@@ -1,0 +1,49 @@
+server:
+  servlet:
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/api}
+  max-http-request-header-size: 126KB
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: ubax-platform
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:db-ubax}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          lob:
+            non_contextual_creation: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    default-schema: ${FLYWAY_DEFAULT_SCHEMA:administrative}
+    schemas: ${FLYWAY_SCHEMAS:administrative}
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+
+# Swagger / OpenAPI
+springdoc:
+  swagger-ui:
+    path: ${SPRINGDOC_SWAGGER_UI_PATH:/swagger-ui.html}
+  api-docs:
+    path: ${SPRINGDOC_API_DOCS_PATH:/api-docs}
+
+# Keycloak configuration
+keycloak-client:
+  id: ${KEYCLOAK_CLIENT_ID:administrateur}
+  secret: ${KEYCLOAK_CLIENT_SECRET:uNa9uZOSqsRhVxNiYU8BqKXRI3tuvSWD}
+  uri: ${KEYCLOAK_URI:https://keycloak-sgf.modelsis.sn/auth}
+  realm: ${KEYCLOAK_REALM:socle-sgf}
+  issuer-url: ${keycloak-client.uri}/realms/${keycloak-client.realm}
