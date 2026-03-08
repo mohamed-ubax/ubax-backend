@@ -64,10 +64,6 @@ import java.time.LocalDateTime;
 @SuperBuilder
 public class User extends BaseEntity {
 
-    // =========================================================================
-    // KEYCLOAK
-    // =========================================================================
-
     /**
      * Identifiant unique Keycloak (sub du JWT).
      * Non modifiable après création ({@code updatable = false}).
@@ -93,10 +89,6 @@ public class User extends BaseEntity {
      */
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
-
-    // =========================================================================
-    // IDENTITÉ
-    // =========================================================================
 
     /**
      * Prénom. Synchronisé depuis le claim Keycloak {@code given_name}

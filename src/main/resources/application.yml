@@ -11,11 +11,11 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:db-ubax}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:terranga}
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
@@ -26,12 +26,12 @@ spring:
             non_contextual_creation: true
     show-sql: false
 
-  flyway:
-    enabled: true
-    default-schema: ${FLYWAY_DEFAULT_SCHEMA:administrative}
-    schemas: ${FLYWAY_SCHEMAS:administrative}
-    user: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+#  flyway:
+#    enabled: true
+#    default-schema: ${FLYWAY_DEFAULT_SCHEMA:administrative}
+#    schemas: ${FLYWAY_SCHEMAS:administrative}
+#    user: ${spring.datasource.username}
+#    password: ${spring.datasource.password}
 
 # Swagger / OpenAPI
 springdoc:
@@ -41,9 +41,9 @@ springdoc:
     path: ${SPRINGDOC_API_DOCS_PATH:/api-docs}
 
 # Keycloak configuration
-keycloak-client:
-  id: ${KEYCLOAK_CLIENT_ID:administrateur}
-  secret: ${KEYCLOAK_CLIENT_SECRET:uNa9uZOSqsRhVxNiYU8BqKXRI3tuvSWD}
-  uri: ${KEYCLOAK_URI:https://keycloak-sgf.modelsis.sn/auth}
-  realm: ${KEYCLOAK_REALM:socle-sgf}
-  issuer-url: ${keycloak-client.uri}/realms/${keycloak-client.realm}
+#keycloak-client:
+#  id: ${KEYCLOAK_CLIENT_ID:administrateur}
+#  secret: ${KEYCLOAK_CLIENT_SECRET:uNa9uZOSqsRhVxNiYU8BqKXRI3tuvSWD}
+#  uri: ${KEYCLOAK_URI:https://keycloak-sgf.modelsis.sn/auth}
+#  realm: ${KEYCLOAK_REALM:socle-sgf}
+#  issuer-url: ${keycloak-client.uri}/realms/${keycloak-client.realm}
