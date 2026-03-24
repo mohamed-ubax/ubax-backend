@@ -1,4 +1,5 @@
 server:
+  port: ${SERVER_PORT:9999}
   servlet:
     context-path: ${SERVER_SERVLET_CONTEXT_PATH:/api}
   max-http-request-header-size: 126KB
@@ -8,42 +9,69 @@ spring:
   application:
     name: ubax-platform
 
+  # ─── PostgreSQL ──────────────────────────────────────────────────
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:db-ubax}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:db-ubax}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:ubax123}
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: administrative
         jdbc:
           lob:
             non_contextual_creation: true
     show-sql: false
 
-  flyway:
-    enabled: true
-    default-schema: ${FLYWAY_DEFAULT_SCHEMA:administrative}
-    schemas: ${FLYWAY_SCHEMAS:administrative}
-    user: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+#  flyway:
+#    enabled: true
+#    default-schema: ${FLYWAY_DEFAULT_SCHEMA:administrative}
+#    schemas: ${FLYWAY_SCHEMAS:administrative}
+#    user: ${spring.datasource.username}
+#    password: ${spring.datasource.password}
 
-# Swagger / OpenAPI
+  # ─── Keycloak OAuth2 Resource Server ─────────────────────────────
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ubax-plateform}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ubax-plateform}/protocol/openid-connect/certs
+
+# ─── Keycloak Client ─────────────────────────────────────────────
+keycloak:
+  realm: ${KEYCLOAK_REALM:ubax-plateform}
+  auth-server-url: ${KEYCLOAK_URL:http://localhost:8180}
+  client-id: ${KEYCLOAK_CLIENT_ID:ubax-client}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:ky2NlSdFT8H7KuYA8I3weY9tjQTXLtkQ}
+  issuer-uri: ${keycloak.auth-server-url}/realms/${keycloak.realm}
+
+# ─── MinIO (Object Storage) ──────────────────────────────────────
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin123}
+  buckets:
+    users-avatars: users-avatars
+    agencies-logos: agencies-logos
+    properties-media: properties-media
+    property-documents: property-documents
+    tenant-documents: tenant-documents
+    documents-generated: documents-generated
+    ticket-attachments: ticket-attachments
+
+# ─── Swagger / OpenAPI ───────────────────────────────────────────
 springdoc:
   swagger-ui:
     path: ${SPRINGDOC_SWAGGER_UI_PATH:/swagger-ui.html}
+    oauth:
+      client-id: ${keycloak.client-id}
+      realm: ${keycloak.realm}
   api-docs:
     path: ${SPRINGDOC_API_DOCS_PATH:/api-docs}
-
-# Keycloak configuration
-keycloak-client:
-  id: ${KEYCLOAK_CLIENT_ID:administrateur}
-  secret: ${KEYCLOAK_CLIENT_SECRET:uNa9uZOSqsRhVxNiYU8BqKXRI3tuvSWD}
-  uri: ${KEYCLOAK_URI:https://keycloak-sgf.modelsis.sn/auth}
-  realm: ${KEYCLOAK_REALM:socle-sgf}
-  issuer-url: ${keycloak-client.uri}/realms/${keycloak-client.realm}
