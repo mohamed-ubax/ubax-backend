@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Docker – ne pas committer les credentials ####
+docker/.env
