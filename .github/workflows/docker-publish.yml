@@ -7,7 +7,7 @@
 #   • push sur main    → image taguée :latest + :main + :sha-{short}
 #
 # Prérequis GitHub Secrets (Settings → Secrets → Actions) :
-#   DOCKER_HUB_USERNAME  → spirittechrevolution
+#   DOCKER_HUB_USERNAME  → ubaxproject
 #   DOCKER_HUB_TOKEN     → dckr_pat_xxxx (access token Docker Hub)
 # ===================================================================
 
@@ -64,13 +64,13 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       # ─── 6. Calcul des métadonnées & tags ─────────────────────────
-      #   develop → spirittechrevolution/ubax-platform:develop
-      #   main    → spirittechrevolution/ubax-platform:latest + :main + :sha-xxx
+      #   develop → ubaxproject/ubax-hub:develop
+      #   main    → ubaxproject/ubax-hub:latest + :main + :sha-xxx
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: spirittechrevolution/ubax-platform
+          images: ubaxproject/ubax-hub
           tags: |
             type=ref,event=branch
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
