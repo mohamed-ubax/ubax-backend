@@ -15,5 +15,7 @@ public enum UserRole {
     /** Compte principal d'une agence immobilière. */
     AGENCY,
     /** Administrateur de la plateforme. */
-    ADMIN
+    ADMIN,
+    /** Super Administrateur de la plateforme. */
+    SUPER_ADMIN
 }
