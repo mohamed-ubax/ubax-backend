@@ -6,10 +6,10 @@
 # ———————————————————— | ————————— | ————————————————————————————————
 # Nginx (reverse proxy)| 80         | http://<VPS_IP>
 # Backend API          | (interne)  | http://<VPS_IP>/api
-# Frontend Admin       | (interne)  | http://<VPS_IP>/admin/
-# Frontend Portail     | (interne)  | http://<VPS_IP>/
 # Keycloak             | (interne)  | http://<VPS_IP>/auth
+# MinIO API            | 9000       | http://<VPS_IP>:9000
 # MinIO Console        | 9001       | http://<VPS_IP>:9001
+# pgAdmin              | 5050       | http://<VPS_IP>:5050
 # Dozzle (logs)        | 8888       | http://<VPS_IP>:8888
 #
 # Images Docker Hub :
@@ -19,12 +19,12 @@
 #
 # Prérequis VPS :
 #   mkdir -p /opt/ubax/{nginx,postgres}
-#   cp docker-compose.prod.yml /opt/ubax/
+#   cp docker-compose.vps.yml /opt/ubax/
 #   cp .env.prod              /opt/ubax/.env
 #   cp nginx/nginx.conf       /opt/ubax/nginx/
 #   cp postgres/init-db.sh    /opt/ubax/postgres/
 #
-# Démarrage : cd /opt/ubax && docker compose -f docker-compose.prod.yml up -d
+# Démarrage : cd /opt/ubax && docker compose -f docker-compose.vps.yml up -d
 # ===================================================================
 
 services:
@@ -68,7 +68,8 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9001:9001"   # Console MinIO accessible directement
+      - "9000:9000"   # API MinIO (S3)
+      - "9001:9001"   # Console MinIO
     networks:
       - ubax-net
     healthcheck:
@@ -111,6 +112,31 @@ services:
       - ubax-net
 
   # ─────────────────────────────────────────────────────────────────
+  # pgAdmin 4 – Interface web PostgreSQL
+  #   Connexions pré-configurées : db-ubax | db-keycloak | db-minio
+  #   Mode Desktop (SERVER_MODE=False) → pas d'écran de connexion
+  # ─────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ubax-pgadmin-prod
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    ports:
+      - "5050:80"
+    networks:
+      - ubax-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────────────────────────
   # Keycloak 26 – IAM / OAuth2 / OIDC
   #   Mode : start (production)
   #   ⚠️  HTTP activé car pas encore de TLS sur le VPS
@@ -120,8 +146,6 @@ services:
     image: quay.io/keycloak/keycloak:26.1.5
     container_name: ubax-keycloak-prod
     restart: unless-stopped
-    # start-dev car pas encore de domaine/HTTPS configuré sur le VPS
-    # Passer à "start --optimized" quand SSL + domaine seront en place
     command: start-dev
     environment:
       KC_DB: postgres
@@ -132,22 +156,23 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HTTP_PORT: 8080
+      KC_HTTP_RELATIVE_PATH: /auth
       KC_HOSTNAME_STRICT: "false"
-      KC_PROXY_HEADERS: xforwarded
       KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
       KC_LOG_LEVEL: info
+      # Limiter la RAM JVM : Keycloak peut saturer la mémoire du VPS
+      JAVA_OPTS_APPEND: "-Xms256m -Xmx512m"
     networks:
       - ubax-net
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo ok >&3 && exec 3>&-"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   # ─────────────────────────────────────────────────────────────────
   # Backend Spring Boot – image Docker Hub (ubaxproject/ubax-hub)
@@ -162,15 +187,16 @@ services:
       DB_NAME: ${POSTGRES_DB}
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_URL: http://keycloak:8080/auth
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/auth/realms/${KEYCLOAK_REALM}
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       SERVER_SERVLET_CONTEXT_PATH: /api
+      SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: docker
     networks:
       - ubax-net
@@ -178,7 +204,7 @@ services:
       postgres:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/actuator/health || exit 1"]
       interval: 30s
@@ -187,47 +213,7 @@ services:
       start_period: 60s
 
   # ─────────────────────────────────────────────────────────────────
-  # Frontend Admin – Angular (image Docker Hub)
-  #   Profil : frontend (non démarré par défaut – image pas encore publiée)
-  #   Activer : docker compose --profile frontend up -d
-  # ─────────────────────────────────────────────────────────────────
-  frontend-admin:
-    profiles:
-      - frontend
-    image: ubaxproject/ubax-admin:${ADMIN_TAG:-latest}
-    container_name: ubax-frontend-admin-prod
-    restart: unless-stopped
-    networks:
-      - ubax-net
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-
-  # ─────────────────────────────────────────────────────────────────
-  # Frontend Portail – Angular (image Docker Hub)
-  #   Profil : frontend (non démarré par défaut – image pas encore publiée)
-  #   Activer : docker compose --profile frontend up -d
-  # ─────────────────────────────────────────────────────────────────
-  frontend-portail:
-    profiles:
-      - frontend
-    image: ubaxproject/ubax-portail:${PORTAIL_TAG:-latest}
-    container_name: ubax-frontend-portail-prod
-    restart: unless-stopped
-    networks:
-      - ubax-net
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-
-  # ─────────────────────────────────────────────────────────────────
-  # Nginx – Reverse proxy (API + Keycloak + Frontends)
+  # Nginx – Reverse proxy (API + Keycloak)
   # ─────────────────────────────────────────────────────────────────
   nginx:
     image: nginx:1.27-alpine
@@ -265,6 +251,8 @@ services:
 volumes:
   postgres_data:
     name: ubax-postgres-prod-data
+  pgadmin_data:
+    name: ubax-pgadmin-prod-data
   minio_data:
     name: ubax-minio-prod-data
 
