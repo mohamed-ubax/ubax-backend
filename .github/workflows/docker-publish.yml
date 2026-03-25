@@ -140,3 +140,74 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 3 – Deploy to VPS
+  # ═══════════════════════════════════════════════════════════════
+  deploy:
+    name: 🚀 Stage 3 – Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build-push
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          timeout: 180s
+          script: |
+            set -e
+            cd /opt/ubax
+
+            TAG="${{ needs.build-push.outputs.image-tag }}"
+            echo "==> Déploiement tag : $TAG"
+
+            # Mise à jour du tag dans .env
+            sed -i "s/^BACKEND_TAG=.*/BACKEND_TAG=$TAG/" .env
+
+            # Connexion Docker Hub
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
+              docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+            # Pull + restart backend uniquement
+            docker compose -f docker-compose.vps.yml pull backend
+            docker compose -f docker-compose.vps.yml up -d --no-deps --remove-orphans backend
+
+            # Nettoyage des anciennes images
+            docker image prune -f
+
+            echo "==> Déploiement terminé ✓"
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 4 – Health Check post-déploiement
+  # ═══════════════════════════════════════════════════════════════
+  health-check:
+    name: 🏥 Stage 4 – Health Check
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Wait for backend to start
+        run: sleep 30
+
+      - name: Check /api/actuator/health
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            http://${{ secrets.VPS_HOST }}/api/actuator/health)
+
+          echo "HTTP status: $STATUS"
+
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Health check failed (HTTP $STATUS)"
+            exit 1
+          fi
+
+          echo "✅ Backend healthy"
+
+      - name: Print health details
+        if: always()
+        run: |
+          curl -sf http://${{ secrets.VPS_HOST }}/api/actuator/health | \
+            python3 -m json.tool || true
