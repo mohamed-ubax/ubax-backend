@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "UBAX Platform – PostgreSQL",
+      "Group": "UBAX Platform",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "db-ubax",
+      "Username": "postgres",
+      "SSLMode": "prefer",
+      "Comment": "Serveur PostgreSQL UBAX – contient db-ubax, db-keycloak, db-minio"
+    }
+  }
+}
