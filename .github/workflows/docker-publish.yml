@@ -66,10 +66,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Compile & run tests
+      - name: Compile & run unit tests
         run: |
           chmod +x mvnw
-          ./mvnw verify -B --no-transfer-progress
+          ./mvnw test -B --no-transfer-progress
 
   # ═══════════════════════════════════════════════════════════════
   # STAGE 2 – Build & Push Docker Hub

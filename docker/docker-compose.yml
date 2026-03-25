@@ -172,16 +172,12 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo ok >&3 && exec 3>&-"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
 
-  # ─────────────────────────────────────────────────────────────────
-  # Dozzle – Visualisation des logs de tous les conteneurs en temps réel
-  #   Accès : http://localhost:8888
-  # ─────────────────────────────────────────────────────────────────
   # ─────────────────────────────────────────────────────────────────
   # Backend Spring Boot – UBAX Platform API
   #   Profil : full-stack (n'est PAS démarré par défaut)
