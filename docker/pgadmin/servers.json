@@ -6,7 +6,7 @@
       "Host": "postgres",
       "Port": 5432,
       "MaintenanceDB": "db-ubax",
-      "Username": "postgres",
+      "Username": "ubax",
       "SSLMode": "prefer",
       "Comment": "Serveur PostgreSQL UBAX – contient db-ubax, db-keycloak, db-minio"
     }

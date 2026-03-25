@@ -1,32 +1,40 @@
 # ===================================================================
-# UBAX Platform – Infrastructure Docker (développement)
+# UBAX Platform – Infrastructure Docker (PRODUCTION – VPS)
 # ===================================================================
 #
-# Services            | Port hôte  | URL
-# ——————————————————— | ————————— | ——————————————————————————————
-# PostgreSQL          | 5432       | jdbc:postgresql://localhost:5432
-# pgAdmin             | 5050       | http://localhost:5050
-# MinIO API           | 9000       | http://localhost:9000
-# MinIO Console       | 9001       | http://localhost:9001
-# Keycloak            | 8180       | http://localhost:8180
-# Dozzle (logs)       | 8888       | http://localhost:8888
-# Backend API         | 8080       | http://localhost:8080/api
+# Services             | Port hôte  | Accès
+# ———————————————————— | ————————— | ————————————————————————————————
+# Nginx (reverse proxy)| 80         | http://<VPS_IP>
+# Backend API          | (interne)  | http://<VPS_IP>/api
+# Keycloak             | (interne)  | http://<VPS_IP>/auth
+# MinIO API            | 9000       | http://<VPS_IP>:9000
+# MinIO Console        | 9001       | http://<VPS_IP>:9001
+# pgAdmin              | 5050       | http://<VPS_IP>:5050
+# Dozzle (logs)        | 8888       | http://<VPS_IP>:8888
 #
-# Démarrage : cd docker && docker compose up -d
-# Backend seul : cd docker && docker compose up -d backend
+# Images Docker Hub :
+#   ubaxproject/ubax-hub       → Backend Spring Boot
+#   ubaxproject/ubax-admin     → Frontend Admin Angular
+#   ubaxproject/ubax-portail   → Frontend Portail Angular
+#
+# Prérequis VPS :
+#   mkdir -p /opt/ubax/{nginx,postgres}
+#   cp docker-compose.vps.yml /opt/ubax/
+#   cp .env.prod              /opt/ubax/.env
+#   cp nginx/nginx.conf       /opt/ubax/nginx/
+#   cp postgres/init-db.sh    /opt/ubax/postgres/
+#
+# Démarrage : cd /opt/ubax && docker compose -f docker-compose.vps.yml up -d
 # ===================================================================
 
 services:
 
   # ─────────────────────────────────────────────────────────────────
   # PostgreSQL 17 – Serveur unique, 3 bases de données
-  #   • db-ubax       → application backend
-  #   • db-keycloak   → Keycloak IAM
-  #   • db-minio      → notifications/événements MinIO
   # ─────────────────────────────────────────────────────────────────
   postgres:
     image: postgres:17-alpine
-    container_name: ubax-postgres
+    container_name: ubax-postgres-prod
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -36,8 +44,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
-    ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+    # Pas d'exposition de port hôte en production — accès interne uniquement
     networks:
       - ubax-net
     healthcheck:
@@ -48,39 +55,11 @@ services:
       start_period: 10s
 
   # ─────────────────────────────────────────────────────────────────
-  # pgAdmin 4 – Interface web PostgreSQL
-  #   Connexions pré-configurées : db-ubax | db-keycloak | db-minio
-  #   Mode Desktop (SERVER_MODE=False) → pas d'écran de connexion
-  # ─────────────────────────────────────────────────────────────────
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: ubax-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
-    networks:
-      - ubax-net
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  # ─────────────────────────────────────────────────────────────────
   # MinIO – Object Storage S3-compatible
-  #   Buckets : users-avatars, agencies-logos, properties-media
-  #             property-documents, tenant-documents,
-  #             documents-generated, ticket-attachments
   # ─────────────────────────────────────────────────────────────────
   minio:
     image: minio/minio:latest
-    container_name: ubax-minio
+    container_name: ubax-minio-prod
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -89,8 +68,8 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "${MINIO_API_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "9000:9000"   # API MinIO (S3)
+      - "9001:9001"   # Console MinIO
     networks:
       - ubax-net
     healthcheck:
@@ -101,12 +80,11 @@ services:
       start_period: 10s
 
   # ─────────────────────────────────────────────────────────────────
-  # MinIO Init – Création des buckets au premier démarrage
-  #   Exécution unique (restart: "no") – s'arrête après init
+  # MinIO Init – Création des buckets (exécution unique)
   # ─────────────────────────────────────────────────────────────────
   minio-init:
     image: minio/mc:latest
-    container_name: ubax-minio-init
+    container_name: ubax-minio-init-prod
     restart: "no"
     depends_on:
       minio:
@@ -117,7 +95,6 @@ services:
       - |
         mc alias set ubax http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}
 
-        # Créer les buckets
         mc mb --ignore-existing ubax/users-avatars
         mc mb --ignore-existing ubax/agencies-logos
         mc mb --ignore-existing ubax/properties-media
@@ -126,7 +103,6 @@ services:
         mc mb --ignore-existing ubax/documents-generated
         mc mb --ignore-existing ubax/ticket-attachments
 
-        # Accès public en lecture pour les médias non-sensibles
         mc anonymous set download ubax/users-avatars
         mc anonymous set download ubax/agencies-logos
         mc anonymous set download ubax/properties-media
@@ -136,36 +112,56 @@ services:
       - ubax-net
 
   # ─────────────────────────────────────────────────────────────────
+  # pgAdmin 4 – Interface web PostgreSQL
+  #   Connexions pré-configurées : db-ubax | db-keycloak | db-minio
+  #   Mode Desktop (SERVER_MODE=False) → pas d'écran de connexion
+  # ─────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ubax-pgadmin-prod
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    ports:
+      - "5050:80"
+    networks:
+      - ubax-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────────────────────────
   # Keycloak 26 – IAM / OAuth2 / OIDC
-  #   Mode : start-dev (HTTP, sans HTTPS requis)
-  #   Base de données : db-keycloak (PostgreSQL)
-  #   ⚠️  start-dev est réservé au développement uniquement
+  #   Mode : start (production)
+  #   ⚠️  HTTP activé car pas encore de TLS sur le VPS
+  #       Ajouter Certbot + HTTPS quand un domaine sera configuré
   # ─────────────────────────────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.5
-    container_name: ubax-keycloak
+    container_name: ubax-keycloak-prod
     restart: unless-stopped
     command: start-dev
     environment:
-      # Base de données
       KC_DB: postgres
       KC_DB_URL_HOST: postgres
       KC_DB_URL_DATABASE: ${KEYCLOAK_DB_NAME}
       KC_DB_USERNAME: ${POSTGRES_USER}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      # Compte administrateur bootstrap (Keycloak 26+)
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      # Réseau & sécurité
       KC_HTTP_PORT: 8080
+      KC_HTTP_RELATIVE_PATH: /auth
       KC_HOSTNAME_STRICT: "false"
-      KC_PROXY_HEADERS: xforwarded
-      # Observabilité
       KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
       KC_LOG_LEVEL: info
-    ports:
-      - "${KEYCLOAK_PORT:-8180}:8080"
+      # Limiter la RAM JVM : Keycloak peut saturer la mémoire du VPS
+      JAVA_OPTS_APPEND: "-Xms256m -Xmx512m"
     networks:
       - ubax-net
     depends_on:
@@ -176,58 +172,39 @@ services:
       interval: 15s
       timeout: 5s
       retries: 15
-      start_period: 60s
+      start_period: 30s
 
   # ─────────────────────────────────────────────────────────────────
-  # Backend Spring Boot – UBAX Platform API
-  #   Profil : full-stack (n'est PAS démarré par défaut)
-  #   Usage  : docker compose --profile full-stack up -d
-  #   Accès  : http://localhost:8080/api
-  #   Swagger: http://localhost:8080/api/swagger-ui.html
-  #
-  #   ℹ️  En développement, lancer le backend depuis l'IDE (plus rapide,
-  #       hot-reload, debug possible). Ce service est utile pour CI/CD
-  #       ou pour partager l'env complet avec un collègue.
+  # Backend Spring Boot – image Docker Hub (ubaxproject/ubax-hub)
   # ─────────────────────────────────────────────────────────────────
   backend:
-    profiles:
-      - full-stack
-    build:
-      context: ..              # Racine du projet (où se trouve le Dockerfile)
-      dockerfile: Dockerfile
-    image: ubax-platform:latest
-    pull_policy: build         # Toujours construire localement, ne jamais télécharger
-    container_name: ubax-backend
+    image: ubaxproject/ubax-hub:${BACKEND_TAG:-latest}
+    container_name: ubax-backend-prod
     restart: unless-stopped
     environment:
-      # Base de données
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB}
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      # Keycloak
-      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_URL: http://keycloak:8080/auth
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}
-      # MinIO
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/auth/realms/${KEYCLOAK_REALM}
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      # Spring
       SERVER_SERVLET_CONTEXT_PATH: /api
+      SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: docker
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
     networks:
       - ubax-net
     depends_on:
       postgres:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/actuator/health || exit 1"]
       interval: 30s
@@ -236,37 +213,51 @@ services:
       start_period: 60s
 
   # ─────────────────────────────────────────────────────────────────
-  # Dozzle – Visualisation des logs de tous les conteneurs en temps réel
-  #   Accès : http://localhost:8888
+  # Nginx – Reverse proxy (API + Keycloak)
+  # ─────────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ubax-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # - "443:443"   # À activer quand le domaine + SSL seront configurés
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - ubax-net
+    depends_on:
+      - backend
+      - keycloak
+
+  # ─────────────────────────────────────────────────────────────────
+  # Dozzle – Logs en temps réel
   # ─────────────────────────────────────────────────────────────────
   dozzle:
     image: amir20/dozzle:latest
-    container_name: ubax-dozzle
+    container_name: ubax-dozzle-prod
     restart: unless-stopped
+    ports:
+      - "8888:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "${DOZZLE_PORT:-8888}:8080"
     environment:
       DOZZLE_LEVEL: info
-      DOZZLE_TAILSIZE: 300
+      DOZZLE_TAILSIZE: 500
     networks:
       - ubax-net
 
-# ─── Volumes persistants ─────────────────────────────────────────
+# ─── Volumes persistants ──────────────────────────────────────────
 volumes:
   postgres_data:
-    driver: local
-    name: ubax_postgres_data
+    name: ubax-postgres-prod-data
   pgadmin_data:
-    driver: local
-    name: ubax_pgadmin_data
+    name: ubax-pgadmin-prod-data
   minio_data:
-    driver: local
-    name: ubax_minio_data
+    name: ubax-minio-prod-data
 
-# ─── Réseau interne ──────────────────────────────────────────────
+# ─── Réseau interne ───────────────────────────────────────────────
 networks:
   ubax-net:
+    name: ubax-prod-net
     driver: bridge
-    name: ubax-net
