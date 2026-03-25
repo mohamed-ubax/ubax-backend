@@ -171,9 +171,11 @@ jobs:
             echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
               docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-            # Pull + restart backend uniquement
+            # Pull nouvelle image backend
             docker compose -f docker-compose.vps.yml pull backend
-            docker compose -f docker-compose.vps.yml up -d --no-deps --remove-orphans backend
+
+            # Démarrer tous les services si pas encore up, restart backend
+            docker compose -f docker-compose.vps.yml up -d --remove-orphans
 
             # Nettoyage des anciennes images
             docker image prune -f
