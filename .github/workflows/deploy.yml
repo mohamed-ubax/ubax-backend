@@ -1,0 +1,96 @@
+# ===================================================================
+# GitHub Actions – Déploiement VPS Contabo
+# ===================================================================
+#
+# Déclenché automatiquement après la réussite de docker-publish.yml
+# sur les branches main et develop.
+#
+# Étapes :
+#   1. SSH sur le VPS (173.249.7.89)
+#   2. docker compose pull backend
+#   3. docker compose up -d --no-deps backend
+#
+# GitHub Secrets requis :
+#   VPS_SSH_PRIVATE_KEY  → clé privée Ed25519 (générée sur le VPS)
+#   VPS_HOST             → 173.249.7.89
+#   VPS_USER             → root
+#   DOCKER_HUB_USERNAME  → ubaxproject
+#   DOCKER_HUB_TOKEN     → token Docker Hub (lecture)
+# ===================================================================
+
+name: Deploy to VPS
+
+on:
+  workflow_run:
+    workflows: ["Build & Publish Docker Image"]
+    types:
+      - completed
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    name: Deploy backend on VPS
+    runs-on: ubuntu-latest
+    # Ne déployer que si le workflow de build a réussi
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Determine image tag
+        id: tag
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          if [ "$BRANCH" = "main" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=develop" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine services to update
+        id: services
+        run: |
+          # Identify which workflow triggered the deploy
+          WORKFLOW="${{ github.event.workflow_run.name }}"
+          if echo "$WORKFLOW" | grep -qi "admin"; then
+            echo "services=frontend-admin" >> $GITHUB_OUTPUT
+          elif echo "$WORKFLOW" | grep -qi "portail"; then
+            echo "services=frontend-portail" >> $GITHUB_OUTPUT
+          else
+            echo "services=backend" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          timeout: 180s
+          script: |
+            set -e
+            cd /opt/ubax
+
+            TAG="${{ steps.tag.outputs.tag }}"
+            SERVICES="${{ steps.services.outputs.services }}"
+
+            echo "==> Mise à jour des tags image : $TAG"
+            sed -i "s/^BACKEND_TAG=.*/BACKEND_TAG=$TAG/" .env
+            sed -i "s/^ADMIN_TAG=.*/ADMIN_TAG=$TAG/" .env
+            sed -i "s/^PORTAIL_TAG=.*/PORTAIL_TAG=$TAG/" .env
+
+            echo "==> Connexion Docker Hub"
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login \
+              -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+            echo "==> Pull des nouvelles images ($SERVICES)"
+            docker compose -f docker-compose.prod.yml pull $SERVICES
+
+            echo "==> Redémarrage des services"
+            docker compose -f docker-compose.prod.yml up -d --no-deps --remove-orphans $SERVICES
+
+            echo "==> Nettoyage des anciennes images"
+            docker image prune -f
+
+            echo "==> Déploiement terminé ✓"
+            docker compose -f docker-compose.prod.yml ps
