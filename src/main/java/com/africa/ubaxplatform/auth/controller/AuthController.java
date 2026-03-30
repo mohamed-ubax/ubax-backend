@@ -27,6 +27,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,7 +38,8 @@ import org.springframework.web.bind.annotation.RestController;
  * Contrôleur d'authentification – délègue toutes les opérations au serveur Keycloak via l'API
  * OpenID Connect et l'API Admin REST.
  *
- * <p>Endpoints publics : {@code /login}, {@code /logout}, {@code /forgot-password}.
+ * <p>Endpoints publics : {@code /login}, {@code /logout}, {@code /forgot-password}, {@code
+ * /register/send-otp}, {@code /register/verify}.
  *
  * <p>Endpoints protégés : {@code /reset-password} (ADMIN), {@code /users/{id}/roles} (ADMIN).
  */
