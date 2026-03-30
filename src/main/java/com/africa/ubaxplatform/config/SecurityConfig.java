@@ -40,7 +40,8 @@ public class SecurityConfig {
     "/actuator/info",
     "/auth/login",
     "/auth/logout",
-    "/auth/forgot-password"
+    "/auth/forgot-password",
+    "/auth/register/**"
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
@@ -79,7 +80,8 @@ public class SecurityConfig {
                           "/actuator/info",
                           "/auth/login",
                           "/auth/logout",
-                          "/auth/forgot-password")
+                          "/auth/forgot-password",
+                          "/auth/register/**")
                       .permitAll()
                       .anyRequest()
                       .authenticated())
