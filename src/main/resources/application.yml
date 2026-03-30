@@ -99,6 +99,16 @@ springdoc:
   api-docs:
     path: ${SPRINGDOC_API_DOCS_PATH:/api-docs}
 
+# ─── Actuator / Monitoring ─────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
 # ─── Ubax Application ────────────────────────────────────────────
 ubax:
   security:

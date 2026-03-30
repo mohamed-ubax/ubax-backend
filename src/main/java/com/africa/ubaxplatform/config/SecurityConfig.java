@@ -19,6 +19,8 @@ import org.springframework.security.oauth2.server.resource.authentication.Delega
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -68,23 +70,16 @@ public class SecurityConfig {
           .exceptionHandling(
               ex -> ex.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDenied))
           .authorizeHttpRequests(
-              auth ->
-                  auth.requestMatchers(
-                          "/api-docs/**",
-                          "/swagger-ui/**",
-                          "/swagger-ui.html",
-                          "/webjars/**",
-                          "/v3/api-docs/**",
-                          "/actuator/prometheus",
-                          "/actuator/health/**",
-                          "/actuator/info",
-                          "/auth/login",
-                          "/auth/logout",
-                          "/auth/forgot-password",
-                          "/auth/register/**")
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
+              auth -> {
+                RequestMatcher[] publicMatchers =
+                    Arrays.stream(WHITELIST)
+                        .map(AntPathRequestMatcher::antMatcher)
+                        .toArray(RequestMatcher[]::new);
+                auth.requestMatchers(publicMatchers)
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated();
+              })
           .oauth2ResourceServer(
               oauth2 ->
                   oauth2.jwt(

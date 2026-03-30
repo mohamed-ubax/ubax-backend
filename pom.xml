@@ -113,17 +113,21 @@
             <version>26.0.7</version>
         </dependency>
 
-        <!-- JavaMail – envoi d'emails transactionnels -->
+        <!-- JavaMail – envoi d'emails transactionnels (désactivé temporairement) -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
+        -->
 
-        <!-- Thymeleaf – templates HTML pour emails -->
+        <!-- Thymeleaf – templates HTML pour emails (désactivé temporairement) -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+        -->
 
     </dependencies>
 

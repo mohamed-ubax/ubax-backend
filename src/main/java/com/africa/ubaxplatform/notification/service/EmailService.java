@@ -1,18 +1,41 @@
 package com.africa.ubaxplatform.notification.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
+
+/**
+ * Service d'envoi d'emails transactionnels.
+ *
+ * <p>Désactivé temporairement (spring-boot-starter-mail et thymeleaf commentés dans pom.xml).
+ * Réactiver les dépendances + restaurer l'implémentation complète pour la mise en production.
+ */
+@Service
+@Slf4j
+public class EmailService {
+
+  @Async
+  public void sendOtp(String to, String otp, long ttlMinutes) {
+    log.info("[EMAIL DISABLED] OTP {} pour {} (valide {} min)", otp, to, ttlMinutes);
+  }
+
+  @Async
+  public void sendWelcome(String to, String firstName) {
+    log.info("[EMAIL DISABLED] Bienvenue {} — {}", firstName, to);
+  }
+
+  @Async
+  public void sendPasswordReset(String to, String firstName, String resetLink) {
+    log.info("[EMAIL DISABLED] Reset password pour {} — {}", firstName, to);
+  }
+
+  @Async
+  public void sendHtml(String to, String subject, String templateName, Map<String, Object> variables) {
+    log.info("[EMAIL DISABLED] sendHtml template={} to={} subject={}", templateName, to, subject);
+  }
+}
+
 
 /**
  * Service d'envoi d'emails transactionnels via JavaMail + Thymeleaf.
@@ -20,6 +43,7 @@ import org.thymeleaf.context.Context;
  * <p>Tous les envois sont asynchrones ({@code @Async}) pour ne pas bloquer le thread HTTP.
  * Templates HTML situés dans {@code src/main/resources/templates/email/}.
  */
+/*
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,13 +60,15 @@ public class EmailService {
 
   // ── Méthodes métier ────────────────────────────────────────────
 
-  /**
+  */
+/**
    * Envoie un code OTP par email.
    *
    * @param to adresse email destinataire
    * @param otp code à 6 chiffres
    * @param ttlMinutes durée de validité en minutes
-   */
+   *//*
+
   @Async
   public void sendOtp(String to, String otp, long ttlMinutes) {
     Context ctx = new Context();
@@ -51,12 +77,14 @@ public class EmailService {
     sendHtml(to, "Votre code de vérification UBAX", "email/otp", ctx);
   }
 
-  /**
+  */
+/**
    * Envoie un email de bienvenue après inscription.
    *
    * @param to adresse email
    * @param firstName prénom de l'utilisateur
-   */
+   *//*
+
   @Async
   public void sendWelcome(String to, String firstName) {
     Context ctx = new Context();
@@ -64,13 +92,15 @@ public class EmailService {
     sendHtml(to, "Bienvenue sur UBAX Platform !", "email/welcome", ctx);
   }
 
-  /**
+  */
+/**
    * Envoie un email de réinitialisation de mot de passe (lien généré via Keycloak).
    *
    * @param to adresse email
    * @param firstName prénom
    * @param resetLink lien de réinitialisation Keycloak
-   */
+   *//*
+
   @Async
   public void sendPasswordReset(String to, String firstName, String resetLink) {
     Context ctx = new Context();
@@ -79,14 +109,16 @@ public class EmailService {
     sendHtml(to, "Réinitialisation de votre mot de passe UBAX", "email/password-reset", ctx);
   }
 
-  /**
+  */
+/**
    * Envoie un email HTML générique avec des variables Thymeleaf.
    *
    * @param to destinataire
    * @param subject objet du mail
    * @param templateName nom du template sans extension (ex: "email/otp")
    * @param variables variables à injecter dans le template
-   */
+   *//*
+
   @Async
   public void sendHtml(
       String to, String subject, String templateName, Map<String, Object> variables) {
@@ -121,3 +153,4 @@ public class EmailService {
     }
   }
 }
+*/
