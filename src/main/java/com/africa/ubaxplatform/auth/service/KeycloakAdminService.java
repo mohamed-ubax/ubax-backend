@@ -25,9 +25,9 @@ public class KeycloakAdminService {
   private final KeycloakProperties props;
   private final RestClient restClient;
 
-  public KeycloakAdminService(KeycloakProperties props, RestClient.Builder builder) {
+  public KeycloakAdminService(KeycloakProperties props) {
     this.props = props;
-    this.restClient = builder.build();
+    this.restClient = RestClient.create();
   }
 
   // ── Forgot Password ────────────────────────────────────────────
@@ -117,8 +117,6 @@ public class KeycloakAdminService {
         .toBodilessEntity();
   }
 
-  // ── Helpers ────────────────────────────────────────────────────
-
   /**
    * Recherche l'identifiant Keycloak d'un utilisateur par son email.
    *
@@ -141,7 +139,7 @@ public class KeycloakAdminService {
       throw new IllegalArgumentException("Aucun utilisateur trouvé avec l'email : " + email);
     }
 
-    return (String) users.get(0).get("id");
+    return (String) users.getFirst().get("id");
   }
 
   /** Obtient un token admin via le flux client_credentials. */

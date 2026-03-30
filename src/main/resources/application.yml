@@ -66,6 +66,13 @@ minio:
     documents-generated: documents-generated
     ticket-attachments: ticket-attachments
 
+# ─── Ubax Application ───────────────────────────────────────────
+ubax:
+  security:
+    enabled: ${SECURITY_ENABLED:true}
+  endpoints:
+    frontend: ${FRONTEND_URL:http://localhost:3000}
+
 # ─── Swagger / OpenAPI ───────────────────────────────────────────
 springdoc:
   swagger-ui:

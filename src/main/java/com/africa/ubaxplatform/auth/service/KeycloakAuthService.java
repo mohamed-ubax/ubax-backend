@@ -22,9 +22,9 @@ public class KeycloakAuthService {
   private final KeycloakProperties props;
   private final RestClient restClient;
 
-  public KeycloakAuthService(KeycloakProperties props, RestClient.Builder builder) {
+  public KeycloakAuthService(KeycloakProperties props) {
     this.props = props;
-    this.restClient = builder.build();
+    this.restClient = RestClient.create();
   }
 
   // ── Login ──────────────────────────────────────────────────────

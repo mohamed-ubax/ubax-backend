@@ -1,70 +1,133 @@
 package com.africa.ubaxplatform.config;
 
-import java.util.Collection;
+import com.africa.ubaxplatform.common.util.KeycloakJwtRolesConverter;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoders;
+import org.springframework.security.oauth2.server.resource.authentication.DelegatingJwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+@Slf4j
 public class SecurityConfig {
 
+  private static final String[] WHITELIST = {
+    "/api-docs/**",
+    "/swagger-ui/**",
+    "/swagger-ui.html",
+    "/webjars/**",
+    "/v3/api-docs/**",
+    "/actuator/prometheus",
+    "/actuator/health/**",
+    "/actuator/info",
+    "/auth/login",
+    "/auth/logout",
+    "/auth/forgot-password"
+  };
+
+  @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
+  private String tokenIssuerUrl;
+
+  @Value("${ubax.endpoints.frontend}")
+  private String frontEndUrl;
+
+  @Value("${ubax.security.enabled:true}")
+  private boolean securityEnabled;
+
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/actuator/health", "/actuator/info")
-                    .permitAll()
-                    .requestMatchers(
-                        "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**")
-                    .permitAll()
-                    .requestMatchers("/auth/login", "/auth/logout", "/auth/forgot-password")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .oauth2ResourceServer(
-            oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(keycloakJwtConverter())));
+  public SecurityFilterChain securityFilterChain(
+      HttpSecurity http,
+      CustomAuthenticationEntryPoint entryPoint,
+      CustomAccessDenied accessDenied)
+      throws Exception {
+    if (securityEnabled) {
+      DelegatingJwtGrantedAuthoritiesConverter authoritiesConverter =
+          new DelegatingJwtGrantedAuthoritiesConverter(
+              new JwtGrantedAuthoritiesConverter(), new KeycloakJwtRolesConverter());
+
+      http.csrf(AbstractHttpConfigurer::disable)
+          .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+          .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+          .exceptionHandling(
+              ex ->
+                  ex.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDenied))
+          .authorizeHttpRequests(
+              auth ->
+                  auth.requestMatchers(
+                          "/api-docs/**",
+                          "/swagger-ui/**",
+                          "/swagger-ui.html",
+                          "/webjars/**",
+                          "/v3/api-docs/**",
+                          "/actuator/prometheus",
+                          "/actuator/health/**",
+                          "/actuator/info",
+                          "/auth/login",
+                          "/auth/logout",
+                          "/auth/forgot-password")
+                      .permitAll()
+                      .anyRequest()
+                      .authenticated())
+          .oauth2ResourceServer(
+              oauth2 ->
+                  oauth2.jwt(
+                      jwt ->
+                          jwt.jwtAuthenticationConverter(
+                              token ->
+                                  new JwtAuthenticationToken(
+                                      token, authoritiesConverter.convert(token)))));
+    } else {
+      http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+          .csrf(AbstractHttpConfigurer::disable);
+    }
     return http.build();
   }
 
-  /**
-   * Convertit les rôles Keycloak du claim {@code realm_access.roles} en {@link GrantedAuthority}
-   * avec le préfixe {@code ROLE_} attendu par Spring Security.
-   *
-   * <p>Exemple JWT Keycloak : {@code {"realm_access": {"roles": ["admin", "client"]}}} → {@code
-   * ROLE_ADMIN}, {@code ROLE_CLIENT}.
-   */
   @Bean
-  public JwtAuthenticationConverter keycloakJwtConverter() {
-    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-    converter.setJwtGrantedAuthoritiesConverter(SecurityConfig::extractRealmRoles);
-    return converter;
+  public CorsConfigurationSource corsConfigurationSource() {
+    List<String> allowedOrigins =
+        Arrays.stream(frontEndUrl.split(",")).map(String::trim).toList();
+    log.info("allowedOrigins {}", allowedOrigins);
+
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOriginPatterns(allowedOrigins);
+    configuration.setAllowedMethods(
+        List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+    configuration.setAllowedHeaders(
+        List.of("Authorization", "Cache-Control", "Content-Type", "X-JWT-Assertion"));
+    configuration.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
   }
 
-  @SuppressWarnings("unchecked")
-  private static Collection<GrantedAuthority> extractRealmRoles(Jwt jwt) {
-    Map<String, Object> realmAccess = jwt.getClaim("realm_access");
-    if (realmAccess == null || !realmAccess.containsKey("roles")) {
-      return List.of();
-    }
-    List<String> roles = (List<String>) realmAccess.get("roles");
-    return roles.stream()
-        .map(role -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
-        .toList();
+  @Bean
+  public JwtDecoder jwtDecoder() {
+    log.info("tokenIssuerUrl {}", tokenIssuerUrl);
+    return JwtDecoders.fromIssuerLocation(tokenIssuerUrl);
+  }
+
+  @Bean
+  GrantedAuthorityDefaults grantedAuthorityDefaults() {
+    return new GrantedAuthorityDefaults("");
   }
 }

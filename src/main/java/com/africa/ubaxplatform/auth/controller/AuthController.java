@@ -1,21 +1,32 @@
 package com.africa.ubaxplatform.auth.controller;
 
+import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.AssignRoleRequest;
 import com.africa.ubaxplatform.auth.dto.ForgotPasswordRequest;
 import com.africa.ubaxplatform.auth.dto.LoginRequest;
 import com.africa.ubaxplatform.auth.dto.LoginResponse;
 import com.africa.ubaxplatform.auth.dto.LogoutRequest;
+import com.africa.ubaxplatform.auth.dto.RequestUser;
 import com.africa.ubaxplatform.auth.dto.ResetPasswordRequest;
 import com.africa.ubaxplatform.auth.service.KeycloakAdminService;
 import com.africa.ubaxplatform.auth.service.KeycloakAuthService;
+import com.africa.ubaxplatform.common.constants.Constants;
+import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
+import com.africa.ubaxplatform.common.exception.CustomException;
+import com.africa.ubaxplatform.common.exception.NotFoundException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
+import com.africa.ubaxplatform.common.response.CustomResponse;
+import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,15 +44,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Authentication", description = "Connexion, déconnexion et gestion des mots de passe")
+@RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
   private final KeycloakAuthService authService;
   private final KeycloakAdminService adminService;
-
-  public AuthController(KeycloakAuthService authService, KeycloakAdminService adminService) {
-    this.authService = authService;
-    this.adminService = adminService;
-  }
+  private final RequestHeaderParser requestHeaderParser;
 
   // ── Login ──────────────────────────────────────────────────────
 
@@ -94,7 +103,7 @@ public class AuthController {
     return ResponseEntity.noContent().build();
   }
 
-  // ── Reset Password (Admin) ─────────────────────────────────────
+  // ── Reset Password (ADMIN) ─────────────────────────────────────
 
   @Operation(
       summary = "Réinitialiser le mot de passe d'un utilisateur (Admin)",
@@ -104,33 +113,67 @@ public class AuthController {
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
     @ApiResponse(responseCode = "204", description = "Mot de passe réinitialisé"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
     @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis"),
     @ApiResponse(responseCode = "404", description = "Utilisateur introuvable")
   })
   @PostMapping("/reset-password")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
-  public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+  public ResponseEntity<CustomResponse> resetPassword(
+      @Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest)
+      throws CustomException {
+    log.info("Reset password request");
+    RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
+    if (user == null)
+      throw new CustomException(new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
+    if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
+      throw new CustomException(
+          new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
+          ResponseMessageConstants.USER_FORBIDDEN);
+
     adminService.resetPassword(
         request.getKeycloakId(), request.getNewPassword(), request.isTemporary());
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_UPDATE_SUCCESS,
+            null));
   }
 
-  // ── Assign Role (Admin) ────────────────────────────────────────
+  // ── Assign Role (ADMIN) ────────────────────────────────────────
 
   @Operation(
       summary = "Attribuer un rôle à un utilisateur (Admin)",
       description = "Assigne un rôle realm Keycloak à l'utilisateur identifié par son keycloakId.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "204", description = "Rôle attribué"),
+    @ApiResponse(responseCode = "200", description = "Rôle attribué"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
     @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis"),
     @ApiResponse(responseCode = "404", description = "Utilisateur ou rôle introuvable")
   })
   @PostMapping("/users/{keycloakId}/roles")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
-  public ResponseEntity<Void> assignRole(
-      @PathVariable String keycloakId, @Valid @RequestBody AssignRoleRequest request) {
+  public ResponseEntity<CustomResponse> assignRole(
+      @PathVariable String keycloakId,
+      @Valid @RequestBody AssignRoleRequest request,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    log.info("Assign role {} to user {}", request.getRole(), keycloakId);
+    RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
+    if (user == null)
+      throw new CustomException(new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
+    if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
+      throw new CustomException(
+          new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
+          ResponseMessageConstants.USER_FORBIDDEN);
+
     adminService.assignRole(keycloakId, request.getRole());
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_UPDATE_SUCCESS,
+            null));
   }
 }
+

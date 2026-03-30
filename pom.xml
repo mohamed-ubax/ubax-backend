@@ -106,6 +106,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Keycloak Admin Client – machine-to-machine token retrieval -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <version>26.0.7</version>
+        </dependency>
+
     </dependencies>
 
     <build>
