@@ -132,14 +132,16 @@ public class KeycloakAdminService {
               .body(new ParameterizedTypeReference<>() {});
 
       // 2. Assign le rôle à l'utilisateur
-      restClient
-          .post()
-          .uri(adminBaseUrl() + "/users/" + keycloakId + "/role-mappings/realm")
-          .header("Authorization", "Bearer " + adminToken)
-          .contentType(MediaType.APPLICATION_JSON)
-          .body(List.of(roleRepresentation))
-          .retrieve()
-          .toBodilessEntity();
+      if (roleRepresentation != null) {
+        restClient
+            .post()
+            .uri(adminBaseUrl() + "/users/" + keycloakId + "/role-mappings/realm")
+            .header("Authorization", "Bearer " + adminToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(List.of(roleRepresentation))
+            .retrieve()
+            .toBodilessEntity();
+      }
     } catch (HttpClientErrorException e) {
       if (e.getStatusCode().value() == 404) {
         throw new CustomException(
@@ -170,14 +172,16 @@ public class KeycloakAdminService {
               .retrieve()
               .body(new ParameterizedTypeReference<>() {});
 
-      restClient
-          .method(org.springframework.http.HttpMethod.DELETE)
-          .uri(adminBaseUrl() + "/users/" + keycloakId + "/role-mappings/realm")
-          .header("Authorization", "Bearer " + adminToken)
-          .contentType(MediaType.APPLICATION_JSON)
-          .body(List.of(roleRepresentation))
-          .retrieve()
-          .toBodilessEntity();
+      if (roleRepresentation != null) {
+        restClient
+            .method(org.springframework.http.HttpMethod.DELETE)
+            .uri(adminBaseUrl() + "/users/" + keycloakId + "/role-mappings/realm")
+            .header("Authorization", "Bearer " + adminToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(List.of(roleRepresentation))
+            .retrieve()
+            .toBodilessEntity();
+      }
     } catch (HttpClientErrorException e) {
       if (e.getStatusCode().value() == 404) {
         throw new CustomException(

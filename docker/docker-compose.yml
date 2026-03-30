@@ -10,8 +10,8 @@
 # MinIO Console       | 9001       | http://localhost:9001
 # Keycloak            | 8180       | http://localhost:8180
 # Dozzle (logs)       | 8888       | http://localhost:8888
-# Backend API         | 8080       | http://localhost:8080/api
-#
+# Backend API         | 8080       | http://localhost:8080/api# Prometheus          | 9090       | http://localhost:9090
+# Grafana             | 3001       | http://localhost:3001#
 # Démarrage : cd docker && docker compose up -d
 # Backend seul : cd docker && docker compose up -d backend
 # ===================================================================
@@ -236,6 +236,51 @@ services:
       start_period: 60s
 
   # ─────────────────────────────────────────────────────────────────
+  # Prometheus – Collecte des métriques (profil monitoring)
+  #   Accès : http://localhost:9090
+  # ─────────────────────────────────────────────────────────────────
+  prometheus:
+    profiles:
+      - monitoring
+    image: prom/prometheus:latest
+    container_name: ubax-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    ports:
+      - "9090:9090"
+    networks:
+      - ubax-net
+
+  # ─────────────────────────────────────────────────────────────────
+  # Grafana – Dashboards de monitoring (profil monitoring)
+  #   Accès : http://localhost:3001   login : admin / admin
+  # ─────────────────────────────────────────────────────────────────
+  grafana:
+    profiles:
+      - monitoring
+    image: grafana/grafana:latest
+    container_name: ubax-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3001:3000"
+    networks:
+      - ubax-net
+    depends_on:
+      - prometheus
+
+  # ─────────────────────────────────────────────────────────────────
   # Dozzle – Visualisation des logs de tous les conteneurs en temps réel
   #   Accès : http://localhost:8888
   # ─────────────────────────────────────────────────────────────────
@@ -264,6 +309,12 @@ volumes:
   minio_data:
     driver: local
     name: ubax_minio_data
+  prometheus_data:
+    driver: local
+    name: ubax_prometheus_data
+  grafana_data:
+    driver: local
+    name: ubax_grafana_data
 
 # ─── Réseau interne ──────────────────────────────────────────────
 networks:

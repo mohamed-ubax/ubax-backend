@@ -40,7 +40,8 @@ public class SecurityConfig {
     "/actuator/info",
     "/auth/login",
     "/auth/logout",
-    "/auth/forgot-password"
+    "/auth/forgot-password",
+    "/auth/register/**"
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
@@ -67,22 +68,7 @@ public class SecurityConfig {
           .exceptionHandling(
               ex -> ex.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDenied))
           .authorizeHttpRequests(
-              auth ->
-                  auth.requestMatchers(
-                          "/api-docs/**",
-                          "/swagger-ui/**",
-                          "/swagger-ui.html",
-                          "/webjars/**",
-                          "/v3/api-docs/**",
-                          "/actuator/prometheus",
-                          "/actuator/health/**",
-                          "/actuator/info",
-                          "/auth/login",
-                          "/auth/logout",
-                          "/auth/forgot-password")
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
+              auth -> auth.requestMatchers(WHITELIST).permitAll().anyRequest().authenticated())
           .oauth2ResourceServer(
               oauth2 ->
                   oauth2.jwt(

@@ -11,6 +11,8 @@
 # MinIO Console        | 9001       | http://<VPS_IP>:9001
 # pgAdmin              | 5050       | http://<VPS_IP>:5050
 # Dozzle (logs)        | 8888       | http://<VPS_IP>:8888
+# Prometheus           | 9090       | http://<VPS_IP>:9090
+# Grafana              | 3001       | http://<VPS_IP>:3001
 #
 # Images Docker Hub :
 #   ubaxproject/ubax-hub       → Backend Spring Boot
@@ -23,6 +25,8 @@
 #   cp .env.prod              /opt/ubax/.env
 #   cp nginx/nginx.conf       /opt/ubax/nginx/
 #   cp postgres/init-db.sh    /opt/ubax/postgres/
+#   cp prometheus/prometheus.yml /opt/ubax/prometheus/
+#   cp -r grafana/            /opt/ubax/grafana/
 #
 # Démarrage : cd /opt/ubax && docker compose -f docker-compose.vps.yml up -d
 # ===================================================================
@@ -231,6 +235,51 @@ services:
       - keycloak
 
   # ─────────────────────────────────────────────────────────────────
+  # Prometheus – Collecte des métriques
+  # ─────────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ubax-prometheus-prod
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    ports:
+      - "9090:9090"
+    networks:
+      - ubax-net
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────────────────────────
+  # Grafana – Dashboards de monitoring
+  #   Accès : http://<VPS_IP>:3001
+  #   Login par défaut : admin / ${GRAFANA_PASSWORD}
+  # ─────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ubax-grafana-prod
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-ubax-grafana-2026}
+      GF_SERVER_ROOT_URL: http://%(domain)s:3001/
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3001:3000"
+    networks:
+      - ubax-net
+    depends_on:
+      - prometheus
+
+  # ─────────────────────────────────────────────────────────────────
   # Dozzle – Logs en temps réel
   # ─────────────────────────────────────────────────────────────────
   dozzle:
@@ -255,6 +304,10 @@ volumes:
     name: ubax-pgadmin-prod-data
   minio_data:
     name: ubax-minio-prod-data
+  prometheus_data:
+    name: ubax-prometheus-prod-data
+  grafana_data:
+    name: ubax-grafana-prod-data
 
 # ─── Réseau interne ───────────────────────────────────────────────
 networks:
