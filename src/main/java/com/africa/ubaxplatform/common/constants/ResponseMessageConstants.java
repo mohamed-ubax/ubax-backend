@@ -26,7 +26,8 @@ public class ResponseMessageConstants {
   public static final String USER_GET_FAILURE = "USER_GET_FAILURE";
   public static final String USER_GET_FAILURE_NOT_FOUND = "USER_GET_FAILURE_NOT_FOUND";
   public static final String USER_CREATE_FAILURE = "USER_CREATE_FAILURE";
-  public static final String USER_CREATE_FAILURE_ALREADY_EXISTS = "USER_CREATE_FAILURE_ALREADY_EXISTS";
+  public static final String USER_CREATE_FAILURE_ALREADY_EXISTS =
+      "USER_CREATE_FAILURE_ALREADY_EXISTS";
   public static final String USER_UPDATE_FAILURE = "USER_UPDATE_FAILURE";
   public static final String USER_DELETE_FAILURE = "USER_DELETE_FAILURE";
 
@@ -39,11 +40,14 @@ public class ResponseMessageConstants {
   public static final String PROPERTY_GET_FAILURE = "PROPERTY_GET_FAILURE";
   public static final String PROPERTY_GET_FAILURE_NOT_FOUND = "PROPERTY_GET_FAILURE_NOT_FOUND";
   public static final String PROPERTY_CREATE_FAILURE = "PROPERTY_CREATE_FAILURE";
-  public static final String PROPERTY_CREATE_FAILURE_BAD_REQUEST = "PROPERTY_CREATE_FAILURE_BAD_REQUEST";
+  public static final String PROPERTY_CREATE_FAILURE_BAD_REQUEST =
+      "PROPERTY_CREATE_FAILURE_BAD_REQUEST";
   public static final String PROPERTY_UPDATE_FAILURE = "PROPERTY_UPDATE_FAILURE";
-  public static final String PROPERTY_UPDATE_FAILURE_NOT_FOUND = "PROPERTY_UPDATE_FAILURE_NOT_FOUND";
+  public static final String PROPERTY_UPDATE_FAILURE_NOT_FOUND =
+      "PROPERTY_UPDATE_FAILURE_NOT_FOUND";
   public static final String PROPERTY_DELETE_FAILURE = "PROPERTY_DELETE_FAILURE";
-  public static final String PROPERTY_DELETE_FAILURE_NOT_FOUND = "PROPERTY_DELETE_FAILURE_NOT_FOUND";
+  public static final String PROPERTY_DELETE_FAILURE_NOT_FOUND =
+      "PROPERTY_DELETE_FAILURE_NOT_FOUND";
 
   // ── TENANT ──────────────────────────────────────────────────────
   public static final String TENANT_GET_SUCCESS = "TENANT_GET_SUCCESS";
@@ -64,16 +68,19 @@ public class ResponseMessageConstants {
   public static final String CONTRACT_DELETE_SUCCESS = "CONTRACT_DELETE_SUCCESS";
   public static final String CONTRACT_GET_FAILURE_NOT_FOUND = "CONTRACT_GET_FAILURE_NOT_FOUND";
   public static final String CONTRACT_CREATE_FAILURE = "CONTRACT_CREATE_FAILURE";
-  public static final String CONTRACT_CREATE_FAILURE_BAD_REQUEST = "CONTRACT_CREATE_FAILURE_BAD_REQUEST";
+  public static final String CONTRACT_CREATE_FAILURE_BAD_REQUEST =
+      "CONTRACT_CREATE_FAILURE_BAD_REQUEST";
   public static final String CONTRACT_UPDATE_FAILURE = "CONTRACT_UPDATE_FAILURE";
-  public static final String CONTRACT_UPDATE_FAILURE_NOT_FOUND = "CONTRACT_UPDATE_FAILURE_NOT_FOUND";
+  public static final String CONTRACT_UPDATE_FAILURE_NOT_FOUND =
+      "CONTRACT_UPDATE_FAILURE_NOT_FOUND";
 
   // ── PAYMENT ─────────────────────────────────────────────────────
   public static final String PAYMENT_GET_SUCCESS = "PAYMENT_GET_SUCCESS";
   public static final String PAYMENT_GET_LIST_SUCCESS = "PAYMENT_GET_LIST_SUCCESS";
   public static final String PAYMENT_CREATE_SUCCESS = "PAYMENT_CREATE_SUCCESS";
   public static final String PAYMENT_CREATE_FAILURE = "PAYMENT_CREATE_FAILURE";
-  public static final String PAYMENT_CREATE_FAILURE_BAD_REQUEST = "PAYMENT_CREATE_FAILURE_BAD_REQUEST";
+  public static final String PAYMENT_CREATE_FAILURE_BAD_REQUEST =
+      "PAYMENT_CREATE_FAILURE_BAD_REQUEST";
   public static final String PAYMENT_GET_FAILURE_NOT_FOUND = "PAYMENT_GET_FAILURE_NOT_FOUND";
 
   // ── DOCUMENT ────────────────────────────────────────────────────

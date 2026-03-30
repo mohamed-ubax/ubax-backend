@@ -54,9 +54,7 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(
-      HttpSecurity http,
-      CustomAuthenticationEntryPoint entryPoint,
-      CustomAccessDenied accessDenied)
+      HttpSecurity http, CustomAuthenticationEntryPoint entryPoint, CustomAccessDenied accessDenied)
       throws Exception {
     if (securityEnabled) {
       DelegatingJwtGrantedAuthoritiesConverter authoritiesConverter =
@@ -67,8 +65,7 @@ public class SecurityConfig {
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .cors(cors -> cors.configurationSource(corsConfigurationSource()))
           .exceptionHandling(
-              ex ->
-                  ex.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDenied))
+              ex -> ex.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDenied))
           .authorizeHttpRequests(
               auth ->
                   auth.requestMatchers(
@@ -103,14 +100,12 @@ public class SecurityConfig {
 
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
-    List<String> allowedOrigins =
-        Arrays.stream(frontEndUrl.split(",")).map(String::trim).toList();
+    List<String> allowedOrigins = Arrays.stream(frontEndUrl.split(",")).map(String::trim).toList();
     log.info("allowedOrigins {}", allowedOrigins);
 
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOriginPatterns(allowedOrigins);
-    configuration.setAllowedMethods(
-        List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     configuration.setAllowedHeaders(
         List.of("Authorization", "Cache-Control", "Content-Type", "X-JWT-Assertion"));
     configuration.setAllowCredentials(true);

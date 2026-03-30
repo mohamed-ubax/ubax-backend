@@ -73,10 +73,7 @@ public class ApiExceptionHandler {
   private CustomResponse getResponse(CustomException e) {
     if (e.getException() instanceof EntityExistsException)
       return new CustomResponse(
-          Constants.Message.CONFLICT_BODY,
-          Constants.Status.CONFLICT,
-          e.getCodeMessage(),
-          null);
+          Constants.Message.CONFLICT_BODY, Constants.Status.CONFLICT, e.getCodeMessage(), null);
     if (e.getException() instanceof IllegalArgumentException
         || e.getException() instanceof DataIntegrityViolationException)
       return new CustomResponse(
@@ -93,10 +90,7 @@ public class ApiExceptionHandler {
     if (e.getException() instanceof EntityNotFoundException
         || e.getException() instanceof NotFoundException)
       return new CustomResponse(
-          Constants.Message.NOT_FOUND_BODY,
-          Constants.Status.NOT_FOUND,
-          e.getCodeMessage(),
-          null);
+          Constants.Message.NOT_FOUND_BODY, Constants.Status.NOT_FOUND, e.getCodeMessage(), null);
     return new CustomResponse(
         Constants.Message.SERVER_ERROR_BODY,
         Constants.Status.INTERNAL_SERVER_ERROR,

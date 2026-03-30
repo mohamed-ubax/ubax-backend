@@ -95,7 +95,7 @@ public class KeycloakAdminService {
    */
   public void assignRole(String keycloakId, UserRole role) {
     String adminToken = getAdminToken();
-    String roleName = role.name().toLowerCase();
+    String roleName = "UBAX_" + role.name(); // ex: UBAX_ADMIN, UBAX_CLIENT
 
     // 1. Récupérer la représentation complète du rôle (id + name requis par Keycloak)
     Map<String, Object> roleRepresentation =

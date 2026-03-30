@@ -124,7 +124,8 @@ public class AuthController {
     log.info("Reset password request");
     RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
     if (user == null)
-      throw new CustomException(new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
+      throw new CustomException(
+          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
     if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
       throw new CustomException(
           new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
@@ -161,7 +162,8 @@ public class AuthController {
     log.info("Assign role {} to user {}", request.getRole(), keycloakId);
     RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
     if (user == null)
-      throw new CustomException(new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
+      throw new CustomException(
+          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
     if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
       throw new CustomException(
           new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
@@ -176,4 +178,3 @@ public class AuthController {
             null));
   }
 }
-

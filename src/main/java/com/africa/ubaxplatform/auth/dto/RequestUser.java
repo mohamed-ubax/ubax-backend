@@ -13,9 +13,9 @@ import lombok.Setter;
 /**
  * Représentation de l'utilisateur extrait du JWT Keycloak.
  *
- * <p>Peuplé par {@link com.africa.ubaxplatform.common.util.RequestHeaderParser} à partir du
- * payload Base64 du Bearer token. Les champs correspondent aux claims standard OpenID Connect
- * enrichis des claims spécifiques au realm UBAX.
+ * <p>Peuplé par {@link com.africa.ubaxplatform.common.util.RequestHeaderParser} à partir du payload
+ * Base64 du Bearer token. Les champs correspondent aux claims standard OpenID Connect enrichis des
+ * claims spécifiques au realm UBAX.
  */
 @Getter
 @Setter
@@ -57,14 +57,18 @@ public class RequestUser {
 
   // ── Helpers ────────────────────────────────────────────────────
 
-  /** @return {@code true} si l'utilisateur possède le rôle donné dans le realm. */
+  /**
+   * @return {@code true} si l'utilisateur possède le rôle donné dans le realm.
+   */
   public boolean hasRole(UserRole userRole) {
     if (realmAccess == null || realmAccess.getRoles() == null) return false;
     String expected = Constants.KEYCLOAK_ROLE_PREFIX + userRole.name();
     return realmAccess.getRoles().stream().anyMatch(r -> r.equalsIgnoreCase(expected));
   }
 
-  /** @return la liste brute des rôles du realm (ex: {@code ["UBAX_ADMIN", "offline_access"]}). */
+  /**
+   * @return la liste brute des rôles du realm (ex: {@code ["UBAX_ADMIN", "offline_access"]}).
+   */
   public List<String> getRealmRoles() {
     if (realmAccess == null || realmAccess.getRoles() == null) return List.of();
     return realmAccess.getRoles();

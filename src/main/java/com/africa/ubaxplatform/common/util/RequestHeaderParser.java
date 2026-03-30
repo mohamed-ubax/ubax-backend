@@ -54,8 +54,8 @@ public class RequestHeaderParser {
   // ── Private helpers ────────────────────────────────────────────
 
   /**
-   * Extrait le token brut depuis le header {@code Authorization: Bearer <token>}. Retourne
-   * {@code null} si le header est absent ou ne commence pas par {@code Bearer }.
+   * Extrait le token brut depuis le header {@code Authorization: Bearer <token>}. Retourne {@code
+   * null} si le header est absent ou ne commence pas par {@code Bearer }.
    */
   private String extractBearerToken(HttpServletRequest request) {
     String header = request.getHeader(Constants.AUTHORIZATION);
@@ -95,7 +95,10 @@ public class RequestHeaderParser {
       RequestUser user = MAPPER.readValue(payload, RequestUser.class);
       user.setRole(resolveRole(user));
       log.debug(
-          "Parsed RequestUser: sub={}, email={}, role={}", user.getSub(), user.getEmail(), user.getRole());
+          "Parsed RequestUser: sub={}, email={}, role={}",
+          user.getSub(),
+          user.getEmail(),
+          user.getRole());
       return user;
     } catch (Exception e) {
       log.error("Failed to parse JWT payload into RequestUser: {}", e.getMessage());
