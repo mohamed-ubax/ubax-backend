@@ -212,7 +212,7 @@ public class AuthController {
     @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis"),
     @ApiResponse(responseCode = "404", description = "Utilisateur ou rôle introuvable")
   })
-  @org.springframework.web.bind.annotation.DeleteMapping("/users/{keycloakId}/roles")
+  @DeleteMapping("/users/{keycloakId}/roles")
   public ResponseEntity<CustomResponse> removeRole(
       @PathVariable String keycloakId,
       @Valid @RequestBody AssignRoleRequest request,
