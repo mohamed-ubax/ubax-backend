@@ -13,6 +13,9 @@ public class ResponseMessageConstants {
   // ── AUTH ────────────────────────────────────────────────────────
   public static final String USER_LOGIN_SUCCESS = "USER_LOGIN_SUCCESS";
   public static final String USER_LOGOUT_SUCCESS = "USER_LOGOUT_SUCCESS";
+  public static final String USER_FORGOT_PASSWORD_SUCCESS = "USER_FORGOT_PASSWORD_SUCCESS";
+  public static final String USER_INVALID_CREDENTIALS = "USER_INVALID_CREDENTIALS";
+  public static final String USER_ROLE_ASSIGN_SUCCESS = "USER_ROLE_ASSIGN_SUCCESS";
   public static final String USER_NOT_FOUND = "USER_NOT_FOUND";
   public static final String USER_UNAUTHORIZED = "USER_UNAUTHORIZED";
   public static final String USER_FORBIDDEN = "USER_FORBIDDEN";

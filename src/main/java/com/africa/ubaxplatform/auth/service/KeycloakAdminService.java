@@ -2,6 +2,10 @@ package com.africa.ubaxplatform.auth.service;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.config.KeycloakProperties;
+import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
+import com.africa.ubaxplatform.common.exception.CustomException;
+import com.africa.ubaxplatform.common.exception.NotFoundException;
+import com.africa.ubaxplatform.common.exception.TokenRetrievalException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.core.ParameterizedTypeReference;
@@ -40,18 +44,26 @@ public class KeycloakAdminService {
    *
    * @param email adresse email de l'utilisateur
    */
-  public void sendForgotPasswordEmail(String email) {
-    String keycloakId = findUserIdByEmail(email);
-    String adminToken = getAdminToken();
+  public void sendForgotPasswordEmail(String email) throws CustomException {
+    try {
+      String keycloakId = findUserIdByEmail(email);
+      String adminToken = getAdminToken();
 
-    restClient
-        .put()
-        .uri(adminBaseUrl() + "/users/" + keycloakId + "/execute-actions-email")
-        .header("Authorization", "Bearer " + adminToken)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(List.of("UPDATE_PASSWORD"))
-        .retrieve()
-        .toBodilessEntity();
+      restClient
+          .put()
+          .uri(adminBaseUrl() + "/users/" + keycloakId + "/execute-actions-email")
+          .header("Authorization", "Bearer " + adminToken)
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(List.of("UPDATE_PASSWORD"))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (NotFoundException e) {
+      throw e; // re-throw — le contrôleur gère silencieusement
+    } catch (HttpClientErrorException e) {
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()),
+          "Erreur lors de l'envoi de l'email de réinitialisation");
+    }
   }
 
   // ── Reset Password ─────────────────────────────────────────────
@@ -63,7 +75,8 @@ public class KeycloakAdminService {
    * @param newPassword nouveau mot de passe en clair
    * @param temporary si {@code true}, l'utilisateur devra changer son MDP à la prochaine connexion
    */
-  public void resetPassword(String keycloakId, String newPassword, boolean temporary) {
+  public void resetPassword(String keycloakId, String newPassword, boolean temporary)
+      throws CustomException {
     String adminToken = getAdminToken();
 
     Map<String, Object> credential =
@@ -72,14 +85,25 @@ public class KeycloakAdminService {
             "value", newPassword,
             "temporary", temporary);
 
-    restClient
-        .put()
-        .uri(adminBaseUrl() + "/users/" + keycloakId + "/reset-password")
-        .header("Authorization", "Bearer " + adminToken)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(credential)
-        .retrieve()
-        .toBodilessEntity();
+    try {
+      restClient
+          .put()
+          .uri(adminBaseUrl() + "/users/" + keycloakId + "/reset-password")
+          .header("Authorization", "Bearer " + adminToken)
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(credential)
+          .retrieve()
+          .toBodilessEntity();
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 404) {
+        throw new CustomException(
+            new NotFoundException("Utilisateur introuvable dans Keycloak"),
+            ResponseMessageConstants.USER_NOT_FOUND);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()),
+          "Erreur lors de la réinitialisation du mot de passe");
+    }
   }
 
   // ── Assign Role ────────────────────────────────────────────────
@@ -93,28 +117,76 @@ public class KeycloakAdminService {
    * @param keycloakId identifiant Keycloak de l'utilisateur
    * @param role rôle à attribuer
    */
-  public void assignRole(String keycloakId, UserRole role) {
+  public void assignRole(String keycloakId, UserRole role) throws CustomException {
     String adminToken = getAdminToken();
     String roleName = "UBAX_" + role.name(); // ex: UBAX_ADMIN, UBAX_CLIENT
 
-    // 1. Récupérer la représentation complète du rôle (id + name requis par Keycloak)
-    Map<String, Object> roleRepresentation =
-        restClient
-            .get()
-            .uri(adminBaseUrl() + "/roles/" + roleName)
-            .header("Authorization", "Bearer " + adminToken)
-            .retrieve()
-            .body(new ParameterizedTypeReference<>() {});
+    try {
+      // 1. Récupérer la représentation complète du rôle (id + name requis par Keycloak)
+      Map<String, Object> roleRepresentation =
+          restClient
+              .get()
+              .uri(adminBaseUrl() + "/roles/" + roleName)
+              .header("Authorization", "Bearer " + adminToken)
+              .retrieve()
+              .body(new ParameterizedTypeReference<>() {});
 
-    // 2. Assign le rôle à l'utilisateur
-    restClient
-        .post()
-        .uri(adminBaseUrl() + "/users/" + keycloakId + "/role-mappings/realm")
-        .header("Authorization", "Bearer " + adminToken)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(List.of(roleRepresentation))
-        .retrieve()
-        .toBodilessEntity();
+      // 2. Assign le rôle à l'utilisateur
+      restClient
+          .post()
+          .uri(adminBaseUrl() + "/users/" + keycloakId + "/role-mappings/realm")
+          .header("Authorization", "Bearer " + adminToken)
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(List.of(roleRepresentation))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 404) {
+        throw new CustomException(
+            new NotFoundException("Rôle '" + roleName + "' ou utilisateur introuvable"),
+            ResponseMessageConstants.USER_NOT_FOUND);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()), "Erreur lors de l'assignation du rôle");
+    }
+  }
+
+  /**
+   * Retire un rôle realm Keycloak d'un utilisateur.
+   *
+   * @param keycloakId identifiant Keycloak de l'utilisateur
+   * @param role rôle à retirer
+   */
+  public void removeRole(String keycloakId, UserRole role) throws CustomException {
+    String adminToken = getAdminToken();
+    String roleName = "UBAX_" + role.name();
+
+    try {
+      Map<String, Object> roleRepresentation =
+          restClient
+              .get()
+              .uri(adminBaseUrl() + "/roles/" + roleName)
+              .header("Authorization", "Bearer " + adminToken)
+              .retrieve()
+              .body(new ParameterizedTypeReference<>() {});
+
+      restClient
+          .method(org.springframework.http.HttpMethod.DELETE)
+          .uri(adminBaseUrl() + "/users/" + keycloakId + "/role-mappings/realm")
+          .header("Authorization", "Bearer " + adminToken)
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(List.of(roleRepresentation))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 404) {
+        throw new CustomException(
+            new NotFoundException("Rôle '" + roleName + "' ou utilisateur introuvable"),
+            ResponseMessageConstants.USER_NOT_FOUND);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()), "Erreur lors du retrait du rôle");
+    }
   }
 
   /**
@@ -136,7 +208,7 @@ public class KeycloakAdminService {
             .body(new ParameterizedTypeReference<>() {});
 
     if (users == null || users.isEmpty()) {
-      throw new IllegalArgumentException("Aucun utilisateur trouvé avec l'email : " + email);
+      throw new NotFoundException("Aucun utilisateur trouvé avec l'email : " + email);
     }
 
     return (String) users.getFirst().get("id");
@@ -149,22 +221,26 @@ public class KeycloakAdminService {
     form.add("client_id", props.getClientId());
     form.add("client_secret", props.getClientSecret());
 
-    Map<String, Object> response =
-        restClient
-            .post()
-            .uri(tokenEndpoint())
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(form)
-            .retrieve()
-            .body(new ParameterizedTypeReference<>() {});
+    try {
+      Map<String, Object> response =
+          restClient
+              .post()
+              .uri(tokenEndpoint())
+              .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+              .body(form)
+              .retrieve()
+              .body(new ParameterizedTypeReference<>() {});
 
-    if (response == null || !response.containsKey("access_token")) {
-      throw new HttpClientErrorException(
-          org.springframework.http.HttpStatus.UNAUTHORIZED,
-          "Impossible d'obtenir le token admin Keycloak");
+      if (response == null || !response.containsKey("access_token")) {
+        throw new TokenRetrievalException("Impossible d'obtenir le token admin Keycloak");
+      }
+      return (String) response.get("access_token");
+    } catch (TokenRetrievalException e) {
+      throw e;
+    } catch (HttpClientErrorException e) {
+      throw new TokenRetrievalException(
+          "Authentification du service account échouée : " + e.getMessage(), e);
     }
-
-    return (String) response.get("access_token");
   }
 
   private String tokenEndpoint() {

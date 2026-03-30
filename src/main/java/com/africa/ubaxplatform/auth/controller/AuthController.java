@@ -64,8 +64,15 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Identifiants invalides")
   })
   @PostMapping("/login")
-  public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-    return ResponseEntity.ok(authService.login(request));
+  public ResponseEntity<CustomResponse> login(@Valid @RequestBody LoginRequest request)
+      throws CustomException {
+    LoginResponse loginResponse = authService.login(request);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_LOGIN_SUCCESS,
+            loginResponse));
   }
 
   // ── Logout ─────────────────────────────────────────────────────
@@ -78,9 +85,15 @@ public class AuthController {
     @ApiResponse(responseCode = "400", description = "Refresh token invalide ou expiré")
   })
   @PostMapping("/logout")
-  public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
+  public ResponseEntity<CustomResponse> logout(@Valid @RequestBody LogoutRequest request)
+      throws CustomException {
     authService.logout(request);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_LOGOUT_SUCCESS,
+            null));
   }
 
   // ── Forgot Password ────────────────────────────────────────────
@@ -94,13 +107,19 @@ public class AuthController {
     @ApiResponse(responseCode = "204", description = "Email envoyé (si l'adresse existe)"),
   })
   @PostMapping("/forgot-password")
-  public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+  public ResponseEntity<CustomResponse> forgotPassword(
+      @Valid @RequestBody ForgotPasswordRequest request) {
     try {
       adminService.sendForgotPasswordEmail(request.getEmail());
-    } catch (IllegalArgumentException ignored) {
+    } catch (NotFoundException | CustomException ignored) {
       // Réponse volontairement silencieuse pour éviter l'énumération des comptes
     }
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_FORGOT_PASSWORD_SUCCESS,
+            null));
   }
 
   // ── Reset Password (ADMIN) ─────────────────────────────────────
@@ -174,7 +193,45 @@ public class AuthController {
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
-            ResponseMessageConstants.USER_UPDATE_SUCCESS,
+            ResponseMessageConstants.USER_ROLE_ASSIGN_SUCCESS,
+            null));
+  }
+
+  // ── Remove Role (ADMIN) ────────────────────────────────────────
+
+  @Operation(
+      summary = "Retirer un rôle à un utilisateur (Admin)",
+      description =
+          "Supprime un rôle realm Keycloak de l'utilisateur identifié par son keycloakId.")
+  @SecurityRequirement(name = "bearerAuth")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Rôle retiré"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis"),
+    @ApiResponse(responseCode = "404", description = "Utilisateur ou rôle introuvable")
+  })
+  @org.springframework.web.bind.annotation.DeleteMapping("/users/{keycloakId}/roles")
+  public ResponseEntity<CustomResponse> removeRole(
+      @PathVariable String keycloakId,
+      @Valid @RequestBody AssignRoleRequest request,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    log.info("Remove role {} from user {}", request.getRole(), keycloakId);
+    RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
+    if (user == null)
+      throw new CustomException(
+          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
+    if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
+      throw new CustomException(
+          new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
+          ResponseMessageConstants.USER_FORBIDDEN);
+
+    adminService.removeRole(keycloakId, request.getRole());
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_ROLE_ASSIGN_SUCCESS,
             null));
   }
 }

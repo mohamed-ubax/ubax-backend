@@ -4,10 +4,14 @@ import com.africa.ubaxplatform.auth.config.KeycloakProperties;
 import com.africa.ubaxplatform.auth.dto.LoginRequest;
 import com.africa.ubaxplatform.auth.dto.LoginResponse;
 import com.africa.ubaxplatform.auth.dto.LogoutRequest;
+import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
+import com.africa.ubaxplatform.common.exception.CustomException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -35,7 +39,7 @@ public class KeycloakAuthService {
    * @param request email + mot de passe
    * @return access_token, refresh_token et métadonnées d'expiration
    */
-  public LoginResponse login(LoginRequest request) {
+  public LoginResponse login(LoginRequest request) throws CustomException {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "password");
     form.add("client_id", props.getClientId());
@@ -44,13 +48,23 @@ public class KeycloakAuthService {
     form.add("password", request.getPassword());
     form.add("scope", "openid profile email");
 
-    return restClient
-        .post()
-        .uri(tokenEndpoint())
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-        .body(form)
-        .retrieve()
-        .body(LoginResponse.class);
+    try {
+      return restClient
+          .post()
+          .uri(tokenEndpoint())
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+          .body(form)
+          .retrieve()
+          .body(LoginResponse.class);
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 400) {
+        throw new CustomException(
+            new UnAuthorizedException("Identifiants invalides ou compte inexistant"),
+            ResponseMessageConstants.USER_INVALID_CREDENTIALS);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()), "Erreur de connexion Keycloak");
+    }
   }
 
   // ── Logout ─────────────────────────────────────────────────────
@@ -60,19 +74,25 @@ public class KeycloakAuthService {
    *
    * @param request refresh token à révoquer
    */
-  public void logout(LogoutRequest request) {
+  public void logout(LogoutRequest request) throws CustomException {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("client_id", props.getClientId());
     form.add("client_secret", props.getClientSecret());
     form.add("refresh_token", request.getRefreshToken());
 
-    restClient
-        .post()
-        .uri(logoutEndpoint())
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-        .body(form)
-        .retrieve()
-        .toBodilessEntity();
+    try {
+      restClient
+          .post()
+          .uri(logoutEndpoint())
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+          .body(form)
+          .retrieve()
+          .toBodilessEntity();
+    } catch (HttpClientErrorException e) {
+      throw new CustomException(
+          new IllegalArgumentException("Token de déconnexion invalide ou expiré"),
+          "Token de déconnexion invalide");
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
@@ -56,6 +57,23 @@ public class ApiExceptionHandler {
                 Constants.Status.BAD_REQUEST,
                 "Max size 50MB",
                 null));
+  }
+
+  @ExceptionHandler(HttpClientErrorException.class)
+  public ResponseEntity<CustomResponse> handleHttpClientError(HttpClientErrorException e) {
+    log.error("Keycloak HTTP error {}: {}", e.getStatusCode(), e.getMessage());
+    HttpStatus status = HttpStatus.resolve(e.getStatusCode().value());
+    if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
+    String body =
+        switch (status) {
+          case UNAUTHORIZED -> Constants.Message.UNAUTHORIZED_BODY;
+          case FORBIDDEN -> "FORBIDDEN";
+          case NOT_FOUND -> Constants.Message.NOT_FOUND_BODY;
+          case BAD_REQUEST -> Constants.Message.BAD_REQUEST_BODY;
+          default -> Constants.Message.SERVER_ERROR_BODY;
+        };
+    return ResponseEntity.status(status)
+        .body(new CustomResponse(body, status.value(), e.getMessage(), null));
   }
 
   private HttpStatus determineHttpStatus(Exception e) {
