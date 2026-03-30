@@ -6,4 +6,4 @@ scrape_configs:
   - job_name: 'ubax-backend'
     metrics_path: '/api/actuator/prometheus'
     static_configs:
-      - targets: ['backend:8080']
+      - targets: ['host.docker.internal:9999']
