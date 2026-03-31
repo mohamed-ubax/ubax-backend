@@ -194,11 +194,11 @@ jobs:
             echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
               docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-            # Pull nouvelle image backend (retry x3 en cas d'erreur réseau)
+            # Pull toutes les images (backend + prometheus + grafana) avec retry x3
             pulled=false
             for attempt in 1 2 3; do
               echo "==> Pull tentative $attempt/3"
-              if docker compose -f docker-compose.vps.yml pull backend; then
+              if docker compose -f docker-compose.vps.yml pull; then
                 pulled=true
                 break
               fi
@@ -206,8 +206,8 @@ jobs:
             done
             $pulled || { echo "❌ Pull échoué après 3 tentatives"; exit 1; }
 
-            # Démarrer tous les services (monitoring inclus), restart backend
-            docker compose -f docker-compose.vps.yml up -d --remove-orphans
+            # Démarrer tous les services — images déjà présentes, pas de téléchargement
+            docker compose -f docker-compose.vps.yml up -d --no-build --remove-orphans
 
             # Recharger nginx pour reconnecter au nouveau conteneur backend
             docker exec ubax-nginx-prod nginx -s reload || true
