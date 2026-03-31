@@ -49,8 +49,6 @@ services:
         -Xmx512m
         -Dhudson.model.DirectoryBrowserSupport.CSP=
         -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true
-    networks:
-      - ubax-net
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]
       interval: 30s
@@ -65,8 +63,3 @@ volumes:
       type: none
       o: bind
       device: /opt/jenkins/data
-
-networks:
-  ubax-net:
-    external: true
-    name: ubax_ubax-net
