@@ -150,6 +150,26 @@ jobs:
     needs: build-push
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync docker config files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          source: >-
+            docker/docker-compose.vps.yml,
+            docker/prometheus/prometheus.vps.yml,
+            docker/grafana/,
+            docker/nginx/nginx.conf,
+            docker/postgres/init-db.sh,
+            docker/pgadmin/servers.json
+          target: /opt/ubax/
+          strip_components: 1
+          overwrite: true
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -161,6 +181,9 @@ jobs:
             set -e
             cd /opt/ubax
 
+            # Créer les répertoires de config si absents
+            mkdir -p prometheus grafana/provisioning/datasources nginx postgres pgadmin
+
             TAG="${{ needs.build-push.outputs.image-tag }}"
             echo "==> Déploiement tag : $TAG"
 
@@ -171,11 +194,23 @@ jobs:
             echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
               docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-            # Pull nouvelle image backend
-            docker compose -f docker-compose.vps.yml pull backend
+            # Pull toutes les images (backend + prometheus + grafana) avec retry x3
+            pulled=false
+            for attempt in 1 2 3; do
+              echo "==> Pull tentative $attempt/3"
+              if docker compose -f docker-compose.vps.yml pull; then
+                pulled=true
+                break
+              fi
+              [ $attempt -lt 3 ] && echo "Pull échoué, nouvel essai dans 15s..." && sleep 15
+            done
+            $pulled || { echo "❌ Pull échoué après 3 tentatives"; exit 1; }
 
-            # Démarrer tous les services si pas encore up, restart backend
-            docker compose -f docker-compose.vps.yml up -d --remove-orphans
+            # Démarrer tous les services — images déjà présentes, pas de téléchargement
+            docker compose -f docker-compose.vps.yml up -d --no-build --remove-orphans
+
+            # Recharger nginx pour reconnecter au nouveau conteneur backend
+            docker exec ubax-nginx-prod nginx -s reload || true
 
             # Nettoyage des anciennes images
             docker image prune -f
@@ -191,22 +226,21 @@ jobs:
     needs: deploy
 
     steps:
-      - name: Wait for backend to start
-        run: sleep 30
-
-      - name: Check /api/actuator/health
+      - name: Wait & retry until backend is healthy
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            http://${{ secrets.VPS_HOST }}/api/actuator/health)
-
-          echo "HTTP status: $STATUS"
-
-          if [ "$STATUS" != "200" ]; then
-            echo "❌ Health check failed (HTTP $STATUS)"
-            exit 1
-          fi
-
-          echo "✅ Backend healthy"
+          echo "Waiting for backend to become healthy (max 2 min)..."
+          for i in $(seq 1 12); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              http://${{ secrets.VPS_HOST }}/api/actuator/health)
+            echo "Attempt $i/12 – HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Backend healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "❌ Health check failed after 2 minutes"
+          exit 1
 
       - name: Print health details
         if: always()
