@@ -215,6 +215,19 @@ jobs:
             # Recharger nginx pour reconnecter au nouveau conteneur backend
             docker exec ubax-nginx-prod nginx -s reload || true
 
+            # ── Jenkins : démarrer s'il n'est pas déjà en cours ──
+            mkdir -p /opt/jenkins/data
+            chown -R 1000:1000 /opt/jenkins
+
+            if ! docker ps --format '{{.Names}}' | grep -q '^ubax-jenkins$'; then
+              echo "==> Jenkins non détecté, démarrage..."
+              docker compose -f docker-compose.jenkins.yml up -d
+              echo "✅ Jenkins démarré sur le port 8090"
+            else
+              echo "==> Jenkins déjà en cours d'exécution, mise à jour de la config..."
+              docker compose -f docker-compose.jenkins.yml up -d --no-recreate
+            fi
+
             # Nettoyage des anciennes images
             docker image prune -f
 
