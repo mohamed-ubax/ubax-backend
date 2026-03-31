@@ -19,7 +19,8 @@ on:
       - develop
     paths-ignore:
       - '**.md'
-      - 'docker/**'
+      - 'docker/grafana/**'
+      - 'docker/pgadmin/**'
       - '.gitignore'
 
 jobs:
@@ -161,11 +162,13 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           source: >-
             docker/docker-compose.vps.yml,
+            docker/docker-compose.jenkins.yml,
             docker/prometheus/prometheus.vps.yml,
             docker/grafana/,
             docker/nginx/nginx.conf,
             docker/postgres/init-db.sh,
-            docker/pgadmin/servers.json
+            docker/pgadmin/servers.json,
+            docker/jenkins/setup-jenkins.sh
           target: /opt/ubax/
           strip_components: 1
           overwrite: true
