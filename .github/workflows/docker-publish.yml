@@ -186,6 +186,8 @@ jobs:
 
             # Créer les répertoires de config si absents
             mkdir -p prometheus grafana/provisioning/datasources nginx postgres pgadmin
+            mkdir -p /opt/jenkins/data
+            chown -R 1000:1000 /opt/jenkins
 
             TAG="${{ needs.build-push.outputs.image-tag }}"
             echo "==> Déploiement tag : $TAG"
@@ -216,9 +218,6 @@ jobs:
             docker exec ubax-nginx-prod nginx -s reload || true
 
             # ── Jenkins : démarrer s'il n'est pas déjà en cours ──
-            mkdir -p /opt/jenkins/data
-            chown -R 1000:1000 /opt/jenkins
-
             if ! docker ps --format '{{.Names}}' | grep -q '^ubax-jenkins$'; then
               echo "==> Jenkins non détecté, démarrage..."
               docker compose -f docker-compose.jenkins.yml up -d
