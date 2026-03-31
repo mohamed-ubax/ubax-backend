@@ -150,6 +150,26 @@ jobs:
     needs: build-push
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync docker config files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          source: >-
+            docker/docker-compose.vps.yml,
+            docker/prometheus/prometheus.vps.yml,
+            docker/grafana/,
+            docker/nginx/nginx.conf,
+            docker/postgres/init-db.sh,
+            docker/pgadmin/servers.json
+          target: /opt/ubax/
+          strip_components: 1
+          overwrite: true
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -160,6 +180,9 @@ jobs:
           script: |
             set -e
             cd /opt/ubax
+
+            # Créer les répertoires de config si absents
+            mkdir -p prometheus grafana/provisioning/datasources nginx postgres pgadmin
 
             TAG="${{ needs.build-push.outputs.image-tag }}"
             echo "==> Déploiement tag : $TAG"
@@ -174,7 +197,7 @@ jobs:
             # Pull nouvelle image backend
             docker compose -f docker-compose.vps.yml pull backend
 
-            # Démarrer tous les services si pas encore up, restart backend
+            # Démarrer tous les services (monitoring inclus), restart backend
             docker compose -f docker-compose.vps.yml up -d --remove-orphans
 
             # Recharger nginx pour reconnecter au nouveau conteneur backend
