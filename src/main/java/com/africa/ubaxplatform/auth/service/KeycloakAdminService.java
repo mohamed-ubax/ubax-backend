@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.auth.service;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.config.KeycloakProperties;
+import com.africa.ubaxplatform.auth.dto.RegisterCompleteRequest;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
@@ -9,7 +10,9 @@ import com.africa.ubaxplatform.common.exception.TokenRetrievalException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -193,6 +196,108 @@ public class KeycloakAdminService {
     }
   }
 
+  // ── Create User ────────────────────────────────────────────────
+
+  /**
+   * Crée un utilisateur dans Keycloak et retourne son identifiant (sub UUID).
+   *
+   * <p>Le numéro de téléphone est stocké dans l'attribut custom {@code phone}. L'email n'est pas
+   * marqué comme vérifié : Keycloak enverra un email de vérification si configuré.
+   *
+   * @param request informations d'inscription
+   * @return keycloakId (UUID) de l'utilisateur créé
+   */
+  public String createUser(RegisterCompleteRequest request) throws CustomException {
+    String adminToken = getAdminToken();
+
+    java.util.Map<String, Object> userRepresentation = new java.util.HashMap<>();
+    userRepresentation.put("username", request.getPhone());
+    userRepresentation.put("firstName", request.getFirstName());
+    userRepresentation.put("lastName", request.getLastName());
+    userRepresentation.put("enabled", true);
+    userRepresentation.put("emailVerified", false);
+    userRepresentation.put("attributes", Map.of("phone", List.of(request.getPhone())));
+    userRepresentation.put(
+        "credentials",
+        List.of(Map.of("type", "password", "value", request.getPassword(), "temporary", false)));
+    if (request.getEmail() != null && !request.getEmail().isBlank()) {
+      userRepresentation.put("email", request.getEmail());
+    }
+
+    try {
+      ResponseEntity<Void> response =
+          restClient
+              .post()
+              .uri(adminBaseUrl() + "/users")
+              .header("Authorization", "Bearer " + adminToken)
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(userRepresentation)
+              .retrieve()
+              .toBodilessEntity();
+
+      // Keycloak retourne 201 avec Location: .../users/{id}
+      if (response.getStatusCode() == HttpStatusCode.valueOf(201)
+          && response.getHeaders().getLocation() != null) {
+        String location = response.getHeaders().getLocation().toString();
+        return location.substring(location.lastIndexOf('/') + 1);
+      }
+      throw new CustomException(
+          new IllegalStateException("Création Keycloak sans Location header"),
+          "Erreur lors de la création du compte Keycloak");
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 409) {
+        throw new CustomException(
+            new IllegalArgumentException("Email ou téléphone déjà utilisé dans Keycloak"),
+            ResponseMessageConstants.USER_CREATE_FAILURE_ALREADY_EXISTS);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()),
+          "Erreur lors de la création du compte Keycloak");
+    }
+  }
+
+  /**
+   * Supprime un utilisateur Keycloak par son identifiant (rollback en cas d'échec DB).
+   *
+   * @param keycloakId identifiant Keycloak de l'utilisateur à supprimer
+   */
+  public void deleteUser(String keycloakId) {
+    try {
+      String adminToken = getAdminToken();
+      restClient
+          .delete()
+          .uri(adminBaseUrl() + "/users/" + keycloakId)
+          .header("Authorization", "Bearer " + adminToken)
+          .retrieve()
+          .toBodilessEntity();
+    } catch (Exception e) {
+      // Log uniquement – ne pas propager pour ne pas masquer l'exception originale
+      org.slf4j.LoggerFactory.getLogger(KeycloakAdminService.class)
+          .error("Échec rollback Keycloak pour userId={}: {}", keycloakId, e.getMessage());
+    }
+  }
+
+  // ── Get Roles ──────────────────────────────────────────────────
+
+  /**
+   * Récupère tous les rôles realm définis dans Keycloak.
+   *
+   * @return liste des rôles (champs : id, name, description, composite, clientRole)
+   */
+  public List<Map<String, Object>> getRoles() {
+    String adminToken = getAdminToken();
+    List<Map<String, Object>> roles =
+        restClient
+            .get()
+            .uri(adminBaseUrl() + "/roles")
+            .header("Authorization", "Bearer " + adminToken)
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() {});
+    return roles != null ? roles : List.of();
+  }
+
+  // ── Find User ──────────────────────────────────────────────────
+
   /**
    * Recherche l'identifiant Keycloak d'un utilisateur par son email.
    *
@@ -216,6 +321,56 @@ public class KeycloakAdminService {
     }
 
     return (String) users.getFirst().get("id");
+  }
+
+  /**
+   * Recherche l'identifiant Keycloak (UUID) d'un utilisateur par son numéro de téléphone.
+   *
+   * @param phone numéro de téléphone au format international
+   * @return identifiant Keycloak (UUID) de l'utilisateur
+   * @throws NotFoundException si aucun utilisateur ne correspond
+   */
+  public String findUserIdByPhone(String phone) {
+    String adminToken = getAdminToken();
+
+    List<Map<String, Object>> users =
+        restClient
+            .get()
+            .uri(adminBaseUrl() + "/users?q=phone:{phone}&exact=true", phone)
+            .header("Authorization", "Bearer " + adminToken)
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() {});
+
+    if (users == null || users.isEmpty()) {
+      throw new NotFoundException("Aucun utilisateur trouvé avec le numéro : " + phone);
+    }
+
+    return (String) users.getFirst().get("id");
+  }
+
+  /**
+   * Recherche le username Keycloak d'un utilisateur par son numéro de téléphone (attribut custom).
+   *
+   * @param phone numéro de téléphone au format international
+   * @return username Keycloak de l'utilisateur
+   * @throws NotFoundException si aucun utilisateur ne correspond
+   */
+  public String findUsernameByPhone(String phone) {
+    String adminToken = getAdminToken();
+
+    List<Map<String, Object>> users =
+        restClient
+            .get()
+            .uri(adminBaseUrl() + "/users?q=phone:{phone}&exact=true", phone)
+            .header("Authorization", "Bearer " + adminToken)
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() {});
+
+    if (users == null || users.isEmpty()) {
+      throw new NotFoundException("Aucun utilisateur trouvé avec le numéro : " + phone);
+    }
+
+    return (String) users.getFirst().get("username");
   }
 
   /** Obtient un token admin via le flux client_credentials. */

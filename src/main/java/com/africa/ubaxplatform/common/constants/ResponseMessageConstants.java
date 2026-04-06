@@ -20,6 +20,12 @@ public class ResponseMessageConstants {
   public static final String USER_UNAUTHORIZED = "USER_UNAUTHORIZED";
   public static final String USER_FORBIDDEN = "USER_FORBIDDEN";
 
+  // ── OTP ─────────────────────────────────────────────────────────
+  public static final String OTP_SENT_SUCCESS = "OTP_SENT_SUCCESS";
+  public static final String OTP_VERIFIED_SUCCESS = "OTP_VERIFIED_SUCCESS";
+  public static final String OTP_INVALID = "OTP_INVALID";
+  public static final String OTP_NOT_FOUND = "OTP_NOT_FOUND";
+
   // ── USER ────────────────────────────────────────────────────────
   public static final String USER_GET_SUCCESS = "USER_GET_SUCCESS";
   public static final String USER_GET_LIST_SUCCESS = "USER_GET_LIST_SUCCESS";

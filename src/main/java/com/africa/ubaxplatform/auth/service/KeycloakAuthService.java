@@ -4,8 +4,10 @@ import com.africa.ubaxplatform.auth.config.KeycloakProperties;
 import com.africa.ubaxplatform.auth.dto.LoginRequest;
 import com.africa.ubaxplatform.auth.dto.LoginResponse;
 import com.africa.ubaxplatform.auth.dto.LogoutRequest;
+import com.africa.ubaxplatform.auth.dto.PhoneLoginRequest;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
+import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -24,10 +26,12 @@ import org.springframework.web.client.RestClient;
 public class KeycloakAuthService {
 
   private final KeycloakProperties props;
+  private final KeycloakAdminService keycloakAdminService;
   private final RestClient restClient;
 
-  public KeycloakAuthService(KeycloakProperties props) {
+  public KeycloakAuthService(KeycloakProperties props, KeycloakAdminService keycloakAdminService) {
     this.props = props;
+    this.keycloakAdminService = keycloakAdminService;
     this.restClient = RestClient.create();
   }
 
@@ -60,6 +64,54 @@ public class KeycloakAuthService {
       if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 400) {
         throw new CustomException(
             new UnAuthorizedException("Identifiants invalides ou compte inexistant"),
+            ResponseMessageConstants.USER_INVALID_CREDENTIALS);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()), "Erreur de connexion Keycloak");
+    }
+  }
+
+  // ── Login by Phone ─────────────────────────────────────────────
+
+  /**
+   * Authentifie un utilisateur par son numéro de téléphone et son mot de passe.
+   *
+   * <p>Le username Keycloak est le numéro de téléphone (format international, ex: +2250712345678).
+   *
+   * @param request téléphone + mot de passe
+   * @return access_token, refresh_token et métadonnées d'expiration
+   */
+  public LoginResponse loginByPhone(PhoneLoginRequest request) throws CustomException {
+    // Résoudre le username Keycloak via l'attribut phone
+    String username;
+    try {
+      username = keycloakAdminService.findUsernameByPhone(request.getPhone());
+    } catch (NotFoundException e) {
+      throw new CustomException(
+          new UnAuthorizedException("Numéro de téléphone ou mot de passe invalide"),
+          ResponseMessageConstants.USER_INVALID_CREDENTIALS);
+    }
+
+    MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+    form.add("grant_type", "password");
+    form.add("client_id", props.getClientId());
+    form.add("client_secret", props.getClientSecret());
+    form.add("username", username);
+    form.add("password", request.getPassword());
+    form.add("scope", "openid profile email");
+
+    try {
+      return restClient
+          .post()
+          .uri(tokenEndpoint())
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+          .body(form)
+          .retrieve()
+          .body(LoginResponse.class);
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 400) {
+        throw new CustomException(
+            new UnAuthorizedException("Numéro de téléphone ou mot de passe invalide"),
             ResponseMessageConstants.USER_INVALID_CREDENTIALS);
       }
       throw new CustomException(
