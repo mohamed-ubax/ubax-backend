@@ -1,8 +1,10 @@
-package com.africa.ubaxplatform.auth.service;
+package com.africa.ubaxplatform.auth.service.impl;
 
 import com.africa.ubaxplatform.auth.codeList.OtpPurpose;
 import com.africa.ubaxplatform.auth.entity.OtpVerification;
 import com.africa.ubaxplatform.auth.repository.OtpVerificationRepository;
+import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
+import com.africa.ubaxplatform.auth.service.interfaces.PasswordResetService;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
@@ -15,18 +17,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Orchestration du flow de récupération de mot de passe via OTP SMS.
+ * Implémentation du service de réinitialisation de mot de passe via OTP SMS.
  *
- * <ol>
- *   <li>Envoi OTP → {@link #sendResetOtp(String)}
- *   <li>Vérification OTP → {@link #verifyResetOtp(String, String)}
- *   <li>Réinitialisation → {@link #resetPassword(String, String, String)}
- * </ol>
+ * <p>Orchestration du flow en 3 étapes : envoi OTP → vérification OTP → réinitialisation.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PasswordResetService {
+public class PasswordResetServiceImpl implements PasswordResetService {
 
   private static final long OTP_TTL_MINUTES = 5;
 
@@ -36,21 +34,15 @@ public class PasswordResetService {
 
   // ── Étape 1 : Envoi OTP ────────────────────────────────────────
 
-  /**
-   * Vérifie que le téléphone est enregistré, génère un OTP PASSWORD_RESET et l'envoie par SMS.
-   *
-   * @param phone numéro de téléphone au format international
-   */
+  @Override
   @Transactional
   public void sendResetOtp(String phone) throws CustomException {
-    // Vérifie que l'utilisateur existe dans Keycloak (attribut phone)
     try {
       keycloakAdminService.findUserIdByPhone(phone);
     } catch (NotFoundException e) {
       throw new CustomException(e, ResponseMessageConstants.USER_NOT_FOUND);
     }
 
-    // Invalider les anciens OTP de reset non utilisés pour ce numéro
     otpRepo
         .findTopByPhoneAndPurposeAndUsedFalseAndExpiresAtAfterOrderByCreatedAtDesc(
             phone, OtpPurpose.PASSWORD_RESET, LocalDateTime.now())
@@ -76,12 +68,7 @@ public class PasswordResetService {
 
   // ── Étape 2 : Vérification OTP ─────────────────────────────────
 
-  /**
-   * Vérifie le code OTP sans le consommer (permet à l'UI de passer à l'étape 3).
-   *
-   * @param phone numéro de téléphone
-   * @param code code OTP reçu par SMS
-   */
+  @Override
   public void verifyResetOtp(String phone, String code) throws CustomException {
     OtpVerification otp =
         otpRepo
@@ -103,13 +90,7 @@ public class PasswordResetService {
 
   // ── Étape 3 : Réinitialisation du mot de passe ─────────────────
 
-  /**
-   * Vérifie le code OTP (le consomme), puis réinitialise le mot de passe via Keycloak.
-   *
-   * @param phone numéro de téléphone
-   * @param code code OTP reçu par SMS
-   * @param newPassword nouveau mot de passe en clair
-   */
+  @Override
   @Transactional
   public void resetPassword(String phone, String code, String newPassword) throws CustomException {
     OtpVerification otp =
@@ -127,11 +108,9 @@ public class PasswordResetService {
           new IllegalArgumentException("Code OTP incorrect"), ResponseMessageConstants.OTP_INVALID);
     }
 
-    // Consommer l'OTP
     otp.setUsed(true);
     otpRepo.save(otp);
 
-    // Récupérer le keycloakId via l'attribut phone dans Keycloak
     String keycloakId;
     try {
       keycloakId = keycloakAdminService.findUserIdByPhone(phone);

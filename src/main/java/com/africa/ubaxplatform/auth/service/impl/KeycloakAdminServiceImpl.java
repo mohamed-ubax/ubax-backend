@@ -1,8 +1,9 @@
-package com.africa.ubaxplatform.auth.service;
+package com.africa.ubaxplatform.auth.service.impl;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.config.KeycloakProperties;
 import com.africa.ubaxplatform.auth.dto.RegisterCompleteRequest;
+import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
@@ -20,33 +21,26 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 /**
- * Service d'administration Keycloak.
+ * Implémentation du service d'administration Keycloak.
  *
  * <p>Toutes les opérations nécessitent un token admin obtenu via le flux {@code
  * client_credentials}. Le client Keycloak doit avoir le service account activé avec les rôles
  * {@code realm-management → manage-users} et {@code realm-management → manage-roles}.
  */
 @Service
-public class KeycloakAdminService {
+public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   private final KeycloakProperties props;
   private final RestClient restClient;
 
-  public KeycloakAdminService(KeycloakProperties props) {
+  public KeycloakAdminServiceImpl(KeycloakProperties props) {
     this.props = props;
     this.restClient = RestClient.create();
   }
 
   // ── Forgot Password ────────────────────────────────────────────
 
-  /**
-   * Envoie un email de réinitialisation de mot de passe à l'utilisateur.
-   *
-   * <p>Keycloak envoie un lien sécurisé à durée limitée permettant à l'utilisateur de choisir un
-   * nouveau mot de passe via l'interface Keycloak.
-   *
-   * @param email adresse email de l'utilisateur
-   */
+  @Override
   public void sendForgotPasswordEmail(String email) throws CustomException {
     try {
       String keycloakId = findUserIdByEmail(email);
@@ -61,7 +55,7 @@ public class KeycloakAdminService {
           .retrieve()
           .toBodilessEntity();
     } catch (NotFoundException e) {
-      throw e; // re-throw — le contrôleur gère silencieusement
+      throw e;
     } catch (HttpClientErrorException e) {
       throw new CustomException(
           new IllegalArgumentException(e.getMessage()),
@@ -71,13 +65,7 @@ public class KeycloakAdminService {
 
   // ── Reset Password ─────────────────────────────────────────────
 
-  /**
-   * Réinitialise directement le mot de passe d'un utilisateur (sans email).
-   *
-   * @param keycloakId identifiant Keycloak de l'utilisateur
-   * @param newPassword nouveau mot de passe en clair
-   * @param temporary si {@code true}, l'utilisateur devra changer son MDP à la prochaine connexion
-   */
+  @Override
   public void resetPassword(String keycloakId, String newPassword, boolean temporary)
       throws CustomException {
     String adminToken = getAdminToken();
@@ -111,21 +99,12 @@ public class KeycloakAdminService {
 
   // ── Assign Role ────────────────────────────────────────────────
 
-  /**
-   * Attribue un rôle realm Keycloak à un utilisateur.
-   *
-   * <p>Le rôle doit exister dans le realm. Son nom correspond à la valeur en minuscules de {@link
-   * UserRole} (ex : {@code client}, {@code admin}).
-   *
-   * @param keycloakId identifiant Keycloak de l'utilisateur
-   * @param role rôle à attribuer
-   */
+  @Override
   public void assignRole(String keycloakId, UserRole role) throws CustomException {
     String adminToken = getAdminToken();
-    String roleName = "UBAX_" + role.name(); // ex: UBAX_ADMIN, UBAX_CLIENT
+    String roleName = "UBAX_" + role.name();
 
     try {
-      // 1. Récupérer la représentation complète du rôle (id + name requis par Keycloak)
       Map<String, Object> roleRepresentation =
           restClient
               .get()
@@ -134,7 +113,6 @@ public class KeycloakAdminService {
               .retrieve()
               .body(new ParameterizedTypeReference<>() {});
 
-      // 2. Assign le rôle à l'utilisateur
       if (roleRepresentation != null) {
         restClient
             .post()
@@ -156,12 +134,7 @@ public class KeycloakAdminService {
     }
   }
 
-  /**
-   * Retire un rôle realm Keycloak d'un utilisateur.
-   *
-   * @param keycloakId identifiant Keycloak de l'utilisateur
-   * @param role rôle à retirer
-   */
+  @Override
   public void removeRole(String keycloakId, UserRole role) throws CustomException {
     String adminToken = getAdminToken();
     String roleName = "UBAX_" + role.name();
@@ -196,17 +169,9 @@ public class KeycloakAdminService {
     }
   }
 
-  // ── Create User ────────────────────────────────────────────────
+  // ── Create / Delete User ───────────────────────────────────────
 
-  /**
-   * Crée un utilisateur dans Keycloak et retourne son identifiant (sub UUID).
-   *
-   * <p>Le numéro de téléphone est stocké dans l'attribut custom {@code phone}. L'email n'est pas
-   * marqué comme vérifié : Keycloak enverra un email de vérification si configuré.
-   *
-   * @param request informations d'inscription
-   * @return keycloakId (UUID) de l'utilisateur créé
-   */
+  @Override
   public String createUser(RegisterCompleteRequest request) throws CustomException {
     String adminToken = getAdminToken();
 
@@ -235,7 +200,6 @@ public class KeycloakAdminService {
               .retrieve()
               .toBodilessEntity();
 
-      // Keycloak retourne 201 avec Location: .../users/{id}
       if (response.getStatusCode() == HttpStatusCode.valueOf(201)
           && response.getHeaders().getLocation() != null) {
         String location = response.getHeaders().getLocation().toString();
@@ -256,11 +220,7 @@ public class KeycloakAdminService {
     }
   }
 
-  /**
-   * Supprime un utilisateur Keycloak par son identifiant (rollback en cas d'échec DB).
-   *
-   * @param keycloakId identifiant Keycloak de l'utilisateur à supprimer
-   */
+  @Override
   public void deleteUser(String keycloakId) {
     try {
       String adminToken = getAdminToken();
@@ -271,19 +231,14 @@ public class KeycloakAdminService {
           .retrieve()
           .toBodilessEntity();
     } catch (Exception e) {
-      // Log uniquement – ne pas propager pour ne pas masquer l'exception originale
-      org.slf4j.LoggerFactory.getLogger(KeycloakAdminService.class)
+      org.slf4j.LoggerFactory.getLogger(KeycloakAdminServiceImpl.class)
           .error("Échec rollback Keycloak pour userId={}: {}", keycloakId, e.getMessage());
     }
   }
 
   // ── Get Roles ──────────────────────────────────────────────────
 
-  /**
-   * Récupère tous les rôles realm définis dans Keycloak.
-   *
-   * @return liste des rôles (champs : id, name, description, composite, clientRole)
-   */
+  @Override
   public List<Map<String, Object>> getRoles() {
     String adminToken = getAdminToken();
     List<Map<String, Object>> roles =
@@ -298,13 +253,7 @@ public class KeycloakAdminService {
 
   // ── Find User ──────────────────────────────────────────────────
 
-  /**
-   * Recherche l'identifiant Keycloak d'un utilisateur par son email.
-   *
-   * @param email email de l'utilisateur
-   * @return identifiant Keycloak (UUID)
-   * @throws IllegalArgumentException si aucun utilisateur n'est trouvé
-   */
+  @Override
   public String findUserIdByEmail(String email) {
     String adminToken = getAdminToken();
 
@@ -323,13 +272,7 @@ public class KeycloakAdminService {
     return (String) users.getFirst().get("id");
   }
 
-  /**
-   * Recherche l'identifiant Keycloak (UUID) d'un utilisateur par son numéro de téléphone.
-   *
-   * @param phone numéro de téléphone au format international
-   * @return identifiant Keycloak (UUID) de l'utilisateur
-   * @throws NotFoundException si aucun utilisateur ne correspond
-   */
+  @Override
   public String findUserIdByPhone(String phone) {
     String adminToken = getAdminToken();
 
@@ -348,13 +291,7 @@ public class KeycloakAdminService {
     return (String) users.getFirst().get("id");
   }
 
-  /**
-   * Recherche le username Keycloak d'un utilisateur par son numéro de téléphone (attribut custom).
-   *
-   * @param phone numéro de téléphone au format international
-   * @return username Keycloak de l'utilisateur
-   * @throws NotFoundException si aucun utilisateur ne correspond
-   */
+  @Override
   public String findUsernameByPhone(String phone) {
     String adminToken = getAdminToken();
 
@@ -373,7 +310,8 @@ public class KeycloakAdminService {
     return (String) users.getFirst().get("username");
   }
 
-  /** Obtient un token admin via le flux client_credentials. */
+  // ── Helpers ────────────────────────────────────────────────────
+
   private String getAdminToken() {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "client_credentials");
