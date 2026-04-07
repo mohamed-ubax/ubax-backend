@@ -57,7 +57,7 @@ spring:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:no-reply@ubax.io}
-    password: ${MAIL_PASSWORD:lljv venq dmmm rhgg}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -79,8 +79,8 @@ spring:
 keycloak:
   realm: ${KEYCLOAK_REALM:ubax-plateform}
   auth-server-url: ${KEYCLOAK_URL:http://localhost:8180}
-  client-id: ${KEYCLOAK_CLIENT_ID:ubax-client}
-  client-secret: ${KEYCLOAK_CLIENT_SECRET:ky2NlSdFT8H7KuYA8I3weY9tjQTXLtkQ}
+  client-id: ${KEYCLOAK_CLIENT_ID}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET}
   issuer-uri: ${keycloak.auth-server-url}/realms/${keycloak.realm}
 
 # ─── MinIO (Object Storage) ──────────────────────────────────────
@@ -131,6 +131,6 @@ ubax:
 lam:
   sms:
     api-url: ${LAM_SMS_URL:https://lamsms.lafricamobile.com/api}
-    account-id: ${LAM_ACCOUNT_ID:UBAX_COTE_DIVOIRE_01}
-    password: ${LAM_PASSWORD:zHI18WaOevNmLE5}
+    account-id: ${LAM_ACCOUNT_ID}
+    password: ${LAM_PASSWORD}
     sender: ${LAM_SENDER:UBAX}

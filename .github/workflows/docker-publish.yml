@@ -160,6 +160,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          use_insecure_cipher: true
           source: >-
             docker/docker-compose.vps.yml,
             docker/docker-compose.jenkins.yml,
@@ -180,6 +181,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           timeout: 180s
+          use_insecure_cipher: true
           script: |
             set -e
             cd /opt/ubax
