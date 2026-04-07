@@ -1,4 +1,4 @@
-package com.africa.ubaxplatform.auth.service;
+package com.africa.ubaxplatform.auth.service.impl;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.RegisterCompleteRequest;
@@ -7,6 +7,8 @@ import com.africa.ubaxplatform.auth.entity.OtpVerification;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.OtpVerificationRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
+import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
+import com.africa.ubaxplatform.auth.service.interfaces.RegistrationService;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.util.OtpUtils;
@@ -21,21 +23,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Orchestration de l'inscription mobile via numéro de téléphone.
+ * Implémentation du service d'inscription mobile via OTP SMS.
  *
- * <p>Flux complet :
- *
- * <ol>
- *   <li>Envoi OTP → {@link #sendOtp(String)}
- *   <li>Vérification OTP → {@link #verifyOtp(String, String)}
- *   <li>Completion → {@link #register(RegisterCompleteRequest)} : Keycloak d'abord, puis PostgreSQL
- *       avec rollback automatique en cas d'échec DB.
- * </ol>
+ * <p>Orchestration du flux en 3 étapes : envoi OTP → vérification OTP → inscription complète
+ * (Keycloak + PostgreSQL + email de bienvenue).
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RegistrationService {
+public class RegistrationServiceImpl implements RegistrationService {
 
   private static final long OTP_TTL_MINUTES = 5;
 
@@ -47,11 +43,7 @@ public class RegistrationService {
 
   // ── Étape 1 : Envoi OTP ────────────────────────────────────────
 
-  /**
-   * Génère un code OTP à 6 chiffres, le persiste et l'envoie par SMS au numéro fourni.
-   *
-   * @param phone numéro de téléphone au format international
-   */
+  @Override
   @Transactional
   public void sendOtp(String phone) throws CustomException {
     if (userRepo.existsByPhone(phone)) {
@@ -60,7 +52,6 @@ public class RegistrationService {
           ResponseMessageConstants.USER_CREATE_FAILURE_ALREADY_EXISTS);
     }
 
-    // Invalider les anciens OTP non utilisés pour ce numéro
     otpRepo
         .findTopByPhoneAndUsedFalseAndExpiresAtAfterOrderByCreatedAtDesc(phone, LocalDateTime.now())
         .ifPresent(
@@ -84,13 +75,7 @@ public class RegistrationService {
 
   // ── Étape 2 : Vérification OTP ─────────────────────────────────
 
-  /**
-   * Vérifie le code OTP soumis par l'utilisateur.
-   *
-   * @param phone numéro de téléphone
-   * @param code code OTP reçu par SMS
-   * @throws CustomException si le code est invalide, expiré ou déjà utilisé
-   */
+  @Override
   @Transactional
   public void verifyOtp(String phone, String code) throws CustomException {
     OtpVerification otp =
@@ -115,24 +100,9 @@ public class RegistrationService {
 
   // ── Étape 3 : Inscription complète ─────────────────────────────
 
-  /**
-   * Finalise l'inscription :
-   *
-   * <ol>
-   *   <li>Crée l'utilisateur dans Keycloak.
-   *   <li>Si succès, persiste dans PostgreSQL.
-   *   <li>Assigne le rôle {@code UBAX_CLIENT} dans Keycloak.
-   *   <li>Envoie un email de bienvenue.
-   * </ol>
-   *
-   * <p>En cas d'échec après création Keycloak, le compte Keycloak est supprimé (rollback manuel).
-   *
-   * @param request informations complètes d'inscription
-   * @return données de l'utilisateur créé
-   */
+  @Override
   @Transactional
   public RegisterResponse register(RegisterCompleteRequest request) throws CustomException {
-    // Vérifications de doublons
     if (request.getEmail() != null
         && !request.getEmail().isBlank()
         && userRepo.existsByEmail(request.getEmail())) {
@@ -146,15 +116,12 @@ public class RegistrationService {
           ResponseMessageConstants.USER_CREATE_FAILURE_ALREADY_EXISTS);
     }
 
-    // 1. Créer dans Keycloak
     String keycloakId = keycloakAdminService.createUser(request);
     log.info("Utilisateur créé dans Keycloak: {}", keycloakId);
 
     try {
-      // 2. Assigner le rôle CLIENT dans Keycloak
       keycloakAdminService.assignRole(keycloakId, UserRole.CLIENT);
 
-      // 3. Persister dans PostgreSQL
       User.UserBuilder<?, ?> userBuilder =
           User.builder()
               .keycloakId(keycloakId)
@@ -171,7 +138,6 @@ public class RegistrationService {
       user = userRepo.save(user);
       log.info("Utilisateur persisté en DB: {}", user.getId());
 
-      // 4. Email de bienvenue (asynchrone – ne bloque pas)
       if (user.getEmail() != null && !user.getEmail().isBlank()) {
         emailService.sendWelcome(user.getEmail(), request.getFirstName());
       }
@@ -187,7 +153,6 @@ public class RegistrationService {
           .build();
 
     } catch (Exception e) {
-      // Rollback Keycloak si la persistence DB échoue
       log.error(
           "Échec inscription DB pour keycloakId={}. Rollback Keycloak en cours...", keycloakId);
       keycloakAdminService.deleteUser(keycloakId);

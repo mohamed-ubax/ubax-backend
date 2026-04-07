@@ -118,6 +118,13 @@
             <version>26.0.7</version>
         </dependency>
 
+        <!-- MinIO – object storage (avatars, documents, médias) -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.17</version>
+        </dependency>
+
         <!-- JavaMail – envoi d'emails transactionnels -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

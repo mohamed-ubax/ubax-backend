@@ -47,6 +47,18 @@ public class ApiExceptionHandler {
                 null));
   }
 
+  @ExceptionHandler(StorageException.class)
+  public ResponseEntity<CustomResponse> handleStorageException(StorageException e) {
+    log.error("Storage error: {}", e.getMessage(), e);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(
+            new CustomResponse(
+                Constants.Message.SERVER_ERROR_BODY,
+                Constants.Status.INTERNAL_SERVER_ERROR,
+                e.getMessage(),
+                null));
+  }
+
   @ExceptionHandler(MaxUploadSizeExceededException.class)
   public ResponseEntity<CustomResponse> maxUploadSizeExceeded(MaxUploadSizeExceededException e) {
     log.info("error: {}", e.getMessage());

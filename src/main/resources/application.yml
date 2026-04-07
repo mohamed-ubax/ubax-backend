@@ -9,6 +9,12 @@ spring:
   application:
     name: ubax-platform
 
+  # ─── Multipart (upload fichiers) ─────────────────────────────────
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   # ─── PostgreSQL ──────────────────────────────────────────────────
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:db-ubax}
@@ -83,13 +89,13 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin123}
   buckets:
-    users-avatars: users-avatars
-    agencies-logos: agencies-logos
-    properties-media: properties-media
-    property-documents: property-documents
-    tenant-documents: tenant-documents
-    documents-generated: documents-generated
-    ticket-attachments: ticket-attachments
+    users-avatars,
+    agencies-logos,
+    properties-media,
+    property-documents,
+    tenant-documents,
+    documents-generated,
+    ticket-attachments
 
 # ─── Swagger / OpenAPI ───────────────────────────────────────────
 springdoc:

@@ -1,10 +1,12 @@
-package com.africa.ubaxplatform.auth.service;
+package com.africa.ubaxplatform.auth.service.impl;
 
 import com.africa.ubaxplatform.auth.config.KeycloakProperties;
 import com.africa.ubaxplatform.auth.dto.LoginRequest;
 import com.africa.ubaxplatform.auth.dto.LoginResponse;
 import com.africa.ubaxplatform.auth.dto.LogoutRequest;
 import com.africa.ubaxplatform.auth.dto.PhoneLoginRequest;
+import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
+import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAuthService;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
@@ -17,19 +19,20 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 /**
- * Service gérant la connexion et la déconnexion via l'endpoint OpenID Connect de Keycloak.
+ * Implémentation du service d'authentification Keycloak.
  *
- * <p>Utilise le flux « Resource Owner Password Credentials » pour la connexion (adapté aux
- * applications mobiles/SPA first-party) et l'endpoint de logout pour révoquer le refresh token.
+ * <p>Utilise le flux « Resource Owner Password Credentials » pour la connexion et l'endpoint de
+ * logout pour révoquer le refresh token.
  */
 @Service
-public class KeycloakAuthService {
+public class KeycloakAuthServiceImpl implements KeycloakAuthService {
 
   private final KeycloakProperties props;
   private final KeycloakAdminService keycloakAdminService;
   private final RestClient restClient;
 
-  public KeycloakAuthService(KeycloakProperties props, KeycloakAdminService keycloakAdminService) {
+  public KeycloakAuthServiceImpl(
+      KeycloakProperties props, KeycloakAdminService keycloakAdminService) {
     this.props = props;
     this.keycloakAdminService = keycloakAdminService;
     this.restClient = RestClient.create();
@@ -37,12 +40,7 @@ public class KeycloakAuthService {
 
   // ── Login ──────────────────────────────────────────────────────
 
-  /**
-   * Authentifie un utilisateur et retourne les tokens Keycloak.
-   *
-   * @param request email + mot de passe
-   * @return access_token, refresh_token et métadonnées d'expiration
-   */
+  @Override
   public LoginResponse login(LoginRequest request) throws CustomException {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "password");
@@ -73,16 +71,8 @@ public class KeycloakAuthService {
 
   // ── Login by Phone ─────────────────────────────────────────────
 
-  /**
-   * Authentifie un utilisateur par son numéro de téléphone et son mot de passe.
-   *
-   * <p>Le username Keycloak est le numéro de téléphone (format international, ex: +2250712345678).
-   *
-   * @param request téléphone + mot de passe
-   * @return access_token, refresh_token et métadonnées d'expiration
-   */
+  @Override
   public LoginResponse loginByPhone(PhoneLoginRequest request) throws CustomException {
-    // Résoudre le username Keycloak via l'attribut phone
     String username;
     try {
       username = keycloakAdminService.findUsernameByPhone(request.getPhone());
@@ -121,11 +111,7 @@ public class KeycloakAuthService {
 
   // ── Logout ─────────────────────────────────────────────────────
 
-  /**
-   * Révoque le refresh token et invalide la session Keycloak.
-   *
-   * @param request refresh token à révoquer
-   */
+  @Override
   public void logout(LogoutRequest request) throws CustomException {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("client_id", props.getClientId());
