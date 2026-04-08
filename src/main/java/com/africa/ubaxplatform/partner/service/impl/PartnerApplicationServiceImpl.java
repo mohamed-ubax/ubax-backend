@@ -11,7 +11,6 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.notification.service.EmailService;
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
-import com.africa.ubaxplatform.partner.dto.ApplicationDecisionRequest;
 import com.africa.ubaxplatform.partner.dto.ApplicationStatusLogResponse;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationRequest;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationResponse;
@@ -54,7 +53,12 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   private final EmailService emailService;
   private final MinioService minioService;
 
-  private static final String BUCKET_PARTNER_DOCS = "partner-documents";
+  private static final Set<String> ALLOWED_DOC_TYPES =
+      Set.of("application/pdf", "image/jpeg", "image/png");
+  private static final Set<String> ALLOWED_LOGO_TYPES =
+      Set.of("image/jpeg", "image/png", "image/webp");
+  private static final long MAX_DOC_BYTES = 10L * 1024 * 1024; // 10 Mo
+  private static final long MAX_LOGO_BYTES = 5L * 1024 * 1024; //  5 Mo
 
   @Value("${ubax.mail.admin-email}")
   private String adminEmail;
@@ -65,13 +69,22 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   @Transactional
   public PartnerApplicationResponse apply(
       PartnerApplicationRequest request,
-      String rccmUrl,
-      String dfeUrl,
-      String bailUrl,
-      String logoUrl) {
+      MultipartFile rccm,
+      MultipartFile dfe,
+      MultipartFile bail,
+      MultipartFile logo) {
     if (applicationRepo.existsByEmailAndStatusNot(request.getEmail(), ApplicationStatus.REJECTED)) {
       throw new ConflictException(ResponseMessageConstants.PARTNER_APPLICATION_ALREADY_EXISTS);
     }
+
+    // 1. Créer la structure de répertoires MinIO
+    String slug = minioService.initPartnerDirectory(request.getCompanyName());
+
+    // 2. Uploader les documents dans les bons sous-répertoires
+    String rccmUrl = uploadLegal(slug, rccm, "rccm");
+    String dfeUrl = uploadLegal(slug, dfe, "dfe");
+    String bailUrl = uploadLegal(slug, bail, "bail");
+    String logoUrl = uploadLogo(slug, logo);
 
     LocalDateTime now = LocalDateTime.now();
 
@@ -89,6 +102,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
             .description(request.getDescription())
             .legalStatus(request.getLegalStatus())
             .registrationNumber(request.getRegistrationNumber())
+            .storageSlug(slug)
             .rccmUrl(rccmUrl)
             .dfeUrl(dfeUrl)
             .bailUrl(bailUrl)
@@ -144,16 +158,15 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   @Override
   @Transactional
   public PartnerApplicationResponse decide(
-      UUID id, String adminKeycloakId, ApplicationDecisionRequest decision) {
+      UUID id, String adminKeycloakId, ApplicationStatus newStatus, String comment) {
 
-    validateDecisionTransition(decision.getNewStatus());
+    validateDecisionTransition(newStatus);
 
     PartnerApplication application = findById(id);
 
     // Commentaire obligatoire pour REJECTED et INCOMPLETE
-    if ((decision.getNewStatus() == ApplicationStatus.REJECTED
-            || decision.getNewStatus() == ApplicationStatus.INCOMPLETE)
-        && (decision.getComment() == null || decision.getComment().isBlank())) {
+    if ((newStatus == ApplicationStatus.REJECTED || newStatus == ApplicationStatus.INCOMPLETE)
+        && (comment == null || comment.isBlank())) {
       throw new BadRequestException(ResponseMessageConstants.PARTNER_APPLICATION_COMMENT_REQUIRED);
     }
 
@@ -165,29 +178,26 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     ApplicationStatus previousStatus = application.getStatus();
     LocalDateTime now = LocalDateTime.now();
 
-    application.setStatus(decision.getNewStatus());
+    application.setStatus(newStatus);
     application.setReviewedBy(admin);
     application.setReviewedAt(now);
-    if (decision.getNewStatus() == ApplicationStatus.REJECTED
-        || decision.getNewStatus() == ApplicationStatus.INCOMPLETE) {
-      application.setRejectionReason(decision.getComment());
+    if (newStatus == ApplicationStatus.REJECTED || newStatus == ApplicationStatus.INCOMPLETE) {
+      application.setRejectionReason(comment);
     }
 
     application = applicationRepo.save(application);
 
-    saveStatusLog(
-        application, previousStatus, decision.getNewStatus(), admin, decision.getComment(), now);
+    saveStatusLog(application, previousStatus, newStatus, admin, comment, now);
 
     // Création automatique du compte partenaire lors de l'approbation
-    if (decision.getNewStatus() == ApplicationStatus.APPROVED) {
+    if (newStatus == ApplicationStatus.APPROVED) {
       provisionPartnerAccount(application);
     }
 
     // Email au partenaire selon la décision
-    sendDecisionEmail(application, decision.getNewStatus(), decision.getComment());
+    sendDecisionEmail(application, newStatus, comment);
 
-    log.info(
-        "Décision admin : {} → {} pour la demande {}", previousStatus, decision.getNewStatus(), id);
+    log.info("Décision admin : {} → {} pour la demande {}", previousStatus, newStatus, id);
 
     return toResponse(application, null);
   }
@@ -356,10 +366,32 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     return builder.build();
   }
 
-  @Override
-  public String uploadIfPresent(
-      MultipartFile file, String docKey, Set<String> allowedTypes, long maxBytes) {
+  // ── Helpers upload partner ──────────────────────────────────────────
+
+  private String uploadLegal(String slug, MultipartFile file, String docKey) {
     if (file == null || file.isEmpty()) return null;
+    validateFile(file, docKey, ALLOWED_DOC_TYPES, MAX_DOC_BYTES);
+    try {
+      return minioService.uploadPartnerLegalDoc(
+          slug, docKey, file.getInputStream(), file.getSize(), file.getContentType());
+    } catch (Exception e) {
+      throw new BadRequestException("Erreur upload '" + docKey + "' : " + e.getMessage());
+    }
+  }
+
+  private String uploadLogo(String slug, MultipartFile file) {
+    if (file == null || file.isEmpty()) return null;
+    validateFile(file, "logo", ALLOWED_LOGO_TYPES, MAX_LOGO_BYTES);
+    try {
+      return minioService.uploadPartnerLogo(
+          slug, file.getInputStream(), file.getSize(), file.getContentType());
+    } catch (Exception e) {
+      throw new BadRequestException("Erreur upload 'logo' : " + e.getMessage());
+    }
+  }
+
+  private void validateFile(
+      MultipartFile file, String docKey, Set<String> allowedTypes, long maxBytes) {
     String ct = file.getContentType();
     if (ct == null || !allowedTypes.contains(ct)) {
       throw new BadRequestException(
@@ -368,20 +400,6 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     if (file.getSize() > maxBytes) {
       throw new BadRequestException(
           "Fichier '" + docKey + "' trop volumineux (max " + (maxBytes / 1024 / 1024) + " Mo)");
-    }
-    String ext =
-        switch (ct) {
-          case "application/pdf" -> ".pdf";
-          case "image/png" -> ".png";
-          case "image/webp" -> ".webp";
-          default -> ".jpg";
-        };
-    String objectName = UUID.randomUUID() + "-" + docKey + ext;
-    try {
-      return minioService.uploadFile(
-          BUCKET_PARTNER_DOCS, objectName, file.getInputStream(), file.getSize(), ct);
-    } catch (Exception e) {
-      throw new BadRequestException("Erreur upload '" + docKey + "' : " + e.getMessage());
     }
   }
 }

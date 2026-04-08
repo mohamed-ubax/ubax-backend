@@ -94,6 +94,17 @@ public class PartnerApplication extends BaseEntity {
   @Column(name = "registration_number", length = 100)
   private String registrationNumber;
 
+  // ── Stockage MinIO ─────────────────────────────────────────────
+
+  /**
+   * Slug du répertoire partenaire dans le bucket {@code partner-documents}.
+   *
+   * <p>Généré à partir de la raison sociale lors de la soumission (ex : {@code hotel-la-teranga}).
+   * Structure : {@code {slug}/legal/}, {@code {slug}/logo/}, {@code {slug}/contracts/}.
+   */
+  @Column(name = "storage_slug", length = 200)
+  private String storageSlug;
+
   // ── Documents (URLs MinIO bucket partner-documents) ────────────
 
   /** URL du document RCCM stocké dans le bucket MinIO {@code partner-documents}. */

@@ -1,10 +1,8 @@
 package com.africa.ubaxplatform.partner.service.interfaces;
 
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
-import com.africa.ubaxplatform.partner.dto.ApplicationDecisionRequest;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationRequest;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationResponse;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,19 +14,23 @@ public interface PartnerApplicationService {
   /**
    * Soumet une nouvelle demande d'adhésion partenaire.
    *
+   * <p>Crée automatiquement la structure de répertoires MinIO pour le partenaire ({@code
+   * partner-documents/{slug}/{legal,logo,contracts}/}) et uploade les fichiers reçus dans les
+   * sous-répertoires correspondants.
+   *
    * @param request formulaire de demande (champs texte)
-   * @param rccmUrl URL MinIO du RCCM uploadé par le contrôleur (null si absent)
-   * @param dfeUrl URL MinIO du DFE uploadé par le contrôleur (null si absent)
-   * @param bailUrl URL MinIO du bail uploadé par le contrôleur (null si absent)
-   * @param logoUrl URL MinIO du logo uploadé par le contrôleur (null si absent)
+   * @param rccm fichier RCCM (optionnel)
+   * @param dfe fichier DFE (optionnel)
+   * @param bail contrat de bail (optionnel)
+   * @param logo logo de l'entreprise (optionnel)
    * @return la demande créée avec statut {@code PENDING}
    */
   PartnerApplicationResponse apply(
       PartnerApplicationRequest request,
-      String rccmUrl,
-      String dfeUrl,
-      String bailUrl,
-      String logoUrl);
+      MultipartFile rccm,
+      MultipartFile dfe,
+      MultipartFile bail,
+      MultipartFile logo);
 
   /**
    * Récupère les demandes filtrées par statut (endpoint admin paginé).
@@ -52,12 +54,10 @@ public interface PartnerApplicationService {
    *
    * @param id identifiant de la demande
    * @param adminKeycloakId identifiant Keycloak de l'administrateur connecté
-   * @param decision objet contenant le nouveau statut et le commentaire
+   * @param newStatus nouveau statut (à choisir parmi UNDER_REVIEW, APPROVED, REJECTED, INCOMPLETE)
+   * @param comment motif obligatoire pour REJECTED et INCOMPLETE
    * @return la demande mise à jour
    */
   PartnerApplicationResponse decide(
-      UUID id, String adminKeycloakId, ApplicationDecisionRequest decision);
-
-  String uploadIfPresent(
-      MultipartFile file, String docKey, Set<String> allowedTypes, long maxBytes);
+      UUID id, String adminKeycloakId, ApplicationStatus newStatus, String comment);
 }

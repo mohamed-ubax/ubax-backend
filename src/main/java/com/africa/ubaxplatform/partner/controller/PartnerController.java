@@ -7,16 +7,16 @@ import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
-import com.africa.ubaxplatform.partner.dto.ApplicationDecisionRequest;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationRequest;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationResponse;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -65,13 +64,6 @@ public class PartnerController {
   private final PartnerApplicationService partnerApplicationService;
   private final RequestHeaderParser requestHeaderParser;
 
-  private static final long MAX_DOC_BYTES = 10L * 1024 * 1024; // 10 Mo (RCCM, DFE, bail)
-  private static final long MAX_LOGO_BYTES = 5L * 1024 * 1024; //  5 Mo
-  private static final Set<String> ALLOWED_DOC_TYPES =
-      Set.of("application/pdf", "image/jpeg", "image/png");
-  private static final Set<String> ALLOWED_LOGO_TYPES =
-      Set.of("image/jpeg", "image/png", "image/webp");
-
   // ── Public ─────────────────────────────────────────────────────
 
   /**
@@ -93,17 +85,8 @@ public class PartnerController {
       @RequestPart(value = "bail", required = false) MultipartFile bail,
       @RequestPart(value = "logo", required = false) MultipartFile logo) {
 
-    String rccmUrl =
-        partnerApplicationService.uploadIfPresent(rccm, "rccm", ALLOWED_DOC_TYPES, MAX_DOC_BYTES);
-    String dfeUrl =
-        partnerApplicationService.uploadIfPresent(dfe, "dfe", ALLOWED_DOC_TYPES, MAX_DOC_BYTES);
-    String bailUrl =
-        partnerApplicationService.uploadIfPresent(bail, "bail", ALLOWED_DOC_TYPES, MAX_DOC_BYTES);
-    String logoUrl =
-        partnerApplicationService.uploadIfPresent(logo, "logo", ALLOWED_LOGO_TYPES, MAX_LOGO_BYTES);
-
     PartnerApplicationResponse response =
-        partnerApplicationService.apply(request, rccmUrl, dfeUrl, bailUrl, logoUrl);
+        partnerApplicationService.apply(request, rccm, dfe, bail, logo);
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             new CustomResponse(
@@ -168,14 +151,24 @@ public class PartnerController {
       security = @SecurityRequirement(name = "bearerAuth"))
   public ResponseEntity<CustomResponse> decide(
       @PathVariable UUID id,
-      @Valid @RequestBody ApplicationDecisionRequest decision,
+      @RequestParam
+          @Parameter(
+              description = "Nouveau statut. PENDING est interdit (réservé à la soumission).",
+              schema =
+                  @Schema(
+                      type = "string",
+                      allowableValues = {"UNDER_REVIEW", "APPROVED", "REJECTED", "INCOMPLETE"}))
+          ApplicationStatus newStatus,
+      @RequestParam(required = false)
+          @Parameter(description = "Motif obligatoire si newStatus est REJECTED ou INCOMPLETE")
+          String comment,
       JwtAuthenticationToken authentication,
       HttpServletRequest httpRequest)
       throws CustomException {
     RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
     String adminKeycloakId = authentication.getName();
     PartnerApplicationResponse response =
-        partnerApplicationService.decide(id, adminKeycloakId, decision);
+        partnerApplicationService.decide(id, adminKeycloakId, newStatus, comment);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,

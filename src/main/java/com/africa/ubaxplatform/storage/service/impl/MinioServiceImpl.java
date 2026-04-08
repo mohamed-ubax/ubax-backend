@@ -9,7 +9,9 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import jakarta.annotation.PostConstruct;
 import java.io.InputStream;
+import java.text.Normalizer;
 import java.util.List;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -81,5 +83,68 @@ public class MinioServiceImpl implements MinioService {
   @Override
   public String getPublicUrl(String bucket, String objectName) {
     return endpoint + "/" + bucket + "/" + objectName;
+  }
+
+  // ── Partner documents ───────────────────────────────────────────
+
+  private static final String BUCKET_PARTNER_DOCS = "partner-documents";
+  private static final String[] PARTNER_SUB_DIRS = {"legal", "logo", "contracts"};
+
+  @Override
+  public String initPartnerDirectory(String companyName) {
+    String slug = slugify(companyName);
+    for (String dir : PARTNER_SUB_DIRS) {
+      String keepKey = slug + "/" + dir + "/.keep";
+      try (InputStream empty = InputStream.nullInputStream()) {
+        minioClient.putObject(
+            PutObjectArgs.builder().bucket(BUCKET_PARTNER_DOCS).object(keepKey).stream(empty, 0, -1)
+                .contentType("application/octet-stream")
+                .build());
+      } catch (Exception e) {
+        log.warn(
+            "MinIO : impossible de créer le préfixe {}/{} : {}",
+            BUCKET_PARTNER_DOCS,
+            keepKey,
+            e.getMessage());
+      }
+    }
+    log.info("MinIO : répertoire partenaire initialisé : {}", slug);
+    return slug;
+  }
+
+  @Override
+  public String uploadPartnerLegalDoc(
+      String slug, String docKey, InputStream inputStream, long size, String contentType) {
+    String objectName = slug + "/legal/" + docKey + "-" + UUID.randomUUID() + extFor(contentType);
+    return uploadFile(BUCKET_PARTNER_DOCS, objectName, inputStream, size, contentType);
+  }
+
+  @Override
+  public String uploadPartnerLogo(
+      String slug, InputStream inputStream, long size, String contentType) {
+    String objectName = slug + "/logo/logo-" + UUID.randomUUID() + extFor(contentType);
+    return uploadFile(BUCKET_PARTNER_DOCS, objectName, inputStream, size, contentType);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────
+
+  private String slugify(String input) {
+    if (input == null || input.isBlank()) return "partner-" + UUID.randomUUID();
+    String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
+    return normalized
+        .replaceAll("[^\\p{ASCII}]", "")
+        .toLowerCase()
+        .replaceAll("[^a-z0-9]+", "-")
+        .replaceAll("^-+|-+$", "");
+  }
+
+  private String extFor(String contentType) {
+    if (contentType == null) return ".bin";
+    return switch (contentType) {
+      case "application/pdf" -> ".pdf";
+      case "image/png" -> ".png";
+      case "image/webp" -> ".webp";
+      default -> ".jpg";
+    };
   }
 }
