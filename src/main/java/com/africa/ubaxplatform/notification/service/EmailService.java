@@ -57,6 +57,63 @@ public class EmailService {
     sendHtml(to, "Réinitialisation de votre mot de passe UBAX", "email/password-reset", ctx);
   }
 
+  // ── Emails partenaire ──────────────────────────────────────────
+
+  @Async
+  public void sendPartnerApplicationAcknowledge(
+      String to, String companyName, String applicationId) {
+    Context ctx = new Context();
+    ctx.setVariable("companyName", companyName);
+    ctx.setVariable("applicationId", applicationId);
+    sendHtml(to, "Demande d'adhésion UBAX – Accusé de réception", "email/partner-acknowledge", ctx);
+  }
+
+  @Async
+  public void sendPartnerApplicationAdminNotif(
+      String to, String companyName, String partnerType, String email, String applicationId) {
+    Context ctx = new Context();
+    ctx.setVariable("companyName", companyName);
+    ctx.setVariable("partnerType", partnerType);
+    ctx.setVariable("email", email);
+    ctx.setVariable("applicationId", applicationId);
+    sendHtml(
+        to,
+        "Nouvelle demande d'adhésion partenaire – " + companyName,
+        "email/partner-admin-notif",
+        ctx);
+  }
+
+  @Async
+  public void sendPartnerApplicationUnderReview(String to, String companyName) {
+    Context ctx = new Context();
+    ctx.setVariable("companyName", companyName);
+    sendHtml(to, "Votre dossier UBAX est en cours d'examen", "email/partner-under-review", ctx);
+  }
+
+  @Async
+  public void sendPartnerApplicationApproved(String to, String companyName) {
+    Context ctx = new Context();
+    ctx.setVariable("companyName", companyName);
+    sendHtml(
+        to, "Félicitations – Votre adhésion UBAX est approuvée !", "email/partner-approved", ctx);
+  }
+
+  @Async
+  public void sendPartnerApplicationRejected(String to, String companyName, String reason) {
+    Context ctx = new Context();
+    ctx.setVariable("companyName", companyName);
+    ctx.setVariable("reason", reason);
+    sendHtml(to, "Décision sur votre demande d'adhésion UBAX", "email/partner-rejected", ctx);
+  }
+
+  @Async
+  public void sendPartnerApplicationIncomplete(String to, String companyName, String comment) {
+    Context ctx = new Context();
+    ctx.setVariable("companyName", companyName);
+    ctx.setVariable("comment", comment);
+    sendHtml(to, "Dossier incomplet – Demande d'adhésion UBAX", "email/partner-incomplete", ctx);
+  }
+
   @Async
   public void sendHtml(
       String to, String subject, String templateName, Map<String, Object> variables) {
