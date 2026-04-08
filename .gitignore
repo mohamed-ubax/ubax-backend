@@ -32,5 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
-### Docker – ne pas committer les credentials ####
+### Credentials – ne jamais committer ####
+.env
 docker/.env
+src/main/resources/application-local.yml

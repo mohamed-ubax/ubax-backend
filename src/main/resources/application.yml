@@ -9,6 +9,9 @@ spring:
   application:
     name: ubax-platform
 
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
   # ─── Multipart (upload fichiers) ─────────────────────────────────
   servlet:
     multipart:
@@ -57,7 +60,7 @@ spring:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:no-reply@ubax.io}
-    password: ${MAIL_PASSWORD}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -131,6 +134,6 @@ ubax:
 lam:
   sms:
     api-url: ${LAM_SMS_URL:https://lamsms.lafricamobile.com/api}
-    account-id: ${LAM_ACCOUNT_ID}
-    password: ${LAM_PASSWORD}
+    account-id: ${LAM_ACCOUNT_ID:}
+    password: ${LAM_PASSWORD:}
     sender: ${LAM_SENDER:UBAX}
