@@ -60,16 +60,4 @@ public class PartnerApplicationRequest {
 
   @Size(max = 100, message = "Le numéro d'immatriculation ne peut dépasser 100 caractères")
   private String registrationNumber;
-
-  /** URL du fichier RCCM après upload dans MinIO ({@code partner-documents}). */
-  private String rccmUrl;
-
-  /** URL du fichier DFE après upload dans MinIO ({@code partner-documents}). */
-  private String dfeUrl;
-
-  /** URL du contrat de bail après upload dans MinIO ({@code partner-documents}). */
-  private String bailUrl;
-
-  /** URL du logo après upload dans MinIO ({@code partner-documents}). */
-  private String logoUrl;
 }

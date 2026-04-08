@@ -91,9 +91,10 @@ public class EmailService {
   }
 
   @Async
-  public void sendPartnerApplicationApproved(String to, String companyName) {
+  public void sendPartnerApplicationApproved(String to, String companyName, String loginEmail) {
     Context ctx = new Context();
     ctx.setVariable("companyName", companyName);
+    ctx.setVariable("loginEmail", loginEmail);
     sendHtml(
         to, "Félicitations – Votre adhésion UBAX est approuvée !", "email/partner-approved", ctx);
   }

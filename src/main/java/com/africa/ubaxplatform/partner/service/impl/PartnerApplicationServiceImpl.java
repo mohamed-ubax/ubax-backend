@@ -1,10 +1,13 @@
 package com.africa.ubaxplatform.partner.service.impl;
 
+import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
+import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.ConflictException;
+import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.notification.service.EmailService;
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
@@ -17,8 +20,11 @@ import com.africa.ubaxplatform.partner.entity.PartnerApplication;
 import com.africa.ubaxplatform.partner.repository.ApplicationStatusLogRepository;
 import com.africa.ubaxplatform.partner.repository.PartnerApplicationRepository;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
+import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Implémentation du service de gestion des demandes d'adhésion partenaire.
@@ -43,7 +50,11 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   private final PartnerApplicationRepository applicationRepo;
   private final ApplicationStatusLogRepository statusLogRepo;
   private final UserRepository userRepo;
+  private final KeycloakAdminService keycloakAdminService;
   private final EmailService emailService;
+  private final MinioService minioService;
+
+  private static final String BUCKET_PARTNER_DOCS = "partner-documents";
 
   @Value("${ubax.mail.admin-email}")
   private String adminEmail;
@@ -52,7 +63,12 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
 
   @Override
   @Transactional
-  public PartnerApplicationResponse apply(PartnerApplicationRequest request) {
+  public PartnerApplicationResponse apply(
+      PartnerApplicationRequest request,
+      String rccmUrl,
+      String dfeUrl,
+      String bailUrl,
+      String logoUrl) {
     if (applicationRepo.existsByEmailAndStatusNot(request.getEmail(), ApplicationStatus.REJECTED)) {
       throw new ConflictException(ResponseMessageConstants.PARTNER_APPLICATION_ALREADY_EXISTS);
     }
@@ -73,10 +89,10 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
             .description(request.getDescription())
             .legalStatus(request.getLegalStatus())
             .registrationNumber(request.getRegistrationNumber())
-            .rccmUrl(request.getRccmUrl())
-            .dfeUrl(request.getDfeUrl())
-            .bailUrl(request.getBailUrl())
-            .logoUrl(request.getLogoUrl())
+            .rccmUrl(rccmUrl)
+            .dfeUrl(dfeUrl)
+            .bailUrl(bailUrl)
+            .logoUrl(logoUrl)
             .status(ApplicationStatus.PENDING)
             .submittedAt(now)
             .build();
@@ -162,6 +178,11 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     saveStatusLog(
         application, previousStatus, decision.getNewStatus(), admin, decision.getComment(), now);
 
+    // Création automatique du compte partenaire lors de l'approbation
+    if (decision.getNewStatus() == ApplicationStatus.APPROVED) {
+      provisionPartnerAccount(application);
+    }
+
     // Email au partenaire selon la décision
     sendDecisionEmail(application, decision.getNewStatus(), decision.getComment());
 
@@ -169,6 +190,54 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
         "Décision admin : {} → {} pour la demande {}", previousStatus, decision.getNewStatus(), id);
 
     return toResponse(application, null);
+  }
+
+  // ── Provisionnement compte partenaire ─────────────────────────
+
+  private void provisionPartnerAccount(PartnerApplication application) {
+    try {
+      // 1. Créer le compte Keycloak (username = email, sans mot de passe)
+      String keycloakId =
+          keycloakAdminService.createPartnerAccount(
+              application.getEmail(),
+              application.getCompanyName(),
+              application.getLegalRepresentative(),
+              application.getPhone());
+
+      // 2. Attribuer le rôle PARTNER
+      keycloakAdminService.assignRole(keycloakId, UserRole.PARTNER);
+
+      // 3. Persister l'utilisateur en base
+      User partnerUser =
+          User.builder()
+              .keycloakId(keycloakId)
+              .firstName(application.getCompanyName())
+              .lastName(application.getLegalRepresentative())
+              .email(application.getEmail())
+              .phone(application.getPhone())
+              .roles(new HashSet<>(Set.of(UserRole.PARTNER)))
+              .emailVerified(true)
+              .country(application.getCountry())
+              .city(application.getCity())
+              .build();
+      userRepo.save(partnerUser);
+
+      // 4. Envoyer le lien "Définir mon mot de passe" via Keycloak
+      keycloakAdminService.sendSetPasswordLink(keycloakId);
+
+      log.info(
+          "Compte partenaire provisionné avec succès : keycloakId={}, email={}",
+          keycloakId,
+          application.getEmail());
+
+    } catch (CustomException e) {
+      // Ne pas faire échouer la décision si le provisionnement Keycloak échoue.
+      // L'admin est alerté via les logs ; le compte peut être créé manuellement.
+      log.error(
+          "[⚠️ PROVISIONNEMENT] Échec création compte pour la demande {} : {}",
+          application.getId(),
+          e.getMessage());
+    }
   }
 
   // ── Méthodes privées ───────────────────────────────────────────
@@ -211,7 +280,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     switch (status) {
       case APPROVED ->
           emailService.sendPartnerApplicationApproved(
-              application.getEmail(), application.getCompanyName());
+              application.getEmail(), application.getCompanyName(), application.getEmail());
       case REJECTED ->
           emailService.sendPartnerApplicationRejected(
               application.getEmail(), application.getCompanyName(), comment);
@@ -285,5 +354,34 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     }
 
     return builder.build();
+  }
+
+  @Override
+  public String uploadIfPresent(
+      MultipartFile file, String docKey, Set<String> allowedTypes, long maxBytes) {
+    if (file == null || file.isEmpty()) return null;
+    String ct = file.getContentType();
+    if (ct == null || !allowedTypes.contains(ct)) {
+      throw new BadRequestException(
+          "Format non supporté pour '" + docKey + "'. Acceptés : " + allowedTypes);
+    }
+    if (file.getSize() > maxBytes) {
+      throw new BadRequestException(
+          "Fichier '" + docKey + "' trop volumineux (max " + (maxBytes / 1024 / 1024) + " Mo)");
+    }
+    String ext =
+        switch (ct) {
+          case "application/pdf" -> ".pdf";
+          case "image/png" -> ".png";
+          case "image/webp" -> ".webp";
+          default -> ".jpg";
+        };
+    String objectName = UUID.randomUUID() + "-" + docKey + ext;
+    try {
+      return minioService.uploadFile(
+          BUCKET_PARTNER_DOCS, objectName, file.getInputStream(), file.getSize(), ct);
+    } catch (Exception e) {
+      throw new BadRequestException("Erreur upload '" + docKey + "' : " + e.getMessage());
+    }
   }
 }

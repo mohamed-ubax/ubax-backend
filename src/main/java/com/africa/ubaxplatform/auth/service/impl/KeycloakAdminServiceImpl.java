@@ -8,6 +8,7 @@ import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.TokenRetrievalException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.core.ParameterizedTypeReference;
@@ -175,7 +176,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   public String createUser(RegisterCompleteRequest request) throws CustomException {
     String adminToken = getAdminToken();
 
-    java.util.Map<String, Object> userRepresentation = new java.util.HashMap<>();
+    Map<String, Object> userRepresentation = new HashMap<>();
     userRepresentation.put("username", request.getPhone());
     userRepresentation.put("firstName", request.getFirstName());
     userRepresentation.put("lastName", request.getLastName());
@@ -308,6 +309,74 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     }
 
     return (String) users.getFirst().get("username");
+  }
+
+  // ── Partner Account ────────────────────────────────────────────
+
+  @Override
+  public String createPartnerAccount(
+      String email, String companyName, String legalRepresentative, String phone)
+      throws CustomException {
+    String adminToken = getAdminToken();
+
+    Map<String, Object> userRepresentation = new HashMap<>();
+    userRepresentation.put("username", email);
+    userRepresentation.put("email", email);
+    userRepresentation.put("firstName", companyName);
+    userRepresentation.put("lastName", legalRepresentative);
+    userRepresentation.put("enabled", true);
+    userRepresentation.put("emailVerified", true);
+    userRepresentation.put("requiredActions", List.of("UPDATE_PASSWORD"));
+    userRepresentation.put("attributes", Map.of("phone", List.of(phone)));
+
+    try {
+      ResponseEntity<Void> response =
+          restClient
+              .post()
+              .uri(adminBaseUrl() + "/users")
+              .header("Authorization", "Bearer " + adminToken)
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(userRepresentation)
+              .retrieve()
+              .toBodilessEntity();
+
+      if (response.getStatusCode() == HttpStatusCode.valueOf(201)
+          && response.getHeaders().getLocation() != null) {
+        String location = response.getHeaders().getLocation().toString();
+        return location.substring(location.lastIndexOf('/') + 1);
+      }
+      throw new CustomException(
+          new IllegalStateException("Keycloak : pas de Location header"),
+          "Erreur lors de la création du compte partenaire");
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 409) {
+        throw new CustomException(
+            new IllegalArgumentException("Email déjà utilisé dans Keycloak : " + email),
+            ResponseMessageConstants.USER_CREATE_FAILURE_ALREADY_EXISTS);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()),
+          "Erreur Keycloak lors de la création du compte partenaire");
+    }
+  }
+
+  @Override
+  public void sendSetPasswordLink(String keycloakId) throws CustomException {
+    String adminToken = getAdminToken();
+    try {
+      restClient
+          .put()
+          .uri(adminBaseUrl() + "/users/" + keycloakId + "/execute-actions-email")
+          .header("Authorization", "Bearer " + adminToken)
+          .contentType(MediaType.APPLICATION_JSON)
+          .body(List.of("UPDATE_PASSWORD"))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (HttpClientErrorException e) {
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()),
+          "Erreur lors de l'envoi du lien de définition du mot de passe");
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────

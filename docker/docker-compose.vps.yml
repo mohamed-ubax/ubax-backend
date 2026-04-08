@@ -106,6 +106,7 @@ services:
         mc mb --ignore-existing ubax/tenant-documents
         mc mb --ignore-existing ubax/documents-generated
         mc mb --ignore-existing ubax/ticket-attachments
+        mc mb --ignore-existing ubax/partner-documents
 
         mc anonymous set download ubax/users-avatars
         mc anonymous set download ubax/agencies-logos
@@ -209,6 +210,7 @@ services:
       LAM_ACCOUNT_ID: ${LAM_ACCOUNT_ID}
       LAM_PASSWORD: ${LAM_PASSWORD}
       LAM_SENDER: ${LAM_SENDER}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
       SERVER_SERVLET_CONTEXT_PATH: /api
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: docker

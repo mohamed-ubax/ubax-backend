@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,7 +34,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Contrôleur de gestion des demandes d'adhésion partenaire.
@@ -61,6 +65,13 @@ public class PartnerController {
   private final PartnerApplicationService partnerApplicationService;
   private final RequestHeaderParser requestHeaderParser;
 
+  private static final long MAX_DOC_BYTES = 10L * 1024 * 1024; // 10 Mo (RCCM, DFE, bail)
+  private static final long MAX_LOGO_BYTES = 5L * 1024 * 1024; //  5 Mo
+  private static final Set<String> ALLOWED_DOC_TYPES =
+      Set.of("application/pdf", "image/jpeg", "image/png");
+  private static final Set<String> ALLOWED_LOGO_TYPES =
+      Set.of("image/jpeg", "image/png", "image/webp");
+
   // ── Public ─────────────────────────────────────────────────────
 
   /**
@@ -69,13 +80,30 @@ public class PartnerController {
    * <p>Accessible sans authentification. Déclenche une confirmation par email au partenaire et une
    * notification à l'administrateur.
    */
-  @PostMapping("/apply")
+  @PostMapping(value = "/apply", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Operation(
       summary = "Soumettre une demande d'adhésion partenaire",
+      description =
+          "Formulaire multipart : champ \"data\" (JSON) + fichiers optionnels \"rccm\", \"dfe\", \"bail\" (PDF/JPEG/PNG – max 10 Mo) et \"logo\" (JPEG/PNG/WEBP – max 5 Mo).",
       tags = {"Partner"})
   public ResponseEntity<CustomResponse> apply(
-      @Valid @RequestBody PartnerApplicationRequest request) {
-    PartnerApplicationResponse response = partnerApplicationService.apply(request);
+      @RequestPart("data") @Valid PartnerApplicationRequest request,
+      @RequestPart(value = "rccm", required = false) MultipartFile rccm,
+      @RequestPart(value = "dfe", required = false) MultipartFile dfe,
+      @RequestPart(value = "bail", required = false) MultipartFile bail,
+      @RequestPart(value = "logo", required = false) MultipartFile logo) {
+
+    String rccmUrl =
+        partnerApplicationService.uploadIfPresent(rccm, "rccm", ALLOWED_DOC_TYPES, MAX_DOC_BYTES);
+    String dfeUrl =
+        partnerApplicationService.uploadIfPresent(dfe, "dfe", ALLOWED_DOC_TYPES, MAX_DOC_BYTES);
+    String bailUrl =
+        partnerApplicationService.uploadIfPresent(bail, "bail", ALLOWED_DOC_TYPES, MAX_DOC_BYTES);
+    String logoUrl =
+        partnerApplicationService.uploadIfPresent(logo, "logo", ALLOWED_LOGO_TYPES, MAX_LOGO_BYTES);
+
+    PartnerApplicationResponse response =
+        partnerApplicationService.apply(request, rccmUrl, dfeUrl, bailUrl, logoUrl);
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             new CustomResponse(

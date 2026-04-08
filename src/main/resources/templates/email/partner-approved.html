@@ -36,22 +36,44 @@
               </h2>
               <p style="margin:0 0 20px;color:#555;line-height:1.7;font-size:15px;">
                 Votre demande d'adhésion à la plateforme UBAX a été <strong style="color:#27AE60;">approuvée</strong>.
-                Vous faites désormais partie de l'écosystème UBAX !
-              </p>
-              <p style="margin:0 0 28px;color:#555;line-height:1.7;font-size:15px;">
-                Notre équipe commerciale vous contactera prochainement pour finaliser votre intégration et vous donner accès à votre espace partenaire.
+                Votre espace partenaire a été créé automatiquement.
               </p>
 
-              <table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+              <!-- Bloc identifiant -->
+              <table cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 24px;background-color:#F0FBF4;border-left:4px solid #27AE60;border-radius:4px;">
                 <tr>
-                  <td style="background-color:#27AE60;border-radius:8px;padding:14px 36px;">
-                    <a href="#" style="color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;">Accéder à la plateforme</a>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0 0 6px;color:#1A1A2E;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Votre identifiant de connexion</p>
+                    <p style="margin:0;color:#27AE60;font-size:15px;font-weight:700;" th:text="${loginEmail}">email@partenaire.com</p>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin:0;color:#999;font-size:13px;line-height:1.6;">
-                Questions ? <a href="mailto:support@ubaxplatform.com" style="color:#F07820;text-decoration:none;">support@ubaxplatform.com</a>
+              <!-- Étapes -->
+              <p style="margin:0 0 12px;color:#1A1A2E;font-size:14px;font-weight:700;">Prochaines étapes :</p>
+              <table cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 28px;">
+                <tr>
+                  <td style="padding:6px 0;">
+                    <span style="display:inline-block;background-color:#27AE60;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">1</span>
+                    <span style="color:#555;font-size:14px;">Consultez votre boîte mail — un email de <strong>UBAX / Keycloak</strong> vous a été envoyé séparément.</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;">
+                    <span style="display:inline-block;background-color:#27AE60;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">2</span>
+                    <span style="color:#555;font-size:14px;">Cliquez sur le lien <strong>« Définir mon mot de passe »</strong> (expire dans 24h).</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;">
+                    <span style="display:inline-block;background-color:#27AE60;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">3</span>
+                    <span style="color:#555;font-size:14px;">Connectez-vous avec votre email et votre nouveau mot de passe.</span>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 8px;color:#999;font-size:13px;line-height:1.6;">
+                Lien expiré ? Contactez-nous à <a href="mailto:support@ubaxplatform.com" style="color:#F07820;text-decoration:none;">support@ubaxplatform.com</a>
               </p>
             </td>
           </tr>
