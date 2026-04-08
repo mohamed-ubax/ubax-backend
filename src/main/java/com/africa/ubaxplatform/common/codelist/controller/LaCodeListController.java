@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -36,17 +37,22 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Contrôleur REST des référentiels de valeurs (code lists).
  *
- * <p>Endpoints publics :
+ * <p>Endpoints publics (aucun token requis) :
  *
  * <ul>
  *   <li>{@code GET /v1/code-list/type/{type}} – liste des valeurs d'un type (selects frontend)
  * </ul>
  *
- * <p>Endpoints admin (rôle {@code UBAX_ADMIN} ou {@code UBAX_SUPER_ADMIN} requis) :
+ * <p>Endpoints authentifiés (tout utilisateur connecté) :
  *
  * <ul>
  *   <li>{@code GET /v1/code-list} – liste paginée de tous les code lists
  *   <li>{@code GET /v1/code-list/{id}} – détail d'un code list
+ * </ul>
+ *
+ * <p>Endpoints admin (rôle {@code UBAX_ADMIN} ou {@code UBAX_SUPER_ADMIN} requis) :
+ *
+ * <ul>
  *   <li>{@code POST /v1/code-list} – création manuelle
  *   <li>{@code PUT /v1/code-list/{id}} – mise à jour
  * </ul>
@@ -96,22 +102,20 @@ public class LaCodeListController {
             codeListService.findAllByType(type).stream().map(LaCodeListDto::from)));
   }
 
-  // ── Admin ──────────────────────────────────────────────────────
+  // ── Authentifié ────────────────────────────────────────────────
 
   @GetMapping
   @Operation(
-      summary = "Liste paginée de tous les code lists (admin)",
-      description = "Accessible uniquement aux administrateurs. Supporte la pagination et le tri.",
+      summary = "Liste paginée de tous les code lists",
+      description = "Accessible à tout utilisateur authentifié. Supporte la pagination et le tri.",
       tags = {"CodeList"},
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "200", description = "Liste récupérée avec succès")
   @ApiResponse(responseCode = "401", description = "Token manquant ou invalide")
-  @ApiResponse(responseCode = "403", description = "Rôle insuffisant")
   public ResponseEntity<CustomResponse> findAll(
-      @PageableDefault(size = 25, sort = "type", direction = Sort.Direction.ASC) Pageable pageable,
-      HttpServletRequest httpRequest)
+      @ParameterObject @PageableDefault(size = 25, sort = "type", direction = Sort.Direction.ASC)
+          Pageable pageable)
       throws CustomException {
-    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
     log.info("Récupération paginée des code lists");
     return ResponseEntity.ok(
         new CustomResponse(
@@ -123,7 +127,7 @@ public class LaCodeListController {
 
   @GetMapping("/{id}")
   @Operation(
-      summary = "Détail d'un code list par id (admin)",
+      summary = "Détail d'un code list par id",
       tags = {"CodeList"},
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(
@@ -134,11 +138,8 @@ public class LaCodeListController {
               mediaType = MediaType.APPLICATION_JSON_VALUE,
               schema = @Schema(implementation = LaCodeListDto.class)))
   @ApiResponse(responseCode = "401", description = "Token manquant ou invalide")
-  @ApiResponse(responseCode = "403", description = "Rôle insuffisant")
   @ApiResponse(responseCode = "404", description = "Code list introuvable")
-  public ResponseEntity<CustomResponse> findById(
-      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
-    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+  public ResponseEntity<CustomResponse> findById(@PathVariable UUID id) throws CustomException {
     log.info("Récupération du code list id : {}", id);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -147,6 +148,8 @@ public class LaCodeListController {
             ResponseMessageConstants.CODELIST_GET_SUCCESS,
             LaCodeListDto.from(codeListService.findById(id))));
   }
+
+  // ── Admin ──────────────────────────────────────────────────────
 
   @PostMapping
   @Operation(

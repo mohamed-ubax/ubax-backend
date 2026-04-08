@@ -2,8 +2,8 @@ package com.africa.ubaxplatform.contract.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.contract.codeList.ContractStatus;
-import com.africa.ubaxplatform.contract.codeList.ContractType;
 import com.africa.ubaxplatform.property.entity.Property;
 import com.africa.ubaxplatform.tenant.entity.Tenant;
 import jakarta.persistence.Column;
@@ -126,9 +126,8 @@ public class Contract extends BaseEntity {
    *   <li>{@code MANDATE} — mandat de gestion locative donné à une agence.
    * </ul>
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "contract_type", nullable = false, length = 30)
-  private ContractType contractType;
+  private String contractType;
 
   /**
    * Numéro de référence unique du contrat, lisible par les parties. Format : {@code
@@ -281,12 +280,12 @@ public class Contract extends BaseEntity {
 
   /** {@code true} si le contrat est un bail de location. */
   public boolean isLease() {
-    return contractType == ContractType.LEASE;
+    return Constants.CodeList.ContractType.LEASE.equals(contractType);
   }
 
   /** {@code true} si le contrat est un acte de vente. */
   public boolean isSale() {
-    return contractType == ContractType.SALE;
+    return Constants.CodeList.ContractType.SALE.equals(contractType);
   }
 
   /** {@code true} si le PDF signé est disponible. */

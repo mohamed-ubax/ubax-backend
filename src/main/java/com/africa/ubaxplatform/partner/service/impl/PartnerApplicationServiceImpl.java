@@ -122,7 +122,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     emailService.sendPartnerApplicationAdminNotif(
         adminEmail,
         request.getCompanyName(),
-        request.getPartnerType().name(),
+        request.getPartnerType(),
         request.getEmail(),
         application.getId().toString());
 

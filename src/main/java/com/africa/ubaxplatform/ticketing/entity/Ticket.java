@@ -2,10 +2,8 @@ package com.africa.ubaxplatform.ticketing.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.contract.entity.Contract;
-import com.africa.ubaxplatform.ticketing.codeList.CostImputedTo;
-import com.africa.ubaxplatform.ticketing.codeList.TicketCategory;
-import com.africa.ubaxplatform.ticketing.codeList.TicketPriority;
 import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -95,9 +93,8 @@ public class Ticket extends BaseEntity {
    *   <li>{@code OTHER} — tout autre incident non catégorisé.
    * </ul>
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "category", nullable = false, length = 30)
-  private TicketCategory category;
+  private String category;
 
   /**
    * Titre court de l'incident, saisi par le locataire. Affiché dans la liste des tickets du tableau
@@ -124,10 +121,9 @@ public class Ticket extends BaseEntity {
    *   <li>{@code URGENT} — incident bloquant ou dangereux (fuite majeure, panne électrique).
    * </ul>
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "priority", nullable = false, length = 20)
   @Builder.Default
-  private TicketPriority priority = TicketPriority.NORMAL;
+  private String priority = Constants.CodeList.TicketPriority.NORMAL;
 
   /**
    * Statut du ticket dans son cycle de résolution.
@@ -190,9 +186,8 @@ public class Ticket extends BaseEntity {
    * Partie imputable pour le coût de réparation. Valeurs : {@code OWNER | TENANT | SHARED} {@code
    * null} tant que le coût n'a pas été arbitré.
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "cost_imputed_to", length = 10)
-  private CostImputedTo costImputedTo;
+  private String costImputedTo;
 
   /**
    * Note de résolution rédigée par l'agent SAV. Décrit les travaux effectués, les pièces
@@ -219,7 +214,8 @@ public class Ticket extends BaseEntity {
 
   /** {@code true} si le ticket est urgent et doit être traité immédiatement. */
   public boolean isUrgent() {
-    return priority == TicketPriority.URGENT || priority == TicketPriority.HIGH;
+    return Constants.CodeList.TicketPriority.URGENT.equals(priority)
+        || Constants.CodeList.TicketPriority.HIGH.equals(priority);
   }
 
   /** {@code true} si un prestataire a été assigné et l'intervention planifiée. */

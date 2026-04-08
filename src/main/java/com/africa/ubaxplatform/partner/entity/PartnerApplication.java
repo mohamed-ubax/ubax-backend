@@ -3,7 +3,6 @@ package com.africa.ubaxplatform.partner.entity;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
-import com.africa.ubaxplatform.partner.codeList.PartnerType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -42,9 +41,8 @@ public class PartnerApplication extends BaseEntity {
   // ── Identification du partenaire ───────────────────────────────
 
   /** Type d'activité du partenaire. */
-  @Enumerated(EnumType.STRING)
   @Column(name = "partner_type", nullable = false, length = 40)
-  private PartnerType partnerType;
+  private String partnerType;
 
   /** Raison sociale ou dénomination commerciale. */
   @Column(name = "company_name", nullable = false, length = 200)

@@ -2,11 +2,9 @@ package com.africa.ubaxplatform.property.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
-import com.africa.ubaxplatform.property.codeList.DocumentType;
+import com.africa.ubaxplatform.common.constants.Constants;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Index;
@@ -81,9 +79,8 @@ public class PropertyDocument extends BaseEntity {
    * Catégorie du document légal. Valeurs : {@code TITLE_DEED | BUILDING_PERMIT | DIAGNOSTIC |
    * CADASTRAL_PLAN | INSURANCE | CONFORMITY_CERTIFICATE | OTHER}
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "doc_type", nullable = false, length = 50)
-  private DocumentType docType;
+  private String docType;
 
   /** Intitulé descriptif du document. Exemple : {@code "Titre foncier N°1234 - Dakar Plateau"} */
   @Column(name = "title", length = 255)
@@ -145,7 +142,7 @@ public class PropertyDocument extends BaseEntity {
    * statut {@code PUBLISHED}.
    */
   public boolean isTitleDeed() {
-    return docType == DocumentType.TITLE_DEED;
+    return Constants.CodeList.PropertyDocumentType.TITLE_DEED.equals(docType);
   }
 
   /** {@code true} si le document est prêt à être partagé avec un acheteur (vérifié + visible). */

@@ -1,7 +1,6 @@
 package com.africa.ubaxplatform.partner.dto;
 
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
-import com.africa.ubaxplatform.partner.codeList.PartnerType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,7 +17,7 @@ import lombok.Setter;
 public class PartnerApplicationResponse {
 
   private UUID id;
-  private PartnerType partnerType;
+  private String partnerType;
   private String companyName;
   private String legalRepresentative;
   private String phone;
