@@ -129,4 +129,15 @@ public class ResponseMessageConstants {
   public static final String TICKET_GET_FAILURE_NOT_FOUND = "TICKET_GET_FAILURE_NOT_FOUND";
   public static final String TICKET_CREATE_FAILURE = "TICKET_CREATE_FAILURE";
   public static final String TICKET_UPDATE_FAILURE_NOT_FOUND = "TICKET_UPDATE_FAILURE_NOT_FOUND";
+
+  // ── CODE LIST ───────────────────────────────────────────────────
+  public static final String CODELIST_GET_SUCCESS = "CODELIST_GET_SUCCESS";
+  public static final String CODELIST_POST_SUCCESS = "CODELIST_POST_SUCCESS";
+  public static final String CODELIST_PUT_SUCCESS = "CODELIST_PUT_SUCCESS";
+  public static final String CODELIST_GET_FAILURE_NOT_FOUND = "CODELIST_GET_FAILURE_NOT_FOUND";
+  public static final String CODELIST_GET_FAILURE_BAD_REQUEST = "CODELIST_GET_FAILURE_BAD_REQUEST";
+  public static final String CODELIST_POST_FAILURE = "CODELIST_POST_FAILURE";
+  public static final String CODELIST_POST_DUPLICATE = "CODELIST_POST_DUPLICATE";
+  public static final String CODELIST_PUT_FAILURE = "CODELIST_PUT_FAILURE";
+  public static final String CODELIST_PUT_FAILURE_BAD_REQUEST = "CODELIST_PUT_FAILURE_BAD_REQUEST";
 }
