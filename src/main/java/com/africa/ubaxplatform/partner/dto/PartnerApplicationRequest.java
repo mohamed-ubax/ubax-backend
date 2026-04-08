@@ -1,9 +1,7 @@
 package com.africa.ubaxplatform.partner.dto;
 
-import com.africa.ubaxplatform.partner.codeList.PartnerType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -18,8 +16,8 @@ import lombok.Setter;
 @Setter
 public class PartnerApplicationRequest {
 
-  @NotNull(message = "Le type de partenaire est obligatoire")
-  private PartnerType partnerType;
+  @NotBlank(message = "Le type de partenaire est obligatoire")
+  private String partnerType;
 
   @NotBlank(message = "La raison sociale est obligatoire")
   @Size(max = 200, message = "La raison sociale ne peut dépasser 200 caractères")

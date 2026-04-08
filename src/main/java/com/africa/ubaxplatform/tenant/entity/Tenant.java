@@ -2,8 +2,6 @@ package com.africa.ubaxplatform.tenant.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
-import com.africa.ubaxplatform.tenant.codeList.EmploymentStatus;
-import com.africa.ubaxplatform.tenant.codeList.IdDocumentType;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -84,9 +82,8 @@ public class Tenant extends BaseEntity {
    * Situation professionnelle du locataire. Valeurs : {@code EMPLOYEE | SELF_EMPLOYED | STUDENT |
    * RETIRED | UNEMPLOYED | OTHER} Utilisée pour évaluer la solvabilité du dossier.
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "employment_status", length = 30)
-  private EmploymentStatus employmentStatus;
+  private String employmentStatus;
 
   /**
    * Nom de l'employeur ou de l'entreprise du locataire. Renseigné pour les statuts {@code EMPLOYEE}
@@ -133,9 +130,8 @@ public class Tenant extends BaseEntity {
    * Type de pièce d'identité fournie. Valeurs : {@code CNI | PASSPORT | RESIDENCE_PERMIT |
    * DRIVER_LICENSE}
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "id_document_type", length = 30)
-  private IdDocumentType idDocumentType;
+  private String idDocumentType;
 
   /** Numéro de la pièce d'identité. Conservé pour les contrats et les vérifications AML. */
   @Column(name = "id_document_number", length = 100)
