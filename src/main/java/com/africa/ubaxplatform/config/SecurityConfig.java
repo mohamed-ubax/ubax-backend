@@ -15,7 +15,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtDecoders;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.DelegatingJwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
@@ -51,6 +51,9 @@ public class SecurityConfig {
 
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
   private String tokenIssuerUrl;
+
+  @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+  private String jwkSetUri;
 
   @Value("${ubax.endpoints.frontend}")
   private String frontEndUrl;
@@ -129,7 +132,8 @@ public class SecurityConfig {
   @Bean
   public JwtDecoder jwtDecoder() {
     log.info("tokenIssuerUrl {}", tokenIssuerUrl);
-    return JwtDecoders.fromIssuerLocation(tokenIssuerUrl);
+    log.info("jwkSetUri {}", jwkSetUri);
+    return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
   }
 
   @Bean
