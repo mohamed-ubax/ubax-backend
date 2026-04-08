@@ -46,7 +46,8 @@ public class SecurityConfig {
     "/v1/auth/forgot-password/send-otp",
     "/v1/auth/forgot-password/verify-otp",
     "/v1/auth/forgot-password/reset",
-    "/v1/auth/register/**"
+    "/v1/auth/register/**",
+    "/v1/partner/apply"
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")

@@ -58,6 +58,22 @@ public class ResponseMessageConstants {
   public static final String PROPERTY_DELETE_FAILURE_NOT_FOUND =
       "PROPERTY_DELETE_FAILURE_NOT_FOUND";
 
+  // ── PARTNER APPLICATION ─────────────────────────────────────────
+  public static final String PARTNER_APPLICATION_SUBMIT_SUCCESS =
+      "PARTNER_APPLICATION_SUBMIT_SUCCESS";
+  public static final String PARTNER_APPLICATION_GET_SUCCESS = "PARTNER_APPLICATION_GET_SUCCESS";
+  public static final String PARTNER_APPLICATION_GET_LIST_SUCCESS =
+      "PARTNER_APPLICATION_GET_LIST_SUCCESS";
+  public static final String PARTNER_APPLICATION_DECISION_SUCCESS =
+      "PARTNER_APPLICATION_DECISION_SUCCESS";
+  public static final String PARTNER_APPLICATION_ALREADY_EXISTS =
+      "PARTNER_APPLICATION_ALREADY_EXISTS";
+  public static final String PARTNER_APPLICATION_NOT_FOUND = "PARTNER_APPLICATION_NOT_FOUND";
+  public static final String PARTNER_APPLICATION_INVALID_TRANSITION =
+      "PARTNER_APPLICATION_INVALID_TRANSITION";
+  public static final String PARTNER_APPLICATION_COMMENT_REQUIRED =
+      "PARTNER_APPLICATION_COMMENT_REQUIRED";
+
   // ── TENANT ──────────────────────────────────────────────────────
   public static final String TENANT_GET_SUCCESS = "TENANT_GET_SUCCESS";
   public static final String TENANT_GET_LIST_SUCCESS = "TENANT_GET_LIST_SUCCESS";

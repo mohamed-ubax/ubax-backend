@@ -98,7 +98,8 @@ minio:
     property-documents,
     tenant-documents,
     documents-generated,
-    ticket-attachments
+    ticket-attachments,
+    partner-documents
 
 # ─── Swagger / OpenAPI ───────────────────────────────────────────
 springdoc:
@@ -128,6 +129,7 @@ ubax:
     frontend: ${FRONTEND_URL:http://localhost:3000}
   mail:
     from: ${MAIL_FROM:no-reply@ubax.io}
+    admin-email: ${ADMIN_EMAIL:mba@ubax.io}
     from-name: ${MAIL_FROM_NAME:UBAX Platform}
 
 # ─── SMS – LAfricaMobile (LAMPUSH) ────────────────────────────────

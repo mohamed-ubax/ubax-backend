@@ -125,6 +125,7 @@ services:
         mc mb --ignore-existing ubax/tenant-documents
         mc mb --ignore-existing ubax/documents-generated
         mc mb --ignore-existing ubax/ticket-attachments
+        mc mb --ignore-existing ubax/partner-documents
 
         # Accès public en lecture pour les médias non-sensibles
         mc anonymous set download ubax/users-avatars
@@ -219,6 +220,7 @@ services:
       # Spring
       SERVER_SERVLET_CONTEXT_PATH: /api
       SPRING_PROFILES_ACTIVE: docker
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks:

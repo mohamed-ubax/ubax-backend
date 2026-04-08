@@ -124,4 +124,34 @@ public interface KeycloakAdminService {
    *     correspond
    */
   String findUsernameByPhone(String phone);
+
+  /**
+   * Crée un compte Keycloak pour un partenaire approuvé.
+   *
+   * <p>Le login est l'email du partenaire. Aucun mot de passe n'est défini à la création ; {@code
+   * requiredActions: [UPDATE_PASSWORD]} force le partenaire à définir son mot de passe via le lien
+   * envoyé par {@link #sendSetPasswordLink(String)}.
+   *
+   * @param email adresse email (sert de username et d'email Keycloak)
+   * @param companyName raison sociale – utilisée comme prénom dans Keycloak
+   * @param legalRepresentative nom du représentant légal – utilisé comme nom dans Keycloak
+   * @param phone numéro de téléphone au format international – stocké dans l'attribut custom {@code
+   *     phone}
+   * @return identifiant Keycloak (UUID) du compte créé
+   * @throws CustomException si l'email est déjà utilisé (409) ou si l'appel échoue
+   */
+  String createPartnerAccount(
+      String email, String companyName, String legalRepresentative, String phone)
+      throws CustomException;
+
+  /**
+   * Envoie un lien sécurisé de définition du mot de passe via Keycloak ({@code
+   * execute-actions-email} avec l'action {@code UPDATE_PASSWORD}).
+   *
+   * <p>Le lien expire selon la configuration du realm Keycloak (défaut : 24h).
+   *
+   * @param keycloakId identifiant Keycloak de l'utilisateur cible
+   * @throws CustomException si l'appel Keycloak échoue
+   */
+  void sendSetPasswordLink(String keycloakId) throws CustomException;
 }

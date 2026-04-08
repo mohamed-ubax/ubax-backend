@@ -1,6 +1,5 @@
 package com.africa.ubaxplatform.auth.controller;
 
-import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.AssignRoleRequest;
 import com.africa.ubaxplatform.auth.dto.ForgotPasswordRequest;
 import com.africa.ubaxplatform.auth.dto.LoginRequest;
@@ -9,7 +8,6 @@ import com.africa.ubaxplatform.auth.dto.LogoutRequest;
 import com.africa.ubaxplatform.auth.dto.PhoneLoginRequest;
 import com.africa.ubaxplatform.auth.dto.RegisterCompleteRequest;
 import com.africa.ubaxplatform.auth.dto.RegisterResponse;
-import com.africa.ubaxplatform.auth.dto.RequestUser;
 import com.africa.ubaxplatform.auth.dto.ResetPasswordByPhoneRequest;
 import com.africa.ubaxplatform.auth.dto.ResetPasswordRequest;
 import com.africa.ubaxplatform.auth.dto.SendOtpRequest;
@@ -22,9 +20,9 @@ import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
-import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
+import com.africa.ubaxplatform.common.util.RoleGuard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -324,14 +322,7 @@ public class AuthController {
       @Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest)
       throws CustomException {
     log.info("Reset password request");
-    RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
-    if (user == null)
-      throw new CustomException(
-          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
-    if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
-      throw new CustomException(
-          new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
-          ResponseMessageConstants.USER_FORBIDDEN);
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
 
     adminService.resetPassword(
         request.getKeycloakId(), request.getNewPassword(), request.isTemporary());
@@ -358,14 +349,7 @@ public class AuthController {
   @GetMapping("/roles")
   public ResponseEntity<CustomResponse> getRoles(HttpServletRequest httpRequest)
       throws CustomException {
-    RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
-    if (user == null)
-      throw new CustomException(
-          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
-    if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
-      throw new CustomException(
-          new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
-          ResponseMessageConstants.USER_FORBIDDEN);
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
 
     return ResponseEntity.ok(
         new CustomResponse(
@@ -395,14 +379,7 @@ public class AuthController {
       HttpServletRequest httpRequest)
       throws CustomException {
     log.info("Assign role {} to user {}", request.getRole(), keycloakId);
-    RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
-    if (user == null)
-      throw new CustomException(
-          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
-    if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
-      throw new CustomException(
-          new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
-          ResponseMessageConstants.USER_FORBIDDEN);
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
 
     adminService.assignRole(keycloakId, request.getRole());
     return ResponseEntity.ok(
@@ -434,14 +411,7 @@ public class AuthController {
       HttpServletRequest httpRequest)
       throws CustomException {
     log.info("Remove role {} from user {}", request.getRole(), keycloakId);
-    RequestUser user = requestHeaderParser.parseUserFromRequest(httpRequest);
-    if (user == null)
-      throw new CustomException(
-          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
-    if (!user.hasRole(UserRole.ADMIN) && !user.hasRole(UserRole.SUPER_ADMIN))
-      throw new CustomException(
-          new UnAuthorizedException("Accès refusé – rôle ADMIN requis"),
-          ResponseMessageConstants.USER_FORBIDDEN);
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
 
     adminService.removeRole(keycloakId, request.getRole());
     return ResponseEntity.ok(

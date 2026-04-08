@@ -20,10 +20,10 @@ import java.io.InputStream;
  *   <li>{@code tenant-documents} – pièces justificatives des locataires
  *   <li>{@code documents-generated} – contrats et factures générés par la plateforme
  *   <li>{@code ticket-attachments} – pièces jointes des tickets de support
+ *   <li>{@code partner-documents} – documents légaux et logos des partenaires, organisés par slug
  * </ul>
  */
 public interface MinioService {
-
   /**
    * Upload un fichier dans un bucket MinIO et retourne son URL directe.
    *
@@ -65,4 +65,46 @@ public interface MinioService {
    * @return URL directe de l'objet
    */
   String getPublicUrl(String bucket, String objectName);
+
+  // ── Partner documents ──────────────────────────────────────────────
+
+  /**
+   * Crée la structure de répertoires pour un partenaire dans le bucket {@code partner-documents}.
+   *
+   * <p>Préfixes créés (via un fichier sentinelle {@code .keep}) :
+   *
+   * <ul>
+   *   <li>{@code {slug}/legal/} – RCCM, DFE, bail
+   *   <li>{@code {slug}/logo/} – logo de l'entreprise
+   *   <li>{@code {slug}/contracts/} – contrats signés (usage futur)
+   * </ul>
+   *
+   * @param companyName raison sociale du partenaire (sera slugifiée)
+   * @return le slug généré (ex : {@code hotel-la-teranga})
+   */
+  String initPartnerDirectory(String companyName);
+
+  /**
+   * Upload un document légal dans {@code partner-documents/{slug}/legal/}.
+   *
+   * @param slug répertoire du partenaire (retourné par {@link #initPartnerDirectory})
+   * @param docKey clé du document (ex : {@code rccm}, {@code dfe}, {@code bail})
+   * @param inputStream flux binaire du fichier
+   * @param size taille en octets
+   * @param contentType type MIME
+   * @return URL directe du fichier uploadé
+   */
+  String uploadPartnerLegalDoc(
+      String slug, String docKey, InputStream inputStream, long size, String contentType);
+
+  /**
+   * Upload le logo d'un partenaire dans {@code partner-documents/{slug}/logo/}.
+   *
+   * @param slug répertoire du partenaire
+   * @param inputStream flux de l'image
+   * @param size taille en octets
+   * @param contentType type MIME
+   * @return URL directe du logo uploadé
+   */
+  String uploadPartnerLogo(String slug, InputStream inputStream, long size, String contentType);
 }
