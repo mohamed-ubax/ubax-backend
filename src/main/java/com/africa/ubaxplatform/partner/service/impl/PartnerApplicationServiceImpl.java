@@ -3,6 +3,7 @@ package com.africa.ubaxplatform.partner.service.impl;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.auth.mapper.AgencyMapper;
 import com.africa.ubaxplatform.auth.repository.AgencyRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
@@ -14,17 +15,16 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.notification.service.EmailService;
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
-import com.africa.ubaxplatform.partner.dto.ApplicationStatusLogResponse;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationRequest;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationResponse;
 import com.africa.ubaxplatform.partner.entity.ApplicationStatusLog;
 import com.africa.ubaxplatform.partner.entity.PartnerApplication;
+import com.africa.ubaxplatform.partner.mapper.PartnerApplicationMapper;
 import com.africa.ubaxplatform.partner.repository.ApplicationStatusLogRepository;
 import com.africa.ubaxplatform.partner.repository.PartnerApplicationRepository;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -56,6 +56,8 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   private final KeycloakAdminService keycloakAdminService;
   private final EmailService emailService;
   private final MinioService minioService;
+  private final PartnerApplicationMapper mapper;
+  private final AgencyMapper agencyMapper;
 
   private static final Set<String> ALLOWED_DOC_TYPES =
       Set.of("application/pdf", "image/jpeg", "image/png");
@@ -93,27 +95,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     LocalDateTime now = LocalDateTime.now();
 
     PartnerApplication application =
-        PartnerApplication.builder()
-            .partnerType(request.getPartnerType())
-            .companyName(request.getCompanyName())
-            .legalRepresentative(request.getLegalRepresentative())
-            .phone(request.getPhone())
-            .email(request.getEmail())
-            .country(request.getCountry())
-            .city(request.getCity())
-            .postalAddress(request.getPostalAddress())
-            .zone(request.getZone())
-            .description(request.getDescription())
-            .legalStatus(request.getLegalStatus())
-            .registrationNumber(request.getRegistrationNumber())
-            .storageSlug(slug)
-            .rccmUrl(rccmUrl)
-            .dfeUrl(dfeUrl)
-            .bailUrl(bailUrl)
-            .logoUrl(logoUrl)
-            .status(ApplicationStatus.PENDING)
-            .submittedAt(now)
-            .build();
+        mapper.toEntity(request, slug, rccmUrl, dfeUrl, bailUrl, logoUrl, now);
 
     application = applicationRepo.save(application);
 
@@ -135,7 +117,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
         request.getCompanyName(),
         application.getId());
 
-    return toResponse(application, null);
+    return mapper.toResponse(application, null);
   }
 
   // ── Consultation admin ─────────────────────────────────────────
@@ -147,14 +129,14 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
         status != null
             ? applicationRepo.findByStatus(status, pageable)
             : applicationRepo.findAll(pageable);
-    return page.map(app -> toResponse(app, null));
+    return page.map(app -> mapper.toResponse(app, null));
   }
 
   @Override
   public PartnerApplicationResponse getApplication(UUID id) {
     PartnerApplication application = findById(id);
     List<ApplicationStatusLog> logs = statusLogRepo.findByApplicationIdOrderByChangedAtAsc(id);
-    return toResponse(application, logs);
+    return mapper.toResponse(application, logs);
   }
 
   // ── Décision admin ─────────────────────────────────────────────
@@ -203,7 +185,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
 
     log.info("Décision admin : {} → {} pour la demande {}", previousStatus, newStatus, id);
 
-    return toResponse(application, null);
+    return mapper.toResponse(application, null);
   }
 
   // ── Provisionnement compte partenaire ─────────────────────────
@@ -229,38 +211,11 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       // 3a. Pour une agence immobilière : créer l'entité Agency
       Agency agency = null;
       if (isAgency) {
-        agency =
-            Agency.builder()
-                .name(application.getCompanyName())
-                .registrationNumber(application.getRegistrationNumber())
-                .logoUrl(application.getLogoUrl())
-                .address(application.getPostalAddress())
-                .city(application.getCity())
-                .country(application.getCountry())
-                .phone(application.getPhone())
-                .email(application.getEmail())
-                .build();
-        agency = agencyRepo.save(agency);
+        agency = agencyRepo.save(agencyMapper.toAgency(application));
       }
 
       // 3b. Persister l'utilisateur en base
-      User.UserBuilder<?, ?> userBuilder =
-          User.builder()
-              .keycloakId(keycloakId)
-              .firstName(application.getCompanyName())
-              .lastName(application.getLegalRepresentative())
-              .email(application.getEmail())
-              .phone(application.getPhone())
-              .roles(new HashSet<>(Set.of(assignedRole)))
-              .emailVerified(true)
-              .country(application.getCountry())
-              .city(application.getCity());
-
-      if (agency != null) {
-        userBuilder.agency(agency);
-      }
-
-      userRepo.save(userBuilder.build());
+      userRepo.save(agencyMapper.toPartnerUser(application, keycloakId, assignedRole, agency));
 
       // 4. Envoyer le lien "Définir mon mot de passe" via Keycloak
       keycloakAdminService.sendSetPasswordLink(keycloakId);
@@ -303,17 +258,8 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       User changedBy,
       String comment,
       LocalDateTime changedAt) {
-
-    ApplicationStatusLog log =
-        ApplicationStatusLog.builder()
-            .application(application)
-            .previousStatus(previousStatus)
-            .newStatus(newStatus)
-            .changedBy(changedBy)
-            .comment(comment)
-            .changedAt(changedAt)
-            .build();
-    statusLogRepo.save(log);
+    statusLogRepo.save(
+        mapper.toStatusLog(application, previousStatus, newStatus, changedBy, comment, changedAt));
   }
 
   private void sendDecisionEmail(
@@ -335,66 +281,6 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
         // PENDING géré à la soumission
       }
     }
-  }
-
-  // ── Mapping entity → DTO ───────────────────────────────────────
-
-  private PartnerApplicationResponse toResponse(
-      PartnerApplication app, List<ApplicationStatusLog> logs) {
-
-    PartnerApplicationResponse.PartnerApplicationResponseBuilder builder =
-        PartnerApplicationResponse.builder()
-            .id(app.getId())
-            .partnerType(app.getPartnerType())
-            .companyName(app.getCompanyName())
-            .legalRepresentative(app.getLegalRepresentative())
-            .phone(app.getPhone())
-            .email(app.getEmail())
-            .country(app.getCountry())
-            .city(app.getCity())
-            .postalAddress(app.getPostalAddress())
-            .zone(app.getZone())
-            .description(app.getDescription())
-            .legalStatus(app.getLegalStatus())
-            .registrationNumber(app.getRegistrationNumber())
-            .rccmUrl(app.getRccmUrl())
-            .dfeUrl(app.getDfeUrl())
-            .bailUrl(app.getBailUrl())
-            .logoUrl(app.getLogoUrl())
-            .status(app.getStatus())
-            .submittedAt(app.getSubmittedAt())
-            .reviewedAt(app.getReviewedAt())
-            .rejectionReason(app.getRejectionReason())
-            .createdAt(app.getCreatedAt())
-            .updatedAt(app.getUpdatedAt());
-
-    if (app.getReviewedBy() != null) {
-      builder.reviewedByName(
-          app.getReviewedBy().getFirstName() + " " + app.getReviewedBy().getLastName());
-    }
-
-    if (logs != null) {
-      builder.statusHistory(
-          logs.stream()
-              .map(
-                  l ->
-                      ApplicationStatusLogResponse.builder()
-                          .id(l.getId())
-                          .previousStatus(l.getPreviousStatus())
-                          .newStatus(l.getNewStatus())
-                          .changedByName(
-                              l.getChangedBy() != null
-                                  ? l.getChangedBy().getFirstName()
-                                      + " "
-                                      + l.getChangedBy().getLastName()
-                                  : "Système")
-                          .comment(l.getComment())
-                          .changedAt(l.getChangedAt())
-                          .build())
-              .toList());
-    }
-
-    return builder.build();
   }
 
   // ── Helpers upload partner ──────────────────────────────────────────
