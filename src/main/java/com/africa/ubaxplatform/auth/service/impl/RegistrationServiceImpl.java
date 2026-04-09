@@ -5,6 +5,7 @@ import com.africa.ubaxplatform.auth.dto.RegisterCompleteRequest;
 import com.africa.ubaxplatform.auth.dto.RegisterResponse;
 import com.africa.ubaxplatform.auth.entity.OtpVerification;
 import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.auth.mapper.UserMapper;
 import com.africa.ubaxplatform.auth.repository.OtpVerificationRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
@@ -142,15 +143,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         emailService.sendWelcome(user.getEmail(), request.getFirstName());
       }
 
-      return RegisterResponse.builder()
-          .userId(user.getId())
-          .keycloakId(keycloakId)
-          .email(user.getEmail())
-          .phone(user.getPhone())
-          .firstName(user.getFirstName())
-          .lastName(user.getLastName())
-          .roles(user.getRoles())
-          .build();
+      return UserMapper.toRegisterResponse(user);
 
     } catch (Exception e) {
       log.error(
