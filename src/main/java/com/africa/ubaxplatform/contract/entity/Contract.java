@@ -12,7 +12,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -57,18 +56,7 @@ import lombok.experimental.SuperBuilder;
  * Document} via {@code refId = contract.getId()} et {@code refType = CONTRACT}.
  */
 @Entity
-@Table(
-    name = "contracts",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_contract_property", columnList = "property_id"),
-      @Index(name = "idx_contract_tenant", columnList = "tenant_id"),
-      @Index(name = "idx_contract_owner", columnList = "owner_id"),
-      @Index(name = "idx_contract_status", columnList = "status"),
-      @Index(name = "idx_contract_type", columnList = "contract_type"),
-      @Index(name = "idx_contract_start_date", columnList = "start_date"),
-      @Index(name = "idx_contract_end_date", columnList = "end_date")
-    })
+@Table(name = "contracts", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor
