@@ -47,6 +47,39 @@ public class ApiExceptionHandler {
                 null));
   }
 
+  @ExceptionHandler(ConflictException.class)
+  public ResponseEntity<CustomResponse> handleConflictException(ConflictException e) {
+    log.warn("Conflict error: {}", e.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(
+            new CustomResponse(
+                Constants.Message.CONFLICT_BODY, Constants.Status.CONFLICT, e.getMessage(), null));
+  }
+
+  @ExceptionHandler(BadRequestException.class)
+  public ResponseEntity<CustomResponse> handleBadRequestException(BadRequestException e) {
+    log.warn("Bad request error: {}", e.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(
+            new CustomResponse(
+                Constants.Message.BAD_REQUEST_BODY,
+                Constants.Status.BAD_REQUEST,
+                e.getMessage(),
+                null));
+  }
+
+  @ExceptionHandler(StorageException.class)
+  public ResponseEntity<CustomResponse> handleStorageException(StorageException e) {
+    log.error("Storage error: {}", e.getMessage(), e);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(
+            new CustomResponse(
+                Constants.Message.SERVER_ERROR_BODY,
+                Constants.Status.INTERNAL_SERVER_ERROR,
+                e.getMessage(),
+                null));
+  }
+
   @ExceptionHandler(MaxUploadSizeExceededException.class)
   public ResponseEntity<CustomResponse> maxUploadSizeExceeded(MaxUploadSizeExceededException e) {
     log.info("error: {}", e.getMessage());

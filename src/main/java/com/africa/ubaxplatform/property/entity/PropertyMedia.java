@@ -1,11 +1,9 @@
 package com.africa.ubaxplatform.property.entity;
 
 import com.africa.ubaxplatform.common.base.BaseEntity;
-import com.africa.ubaxplatform.property.codeList.MediaType;
+import com.africa.ubaxplatform.common.constants.Constants;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Index;
@@ -64,9 +62,8 @@ public class PropertyMedia extends BaseEntity {
   private Property property;
 
   /** Nature du média uploadé. Valeurs : {@code PHOTO | VIDEO | PLAN_2D | PLAN_3D | VISIT_360} */
-  @Enumerated(EnumType.STRING)
   @Column(name = "media_type", nullable = false, length = 20)
-  private MediaType mediaType;
+  private String mediaType;
 
   /**
    * URL d'accès au fichier dans MinIO bucket {@code properties-media}. Pour les visites 360°, peut
@@ -109,11 +106,11 @@ public class PropertyMedia extends BaseEntity {
 
   /** {@code true} si ce média est une photo affichable dans le carrousel. */
   public boolean isPhoto() {
-    return mediaType == MediaType.PHOTO;
+    return Constants.CodeList.MediaType.PHOTO.equals(mediaType);
   }
 
   /** {@code true} si ce média est une visite virtuelle 360°. */
   public boolean isVirtualVisit() {
-    return mediaType == MediaType.VISIT_360;
+    return Constants.CodeList.MediaType.VISIT_360.equals(mediaType);
   }
 }

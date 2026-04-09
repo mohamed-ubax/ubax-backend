@@ -106,6 +106,7 @@ services:
         mc mb --ignore-existing ubax/tenant-documents
         mc mb --ignore-existing ubax/documents-generated
         mc mb --ignore-existing ubax/ticket-attachments
+        mc mb --ignore-existing ubax/partner-documents
 
         mc anonymous set download ubax/users-avatars
         mc anonymous set download ubax/agencies-logos
@@ -199,6 +200,17 @@ services:
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      LAM_SMS_URL: ${LAM_SMS_URL}
+      LAM_ACCOUNT_ID: ${LAM_ACCOUNT_ID}
+      LAM_PASSWORD: ${LAM_PASSWORD}
+      LAM_SENDER: ${LAM_SENDER}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
       SERVER_SERVLET_CONTEXT_PATH: /api
       SERVER_PORT: 8080
       SPRING_PROFILES_ACTIVE: docker

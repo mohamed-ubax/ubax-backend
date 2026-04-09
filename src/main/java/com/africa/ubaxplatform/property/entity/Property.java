@@ -3,10 +3,7 @@ package com.africa.ubaxplatform.property.entity;
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
-import com.africa.ubaxplatform.property.codeList.PropertyCondition;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
-import com.africa.ubaxplatform.property.codeList.PropertyType;
-import com.africa.ubaxplatform.property.codeList.TransactionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -93,23 +90,20 @@ public class Property extends BaseEntity {
    * Catégorie du bien immobilier. Valeurs : {@code APARTMENT | VILLA | HOUSE | LAND | OFFICE |
    * WAREHOUSE | STORE}
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "property_type", nullable = false, length = 50)
-  private PropertyType propertyType;
+  private String propertyType;
 
   /** Nature de la transaction proposée. Valeurs : {@code SALE | RENT | RENT_FURNISHED} */
-  @Enumerated(EnumType.STRING)
   @Column(name = "transaction_type", nullable = false, length = 30)
-  private TransactionType transactionType;
+  private String transactionType;
 
   /** Prix de vente ou loyer mensuel hors charges en XOF. */
   @Column(name = "price", nullable = false, precision = 15, scale = 2)
   private BigDecimal price;
 
   /** État général du bien. Valeurs : {@code NEW | GOOD | RENOVATE} */
-  @Enumerated(EnumType.STRING)
   @Column(name = "condition", length = 20)
-  private PropertyCondition condition;
+  private String condition;
 
   /** Année de construction du bien. */
   @Column(name = "year_built")

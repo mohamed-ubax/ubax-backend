@@ -1,11 +1,9 @@
 package com.africa.ubaxplatform.auth.entity;
 
-import com.africa.ubaxplatform.auth.codeList.SubscriptionPlan;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import com.africa.ubaxplatform.common.constants.Constants;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -124,10 +122,9 @@ public class Agency extends BaseEntity {
    * Offre d'abonnement souscrite par l'agence sur la plateforme. Détermine les fonctionnalités
    * accessibles (nombre d'annonces, outils avancés...). Valeurs : {@code BASIC | PRO | PREMIUM}
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "subscription_plan", length = 20)
   @Builder.Default
-  private SubscriptionPlan subscriptionPlan = SubscriptionPlan.BASIC;
+  private String subscriptionPlan = Constants.CodeList.SubscriptionPlan.BASIC;
 
   /**
    * Date d'expiration de l'abonnement en cours. Si {@code null} ou passée, l'agence est rétrogradée

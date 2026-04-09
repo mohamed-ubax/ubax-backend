@@ -2,8 +2,6 @@ package com.africa.ubaxplatform.tenant.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
-import com.africa.ubaxplatform.tenant.codeList.EmploymentStatus;
-import com.africa.ubaxplatform.tenant.codeList.IdDocumentType;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,12 +9,10 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -54,16 +50,7 @@ import lombok.experimental.SuperBuilder;
  * Contract.tenant}.
  */
 @Entity
-@Table(
-    name = "tenants",
-    schema = "administrative",
-    uniqueConstraints = {@UniqueConstraint(name = "uq_tenant_user_id", columnNames = "user_id")},
-    indexes = {
-      @Index(name = "idx_tenant_user", columnList = "user_id"),
-      @Index(name = "idx_tenant_status", columnList = "status"),
-      @Index(name = "idx_tenant_qualified", columnList = "is_qualified"),
-      @Index(name = "idx_tenant_deleted_at", columnList = "deleted_at")
-    })
+@Table(name = "tenants", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -84,9 +71,8 @@ public class Tenant extends BaseEntity {
    * Situation professionnelle du locataire. Valeurs : {@code EMPLOYEE | SELF_EMPLOYED | STUDENT |
    * RETIRED | UNEMPLOYED | OTHER} Utilisée pour évaluer la solvabilité du dossier.
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "employment_status", length = 30)
-  private EmploymentStatus employmentStatus;
+  private String employmentStatus;
 
   /**
    * Nom de l'employeur ou de l'entreprise du locataire. Renseigné pour les statuts {@code EMPLOYEE}
@@ -133,9 +119,8 @@ public class Tenant extends BaseEntity {
    * Type de pièce d'identité fournie. Valeurs : {@code CNI | PASSPORT | RESIDENCE_PERMIT |
    * DRIVER_LICENSE}
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "id_document_type", length = 30)
-  private IdDocumentType idDocumentType;
+  private String idDocumentType;
 
   /** Numéro de la pièce d'identité. Conservé pour les contrats et les vérifications AML. */
   @Column(name = "id_document_number", length = 100)

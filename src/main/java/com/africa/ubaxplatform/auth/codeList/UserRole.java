@@ -16,5 +16,10 @@ public enum UserRole {
   /** Administrateur de la plateforme. */
   ADMIN,
   /** Super Administrateur de la plateforme. */
-  SUPER_ADMIN
+  SUPER_ADMIN,
+  /**
+   * Partenaire de la plateforme (agence, promoteur, notaire, etc.) – compte créé automatiquement à
+   * l'approbation de sa demande.
+   */
+  PARTNER
 }

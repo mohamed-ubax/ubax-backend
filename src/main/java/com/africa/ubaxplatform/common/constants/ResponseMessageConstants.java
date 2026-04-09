@@ -20,6 +20,12 @@ public class ResponseMessageConstants {
   public static final String USER_UNAUTHORIZED = "USER_UNAUTHORIZED";
   public static final String USER_FORBIDDEN = "USER_FORBIDDEN";
 
+  // ── OTP ─────────────────────────────────────────────────────────
+  public static final String OTP_SENT_SUCCESS = "OTP_SENT_SUCCESS";
+  public static final String OTP_VERIFIED_SUCCESS = "OTP_VERIFIED_SUCCESS";
+  public static final String OTP_INVALID = "OTP_INVALID";
+  public static final String OTP_NOT_FOUND = "OTP_NOT_FOUND";
+
   // ── USER ────────────────────────────────────────────────────────
   public static final String USER_GET_SUCCESS = "USER_GET_SUCCESS";
   public static final String USER_GET_LIST_SUCCESS = "USER_GET_LIST_SUCCESS";
@@ -51,6 +57,22 @@ public class ResponseMessageConstants {
   public static final String PROPERTY_DELETE_FAILURE = "PROPERTY_DELETE_FAILURE";
   public static final String PROPERTY_DELETE_FAILURE_NOT_FOUND =
       "PROPERTY_DELETE_FAILURE_NOT_FOUND";
+
+  // ── PARTNER APPLICATION ─────────────────────────────────────────
+  public static final String PARTNER_APPLICATION_SUBMIT_SUCCESS =
+      "PARTNER_APPLICATION_SUBMIT_SUCCESS";
+  public static final String PARTNER_APPLICATION_GET_SUCCESS = "PARTNER_APPLICATION_GET_SUCCESS";
+  public static final String PARTNER_APPLICATION_GET_LIST_SUCCESS =
+      "PARTNER_APPLICATION_GET_LIST_SUCCESS";
+  public static final String PARTNER_APPLICATION_DECISION_SUCCESS =
+      "PARTNER_APPLICATION_DECISION_SUCCESS";
+  public static final String PARTNER_APPLICATION_ALREADY_EXISTS =
+      "PARTNER_APPLICATION_ALREADY_EXISTS";
+  public static final String PARTNER_APPLICATION_NOT_FOUND = "PARTNER_APPLICATION_NOT_FOUND";
+  public static final String PARTNER_APPLICATION_INVALID_TRANSITION =
+      "PARTNER_APPLICATION_INVALID_TRANSITION";
+  public static final String PARTNER_APPLICATION_COMMENT_REQUIRED =
+      "PARTNER_APPLICATION_COMMENT_REQUIRED";
 
   // ── TENANT ──────────────────────────────────────────────────────
   public static final String TENANT_GET_SUCCESS = "TENANT_GET_SUCCESS";
@@ -107,4 +129,15 @@ public class ResponseMessageConstants {
   public static final String TICKET_GET_FAILURE_NOT_FOUND = "TICKET_GET_FAILURE_NOT_FOUND";
   public static final String TICKET_CREATE_FAILURE = "TICKET_CREATE_FAILURE";
   public static final String TICKET_UPDATE_FAILURE_NOT_FOUND = "TICKET_UPDATE_FAILURE_NOT_FOUND";
+
+  // ── CODE LIST ───────────────────────────────────────────────────
+  public static final String CODELIST_GET_SUCCESS = "CODELIST_GET_SUCCESS";
+  public static final String CODELIST_POST_SUCCESS = "CODELIST_POST_SUCCESS";
+  public static final String CODELIST_PUT_SUCCESS = "CODELIST_PUT_SUCCESS";
+  public static final String CODELIST_GET_FAILURE_NOT_FOUND = "CODELIST_GET_FAILURE_NOT_FOUND";
+  public static final String CODELIST_GET_FAILURE_BAD_REQUEST = "CODELIST_GET_FAILURE_BAD_REQUEST";
+  public static final String CODELIST_POST_FAILURE = "CODELIST_POST_FAILURE";
+  public static final String CODELIST_POST_DUPLICATE = "CODELIST_POST_DUPLICATE";
+  public static final String CODELIST_PUT_FAILURE = "CODELIST_PUT_FAILURE";
+  public static final String CODELIST_PUT_FAILURE_BAD_REQUEST = "CODELIST_PUT_FAILURE_BAD_REQUEST";
 }

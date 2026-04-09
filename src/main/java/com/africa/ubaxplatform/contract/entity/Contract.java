@@ -2,8 +2,8 @@ package com.africa.ubaxplatform.contract.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.contract.codeList.ContractStatus;
-import com.africa.ubaxplatform.contract.codeList.ContractType;
 import com.africa.ubaxplatform.property.entity.Property;
 import com.africa.ubaxplatform.tenant.entity.Tenant;
 import jakarta.persistence.Column;
@@ -12,7 +12,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -57,18 +56,7 @@ import lombok.experimental.SuperBuilder;
  * Document} via {@code refId = contract.getId()} et {@code refType = CONTRACT}.
  */
 @Entity
-@Table(
-    name = "contracts",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_contract_property", columnList = "property_id"),
-      @Index(name = "idx_contract_tenant", columnList = "tenant_id"),
-      @Index(name = "idx_contract_owner", columnList = "owner_id"),
-      @Index(name = "idx_contract_status", columnList = "status"),
-      @Index(name = "idx_contract_type", columnList = "contract_type"),
-      @Index(name = "idx_contract_start_date", columnList = "start_date"),
-      @Index(name = "idx_contract_end_date", columnList = "end_date")
-    })
+@Table(name = "contracts", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -126,9 +114,8 @@ public class Contract extends BaseEntity {
    *   <li>{@code MANDATE} — mandat de gestion locative donné à une agence.
    * </ul>
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "contract_type", nullable = false, length = 30)
-  private ContractType contractType;
+  private String contractType;
 
   /**
    * Numéro de référence unique du contrat, lisible par les parties. Format : {@code
@@ -281,12 +268,12 @@ public class Contract extends BaseEntity {
 
   /** {@code true} si le contrat est un bail de location. */
   public boolean isLease() {
-    return contractType == ContractType.LEASE;
+    return Constants.CodeList.ContractType.LEASE.equals(contractType);
   }
 
   /** {@code true} si le contrat est un acte de vente. */
   public boolean isSale() {
-    return contractType == ContractType.SALE;
+    return Constants.CodeList.ContractType.SALE.equals(contractType);
   }
 
   /** {@code true} si le PDF signé est disponible. */

@@ -1,13 +1,9 @@
 package com.africa.ubaxplatform.auth.entity;
 
-import com.africa.ubaxplatform.auth.codeList.AlertFrequency;
-import com.africa.ubaxplatform.auth.codeList.DisplayMode;
-import com.africa.ubaxplatform.auth.codeList.NewsletterFrequency;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import com.africa.ubaxplatform.common.constants.Constants;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.JoinColumn;
@@ -137,10 +133,9 @@ public class UserPreferences extends BaseEntity {
   /**
    * Fréquence d'envoi des alertes de nouveaux biens. Valeurs : {@code REALTIME | DAILY | WEEKLY}
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "alert_frequency", length = 20)
   @Builder.Default
-  private AlertFrequency alertFrequency = AlertFrequency.DAILY;
+  private String alertFrequency = Constants.CodeList.AlertFrequency.DAILY;
 
   /** Recevoir les alertes et notifications par email. */
   @Column(name = "notification_email", nullable = false)
@@ -169,10 +164,9 @@ public class UserPreferences extends BaseEntity {
   private boolean newsletterSubscribed = false;
 
   /** Fréquence de réception de la newsletter. Valeurs : {@code WEEKLY | MONTHLY} */
-  @Enumerated(EnumType.STRING)
   @Column(name = "newsletter_frequency", length = 20)
   @Builder.Default
-  private NewsletterFrequency newsletterFrequency = NewsletterFrequency.WEEKLY;
+  private String newsletterFrequency = Constants.CodeList.NewsletterFrequency.WEEKLY;
 
   /**
    * Devise préférée pour l'affichage des prix. Défaut : {@code XOF} (Franc CFA). Valeurs supportées
@@ -185,10 +179,9 @@ public class UserPreferences extends BaseEntity {
   /**
    * Mode d'affichage par défaut des résultats de recherche. Valeurs : {@code LIST | MAP | SPLIT}
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "display_mode", length = 10)
   @Builder.Default
-  private DisplayMode displayMode = DisplayMode.SPLIT;
+  private String displayMode = Constants.CodeList.DisplayMode.SPLIT;
 
   /**
    * {@code true} si l'utilisateur a défini au moins un critère de recherche. Utilisé pour savoir si

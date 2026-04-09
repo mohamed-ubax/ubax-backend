@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -14,7 +15,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtDecoders;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.DelegatingJwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
@@ -38,14 +39,23 @@ public class SecurityConfig {
     "/actuator/prometheus",
     "/actuator/health/**",
     "/actuator/info",
-    "/auth/login",
-    "/auth/logout",
-    "/auth/forgot-password",
-    "/auth/register/**"
+    "/v1/auth/login",
+    "/v1/auth/login/phone",
+    "/v1/auth/logout",
+    "/v1/auth/forgot-password",
+    "/v1/auth/forgot-password/send-otp",
+    "/v1/auth/forgot-password/verify-otp",
+    "/v1/auth/forgot-password/reset",
+    "/v1/auth/register/**",
+    "/v1/partner/apply",
+    "/v1/code-list/type/**"
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
   private String tokenIssuerUrl;
+
+  @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+  private String jwkSetUri;
 
   @Value("${ubax.endpoints.frontend}")
   private String frontEndUrl;
@@ -53,7 +63,28 @@ public class SecurityConfig {
   @Value("${ubax.security.enabled:true}")
   private boolean securityEnabled;
 
+  // ── Chaîne publique (ordre 1) – pas de validation JWT ─────────
+
+  /**
+   * Filter chain pour les routes publiques. Prioritaire sur la chaîne sécurisée. Aucun
+   * BearerTokenAuthenticationFilter n'est enregistré ici : un token invalide ou expiré est
+   * simplement ignoré au lieu de provoquer un 401.
+   */
   @Bean
+  @Order(1)
+  public SecurityFilterChain publicFilterChain(HttpSecurity http) throws Exception {
+    http.securityMatcher(WHITELIST)
+        .csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+    return http.build();
+  }
+
+  // ── Chaîne sécurisée (ordre 2) – JWT requis ────────────────────
+
+  @Bean
+  @Order(2)
   public SecurityFilterChain securityFilterChain(
       HttpSecurity http, CustomAuthenticationEntryPoint entryPoint, CustomAccessDenied accessDenied)
       throws Exception {
@@ -67,8 +98,7 @@ public class SecurityConfig {
           .cors(cors -> cors.configurationSource(corsConfigurationSource()))
           .exceptionHandling(
               ex -> ex.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDenied))
-          .authorizeHttpRequests(
-              auth -> auth.requestMatchers(WHITELIST).permitAll().anyRequest().authenticated())
+          .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
           .oauth2ResourceServer(
               oauth2 ->
                   oauth2.jwt(
@@ -104,7 +134,8 @@ public class SecurityConfig {
   @Bean
   public JwtDecoder jwtDecoder() {
     log.info("tokenIssuerUrl {}", tokenIssuerUrl);
-    return JwtDecoders.fromIssuerLocation(tokenIssuerUrl);
+    log.info("jwkSetUri {}", jwkSetUri);
+    return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
   }
 
   @Bean

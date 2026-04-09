@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nouvelle demande partenaire – UBAX Admin</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F7F7F7;font-family:'Segoe UI',Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F7F7F7;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="580" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.10);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1A1A2E;padding:28px 40px;text-align:center;">
+              <span style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:3px;">UBAX</span>
+              <p style="margin:8px 0 0;color:#F07820;font-size:13px;font-weight:600;">ADMINISTRATION</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#F07820;height:4px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:44px 48px 36px;">
+              <h2 style="margin:0 0 16px;color:#1A1A2E;font-size:20px;font-weight:700;">
+                Nouvelle demande d'adhésion partenaire
+              </h2>
+              <p style="margin:0 0 24px;color:#555;line-height:1.7;font-size:15px;">
+                Une nouvelle demande vient d'être soumise sur la plateforme. Veuillez l'examiner.
+              </p>
+
+              <!-- Récapitulatif -->
+              <table cellpadding="0" cellspacing="0" style="width:100%;background-color:#F7F7F7;border-radius:8px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <table cellpadding="0" cellspacing="0" style="width:100%;">
+                      <tr>
+                        <td style="padding:6px 0;color:#777;font-size:13px;width:40%;">Entreprise</td>
+                        <td style="padding:6px 0;color:#1A1A2E;font-size:14px;font-weight:600;" th:text="${companyName}">—</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;color:#777;font-size:13px;">Type</td>
+                        <td style="padding:6px 0;color:#1A1A2E;font-size:14px;" th:text="${partnerType}">—</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;color:#777;font-size:13px;">Email contact</td>
+                        <td style="padding:6px 0;color:#1A1A2E;font-size:14px;" th:text="${email}">—</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;color:#777;font-size:13px;">N° dossier</td>
+                        <td style="padding:6px 0;color:#1A1A2E;font-size:14px;font-weight:600;" th:text="${applicationId}">—</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0;color:#999;font-size:13px;line-height:1.6;">
+                Connectez-vous au back-office UBAX pour traiter cette demande.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#F7F7F7;padding:20px 48px;text-align:center;border-top:1px solid #EBEBEB;">
+              <p style="margin:0;color:#AAAAAA;font-size:12px;">
+                &copy; 2026 <strong style="color:#1A1A2E;">UBAX Platform</strong> — Email automatique interne
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+# ===================================================================
+# UBAX Platform – Jenkins CI/CD (VPS)
+# ===================================================================
+#
+# Services               | Port hôte | Description
+# ———————————————————————|———————————|——————————————————————————————
+# Jenkins                | 8090      | Interface web Jenkins
+# Jenkins Agent (JNLP)   | 50000     | Communication agents distants
+#
+# Prérequis VPS :
+#   mkdir -p /opt/jenkins/{data,certs}
+#   chown -R 1000:1000 /opt/jenkins/data
+#
+# Démarrage :
+#   cd /opt/ubax
+#   docker compose -f docker-compose.jenkins.yml up -d
+#
+# Accès : http://<VPS_IP>:8090
+# Mot de passe initial :
+#   docker exec ubax-jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+#
+# ===================================================================
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────
+  # Jenkins LTS – Serveur CI/CD
+  # ─────────────────────────────────────────────────────────────────
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: ubax-jenkins
+    restart: unless-stopped
+    privileged: true
+    user: root
+    ports:
+      - "8090:8080"    # Interface web Jenkins
+      - "50000:50000"  # Communication agents JNLP
+    volumes:
+      # Données Jenkins persistantes
+      - jenkins_data:/var/jenkins_home
+      # Accès au socket Docker hôte pour builder les images
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Docker CLI dans le conteneur
+      - /usr/bin/docker:/usr/bin/docker
+    environment:
+      # Désactiver le wizard d'installation (optionnel – retirez pour le conserver)
+      # JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+      JAVA_OPTS: >-
+        -Xmx512m
+        -Dhudson.model.DirectoryBrowserSupport.CSP=
+        -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  jenkins_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/jenkins/data

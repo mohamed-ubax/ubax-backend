@@ -2,7 +2,9 @@ package com.africa.ubaxplatform.auth.entity;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,9 +14,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,20 +43,7 @@ import lombok.experimental.SuperBuilder;
  * traçabilité des contrats). {@code deletedAt} non null = compte supprimé.
  */
 @Entity
-@Table(
-    name = "users",
-    schema = "administrative",
-    uniqueConstraints = {
-      @UniqueConstraint(name = "uq_users_keycloak_id", columnNames = "keycloak_id"),
-      @UniqueConstraint(name = "uq_users_email", columnNames = "email"),
-      @UniqueConstraint(name = "uq_users_phone", columnNames = "phone")
-    },
-    indexes = {
-      @Index(name = "idx_users_role", columnList = "role"),
-      @Index(name = "idx_users_active", columnList = "is_active"),
-      @Index(name = "idx_users_deleted_at", columnList = "deleted_at"),
-      @Index(name = "idx_users_agency", columnList = "agency_id")
-    })
+@Table(name = "users", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -69,14 +59,21 @@ public class User extends BaseEntity {
   private String keycloakId;
 
   /**
-   * Rôle fonctionnel dupliqué depuis le realm Keycloak. Utilisé pour les requêtes métier (filtrer
-   * les biens par agent, etc.). La vérification d'accès réelle reste assurée par Spring Security
-   * via le JWT. Valeurs : {@code CLIENT | OWNER | AGENT | AGENCY | ADMIN}
+   * Rôles fonctionnels dupliqués depuis le realm Keycloak. Utilisés pour les requêtes métier
+   * (filtrer les biens par agent, etc.). La vérification d'accès réelle reste assurée par Spring
+   * Security via le JWT. Valeurs : {@code CLIENT | OWNER | AGENT | AGENCY | ADMIN}
    */
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
+      name = "user_roles",
+      schema = "administrative",
+      joinColumns = @JoinColumn(name = "user_id"),
+      foreignKey = @ForeignKey(name = "fk_user_roles_user"),
+      indexes = @Index(name = "idx_user_roles_role", columnList = "role"))
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 30)
   @Builder.Default
-  private UserRole role = UserRole.CLIENT;
+  private Set<UserRole> roles = new HashSet<>(Set.of(UserRole.CLIENT));
 
   /**
    * Date et heure de la dernière connexion réussie via Keycloak. Mis à jour à chaque résolution de
@@ -100,7 +97,7 @@ public class User extends BaseEntity {
    * Adresse email principale. Synchronisée depuis le claim Keycloak {@code email}. Utilisée pour
    * les notifications, factures PDF et relances de loyer.
    */
-  @Column(name = "email", nullable = false, length = 150)
+  @Column(name = "email", nullable = true, length = 150)
   private String email;
 
   /**

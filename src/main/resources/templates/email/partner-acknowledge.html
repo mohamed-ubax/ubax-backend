@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Accusé de réception – Demande partenaire UBAX</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F7F7F7;font-family:'Segoe UI',Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F7F7F7;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="580" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.10);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1A1A2E;padding:28px 40px;text-align:center;">
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  <td style="text-align:center;">
+                    <span style="display:inline-block;width:14px;height:14px;background:#F07820;border-radius:50%;margin:0 3px 6px 0;"></span>
+                    <span style="display:inline-block;width:14px;height:14px;background:#F07820;border-radius:50%;margin:0 0 6px 3px;"></span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align:center;">
+                    <span style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:3px;font-family:'Segoe UI',Arial,sans-serif;">UBAX</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Orange accent bar -->
+          <tr>
+            <td style="background-color:#F07820;height:4px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:44px 48px 36px;">
+              <h2 style="margin:0 0 12px;color:#1A1A2E;font-size:20px;font-weight:700;">
+                Demande bien reçue, <span th:text="${companyName}">Votre entreprise</span> !
+              </h2>
+              <p style="margin:0 0 20px;color:#555;line-height:1.7;font-size:15px;">
+                Nous avons bien reçu votre demande d'adhésion à la plateforme UBAX.
+                Notre équipe va l'examiner dans les meilleurs délais et vous contactera par email.
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;background-color:#F7F7F7;border-radius:8px;width:100%;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0;color:#777;font-size:13px;">Numéro de dossier</p>
+                    <p style="margin:4px 0 0;color:#1A1A2E;font-size:14px;font-weight:600;" th:text="${applicationId}">XXXX-XXXX</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 28px;color:#555;line-height:1.7;font-size:15px;">
+                Conservez ce numéro de dossier pour tout suivi de votre demande.
+              </p>
+              <p style="margin:0;color:#999;font-size:13px;line-height:1.6;">
+                Une question ? Contactez-nous à
+                <a href="mailto:support@ubaxplatform.com" style="color:#F07820;text-decoration:none;">support@ubaxplatform.com</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#F7F7F7;padding:20px 48px;text-align:center;border-top:1px solid #EBEBEB;">
+              <p style="margin:0;color:#AAAAAA;font-size:12px;">
+                &copy; 2026 <strong style="color:#1A1A2E;">UBAX Platform</strong> — Côte d'Ivoire
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

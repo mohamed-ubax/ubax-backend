@@ -2,11 +2,9 @@ package com.africa.ubaxplatform.ticketing.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
-import com.africa.ubaxplatform.ticketing.codeList.AttachmentType;
+import com.africa.ubaxplatform.common.constants.Constants;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Index;
@@ -100,10 +98,9 @@ public class TicketAttachment extends BaseEntity {
    *   <li>{@code OTHER} — tout autre document.
    * </ul>
    */
-  @Enumerated(EnumType.STRING)
   @Column(name = "attachment_type", nullable = false, length = 30)
   @Builder.Default
-  private AttachmentType attachmentType = AttachmentType.INCIDENT_PHOTO;
+  private String attachmentType = Constants.CodeList.AttachmentType.INCIDENT_PHOTO;
 
   /**
    * Légende ou description courte de la pièce jointe. Saisie optionnellement par l'utilisateur lors

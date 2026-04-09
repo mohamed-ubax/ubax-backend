@@ -38,10 +38,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-       <!-- <dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
-        </dependency>-->
+        </dependency>
+        <!-- Flyway 10+ : support PostgreSQL dans un module séparé -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
@@ -113,21 +118,24 @@
             <version>26.0.7</version>
         </dependency>
 
-        <!-- JavaMail – envoi d'emails transactionnels (désactivé temporairement) -->
-        <!--
+        <!-- MinIO – object storage (avatars, documents, médias) -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.17</version>
+        </dependency>
+
+        <!-- JavaMail – envoi d'emails transactionnels -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
-        -->
 
-        <!-- Thymeleaf – templates HTML pour emails (désactivé temporairement) -->
-        <!--
+        <!-- Thymeleaf – templates HTML pour emails -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-        -->
 
     </dependencies>
 
@@ -157,6 +165,26 @@
                             <artifactId>lombok</artifactId>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <!-- Flyway Maven Plugin – repair / info / migrate en dehors du contexte Spring -->
+            <!-- Usage : ./mvnw flyway:repair  (les env vars DB_* doivent être définies)   -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <configuration>
+                    <url>jdbc:postgresql://${env.DB_HOST:localhost}:${env.DB_PORT:5433}/${env.DB_NAME:db-ubax}</url>
+                    <user>${env.DB_USERNAME:postgres}</user>
+                    <password>${env.DB_PASSWORD:ubax123}</password>
+                    <schemas>
+                        <schema>administrative</schema>
+                    </schemas>
+                    <locations>
+                        <location>classpath:db/migration</location>
+                    </locations>
+                    <baselineOnMigrate>true</baselineOnMigrate>
+                    <baselineVersion>0</baselineVersion>
+                    <outOfOrder>false</outOfOrder>
                 </configuration>
             </plugin>
             <plugin>
