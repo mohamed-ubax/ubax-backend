@@ -1,9 +1,12 @@
 package com.africa.ubaxplatform.partner.service.impl;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
+import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.auth.repository.AgencyRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
+import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.ConflictException;
@@ -49,6 +52,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   private final PartnerApplicationRepository applicationRepo;
   private final ApplicationStatusLogRepository statusLogRepo;
   private final UserRepository userRepo;
+  private final AgencyRepository agencyRepo;
   private final KeycloakAdminService keycloakAdminService;
   private final EmailService emailService;
   private final MinioService minioService;
@@ -206,6 +210,11 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
 
   private void provisionPartnerAccount(PartnerApplication application) {
     try {
+      boolean isAgency =
+          Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE.equals(application.getPartnerType());
+
+      UserRole assignedRole = isAgency ? UserRole.AGENCY : UserRole.PARTNER;
+
       // 1. Créer le compte Keycloak (username = email, sans mot de passe)
       String keycloakId =
           keycloakAdminService.createPartnerAccount(
@@ -214,29 +223,51 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
               application.getLegalRepresentative(),
               application.getPhone());
 
-      // 2. Attribuer le rôle PARTNER
-      keycloakAdminService.assignRole(keycloakId, UserRole.PARTNER);
+      // 2. Attribuer le rôle approprié
+      keycloakAdminService.assignRole(keycloakId, assignedRole);
 
-      // 3. Persister l'utilisateur en base
-      User partnerUser =
+      // 3a. Pour une agence immobilière : créer l'entité Agency
+      Agency agency = null;
+      if (isAgency) {
+        agency =
+            Agency.builder()
+                .name(application.getCompanyName())
+                .registrationNumber(application.getRegistrationNumber())
+                .logoUrl(application.getLogoUrl())
+                .address(application.getPostalAddress())
+                .city(application.getCity())
+                .country(application.getCountry())
+                .phone(application.getPhone())
+                .email(application.getEmail())
+                .build();
+        agency = agencyRepo.save(agency);
+      }
+
+      // 3b. Persister l'utilisateur en base
+      User.UserBuilder<?, ?> userBuilder =
           User.builder()
               .keycloakId(keycloakId)
               .firstName(application.getCompanyName())
               .lastName(application.getLegalRepresentative())
               .email(application.getEmail())
               .phone(application.getPhone())
-              .roles(new HashSet<>(Set.of(UserRole.PARTNER)))
+              .roles(new HashSet<>(Set.of(assignedRole)))
               .emailVerified(true)
               .country(application.getCountry())
-              .city(application.getCity())
-              .build();
-      userRepo.save(partnerUser);
+              .city(application.getCity());
+
+      if (agency != null) {
+        userBuilder.agency(agency);
+      }
+
+      userRepo.save(userBuilder.build());
 
       // 4. Envoyer le lien "Définir mon mot de passe" via Keycloak
       keycloakAdminService.sendSetPasswordLink(keycloakId);
 
       log.info(
-          "Compte partenaire provisionné avec succès : keycloakId={}, email={}",
+          "Compte {} provisionné avec succès : keycloakId={}, email={}",
+          assignedRole,
           keycloakId,
           application.getEmail());
 

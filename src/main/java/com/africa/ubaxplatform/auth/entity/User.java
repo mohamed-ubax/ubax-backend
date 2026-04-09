@@ -12,6 +12,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -147,11 +148,11 @@ public class User extends BaseEntity {
   /**
    * Agence immobilière à laquelle l'utilisateur est rattaché. Non null uniquement pour les rôles
    * {@code AGENT} et {@code AGENCY}. Ignoré pour les rôles {@code CLIENT}, {@code OWNER} et {@code
-   * ADMIN}. TODO: décommenter quand l'entité Agency sera créée.
+   * ADMIN}.
    */
-  // @ManyToOne(fetch = FetchType.LAZY)
-  // @JoinColumn(name = "agency_id", foreignKey = @ForeignKey(name = "fk_user_agency"))
-  // private Agency agency;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "agency_id", foreignKey = @ForeignKey(name = "fk_user_agency"))
+  private Agency agency;
 
   /** {@code true} si l'email a été confirmé via le lien Keycloak (VERIFY_EMAIL). */
   @Column(name = "is_email_verified", nullable = false)
@@ -209,9 +210,9 @@ public class User extends BaseEntity {
 
   /**
    * {@code true} si l'utilisateur est rattaché à une agence. Vrai uniquement pour les rôles AGENT
-   * et AGENCY. TODO: décommenter quand l'entité Agency sera créée.
+   * et AGENCY.
    */
-  // public boolean hasAgency() {
-  //   return agency != null;
-  // }
+  public boolean hasAgency() {
+    return agency != null;
+  }
 }
