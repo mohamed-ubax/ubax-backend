@@ -1,17 +1,21 @@
 package com.africa.ubaxplatform.storage.service.impl;
 
 import com.africa.ubaxplatform.common.exception.StorageException;
+import com.africa.ubaxplatform.storage.dto.PresignedUrlResponse;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import io.minio.BucketExistsArgs;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
 import java.io.InputStream;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,6 +30,8 @@ import org.springframework.stereotype.Service;
 public class MinioServiceImpl implements MinioService {
 
   private final MinioClient minioClient;
+  private static final String BUCKET_PARTNER_DOCS = "partner-documents";
+  private static final String[] PARTNER_SUB_DIRS = {"legal", "logo", "contracts"};
 
   @Value("${minio.endpoint}")
   private String endpoint;
@@ -85,10 +91,34 @@ public class MinioServiceImpl implements MinioService {
     return endpoint + "/" + bucket + "/" + objectName;
   }
 
-  // ── Partner documents ───────────────────────────────────────────
+  @Override
+  public PresignedUrlResponse generatePresignedUrl(
+      String bucket, String objectName, int expiresInSeconds) {
+    try {
+      String uploadUrl =
+          minioClient.getPresignedObjectUrl(
+              GetPresignedObjectUrlArgs.builder()
+                  .method(Method.PUT)
+                  .bucket(bucket)
+                  .object(objectName)
+                  .expiry(expiresInSeconds, TimeUnit.SECONDS)
+                  .build());
 
-  private static final String BUCKET_PARTNER_DOCS = "partner-documents";
-  private static final String[] PARTNER_SUB_DIRS = {"legal", "logo", "contracts"};
+      return PresignedUrlResponse.builder()
+          .uploadUrl(uploadUrl)
+          .publicUrl(getPublicUrl(bucket, objectName))
+          .objectName(objectName)
+          .bucket(bucket)
+          .expiresInSeconds(expiresInSeconds)
+          .build();
+
+    } catch (Exception e) {
+      throw new StorageException(
+          "Erreur lors de la génération de l'URL présignée : " + e.getMessage(), e);
+    }
+  }
+
+  // ── Partner documents ───────────────────────────────────────────
 
   @Override
   public String initPartnerDirectory(String companyName) {

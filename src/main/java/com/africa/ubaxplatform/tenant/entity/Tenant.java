@@ -9,12 +9,10 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -52,16 +50,7 @@ import lombok.experimental.SuperBuilder;
  * Contract.tenant}.
  */
 @Entity
-@Table(
-    name = "tenants",
-    schema = "administrative",
-    uniqueConstraints = {@UniqueConstraint(name = "uq_tenant_user_id", columnNames = "user_id")},
-    indexes = {
-      @Index(name = "idx_tenant_user", columnList = "user_id"),
-      @Index(name = "idx_tenant_status", columnList = "status"),
-      @Index(name = "idx_tenant_qualified", columnList = "is_qualified"),
-      @Index(name = "idx_tenant_deleted_at", columnList = "deleted_at")
-    })
+@Table(name = "tenants", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor
