@@ -1,6 +1,7 @@
 package com.africa.ubaxplatform.storage.service.interfaces;
 
 import com.africa.ubaxplatform.common.exception.StorageException;
+import com.africa.ubaxplatform.storage.dto.PresignedUrlResponse;
 import java.io.InputStream;
 
 /**
@@ -65,6 +66,24 @@ public interface MinioService {
    * @return URL directe de l'objet
    */
   String getPublicUrl(String bucket, String objectName);
+
+  // ── Partner documents ──────────────────────────────────────────────
+
+  /**
+   * Génère une URL présignée PUT permettant au frontend d'uploader un fichier directement vers
+   * MinIO, sans transiter par le backend.
+   *
+   * <p>Le frontend utilise cette URL pour un {@code PUT} HTTP direct vers MinIO. Après l'upload, il
+   * notifie le backend avec l'{@code objectName} retourné.
+   *
+   * @param bucket nom du bucket cible (doit être dans la liste des buckets autorisés)
+   * @param objectName chemin et nom de l'objet dans le bucket (ex : {@code propertyId/uuid.webp})
+   * @param expiresInSeconds durée de validité de l'URL en secondes (max 604800 = 7 jours)
+   * @return {@link PresignedUrlResponse} contenant l'URL d'upload, l'URL publique finale et les
+   *     métadonnées
+   * @throws StorageException si la génération échoue
+   */
+  PresignedUrlResponse generatePresignedUrl(String bucket, String objectName, int expiresInSeconds);
 
   // ── Partner documents ──────────────────────────────────────────────
 
