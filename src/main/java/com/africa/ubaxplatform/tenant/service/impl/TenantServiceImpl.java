@@ -12,6 +12,7 @@ import com.africa.ubaxplatform.tenant.dto.TenantCreateRequest;
 import com.africa.ubaxplatform.tenant.dto.TenantResponse;
 import com.africa.ubaxplatform.tenant.dto.TenantUpdateRequest;
 import com.africa.ubaxplatform.tenant.entity.Tenant;
+import com.africa.ubaxplatform.tenant.mapper.TenantMapper;
 import com.africa.ubaxplatform.tenant.repository.TenantRepository;
 import com.africa.ubaxplatform.tenant.service.interfaces.TenantService;
 import java.time.LocalDate;
@@ -56,31 +57,7 @@ public class TenantServiceImpl implements TenantService {
   }
 
   private TenantResponse toResponse(Tenant t) {
-    User u = t.getUser();
-    return new TenantResponse(
-        t.getId(),
-        u != null ? u.getId() : null,
-        t.getFullName(),
-        u != null ? u.getEmail() : null,
-        t.getEmploymentStatus(),
-        t.getEmployerName(),
-        t.getMonthlyIncome(),
-        t.isHasGuarantor(),
-        t.getGuarantorName(),
-        t.getGuarantorPhone(),
-        t.getGuarantorEmail(),
-        t.getIdDocumentUrl(),
-        t.getIdDocumentType(),
-        t.getIdDocumentNumber(),
-        t.getIdDocumentExpiry(),
-        t.getIncomeProofUrl(),
-        t.getAddressProofUrl(),
-        t.getStatus(),
-        t.isQualified(),
-        t.getQualifiedAt(),
-        t.getRejectionReason(),
-        t.getCreatedAt(),
-        t.getUpdatedAt());
+    return TenantMapper.toResponse(t);
   }
 
   // ── CRUD locataire ─────────────────────────────────────────────
