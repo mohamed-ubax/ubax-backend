@@ -1,4 +1,4 @@
-package com.africa.ubaxplatform.unitTest.tenant;
+package com.africa.ubaxplatform.unit.tenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

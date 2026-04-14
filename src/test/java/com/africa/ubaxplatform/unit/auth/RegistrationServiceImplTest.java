@@ -1,4 +1,4 @@
-package com.africa.ubaxplatform.unitTest.auth;
+package com.africa.ubaxplatform.unit.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
