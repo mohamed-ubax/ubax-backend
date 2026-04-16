@@ -1,4 +1,4 @@
-package com.africa.ubaxplatform.unitTest.storage;
+package com.africa.ubaxplatform.unit.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

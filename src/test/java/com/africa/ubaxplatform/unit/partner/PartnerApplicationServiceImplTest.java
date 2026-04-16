@@ -1,4 +1,4 @@
-package com.africa.ubaxplatform.unitTest.partner;
+package com.africa.ubaxplatform.unit.partner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

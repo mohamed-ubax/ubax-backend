@@ -1,0 +1,70 @@
+# ===================================================================
+# UBAX Platform – Infrastructure Docker (tests d'intégration)
+# Ports différents de l'environnement de dev pour éviter les conflits
+# ===================================================================
+# Démarrage : docker compose -f docker-compose-test.yml up -d
+# Arrêt     : docker compose -f docker-compose-test.yml down
+# ===================================================================
+
+services:
+
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: ubax-postgres-test
+    environment:
+      POSTGRES_DB: db-ubax-test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d db-ubax-test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  keycloak-test:
+    image: quay.io/keycloak/keycloak:26.1.5
+    container_name: ubax-keycloak-test
+    user: root
+    entrypoint: >
+      /bin/bash -c "
+      mkdir -p /opt/keycloak/data/import &&
+      ls /opt/keycloak/data/import-src/ &&
+      cp /opt/keycloak/data/import-src/* /opt/keycloak/data/import/ &&
+      chown -R keycloak:keycloak /opt/keycloak/data/import &&
+      exec /opt/keycloak/bin/kc.sh start-dev --import-realm
+      "
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import-src
+    ports:
+      - "8181:8080"
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo ok >&3 && exec 3>&-" ]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+  minio-test:
+    image: minio/minio:latest
+    container_name: ubax-minio-test
+    command: server /data --console-address ":9011"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9010:9000"
+      - "9011:9011"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
