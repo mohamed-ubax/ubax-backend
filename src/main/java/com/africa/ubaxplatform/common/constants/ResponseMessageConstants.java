@@ -26,6 +26,11 @@ public class ResponseMessageConstants {
   public static final String OTP_INVALID = "OTP_INVALID";
   public static final String OTP_NOT_FOUND = "OTP_NOT_FOUND";
 
+  // ── ADMIN ───────────────────────────────────────────────────────
+  public static final String ADMIN_CREATE_SUCCESS = "ADMIN_CREATE_SUCCESS";
+  public static final String ADMIN_ROLE_ASSIGN_SUCCESS = "ADMIN_ROLE_ASSIGN_SUCCESS";
+  public static final String ADMIN_DELETE_SUCCESS = "ADMIN_DELETE_SUCCESS";
+
   // ── USER ────────────────────────────────────────────────────────
   public static final String USER_GET_SUCCESS = "USER_GET_SUCCESS";
   public static final String USER_GET_LIST_SUCCESS = "USER_GET_LIST_SUCCESS";

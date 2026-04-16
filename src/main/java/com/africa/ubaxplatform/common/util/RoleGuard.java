@@ -44,6 +44,20 @@ public final class RoleGuard {
   }
 
   /**
+   * Extrait l'utilisateur du JWT et vérifie qu'il possède exclusivement le rôle {@code
+   * SUPER_ADMIN}.
+   *
+   * @return l'utilisateur extrait du token
+   * @throws CustomException 401 si le token est absent/invalide, 403 si le rôle est insuffisant
+   */
+  public static RequestUser requireSuperAdmin(
+      RequestHeaderParser parser, HttpServletRequest request) throws CustomException {
+    RequestUser user = extractUser(parser, request);
+    checkAnyRole(user, UserRole.SUPER_ADMIN);
+    return user;
+  }
+
+  /**
    * Extrait l'utilisateur du JWT et vérifie qu'il est authentifié (token valide, peu importe le
    * rôle).
    *
