@@ -381,7 +381,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   // ── Helpers ────────────────────────────────────────────────────
 
-  private String getAdminToken() {
+  protected String getAdminToken() {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "client_credentials");
     form.add("client_id", props.getClientId());

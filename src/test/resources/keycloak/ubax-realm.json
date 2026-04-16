@@ -1,0 +1,100 @@
+{
+  "realm": "ubax-plateform",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "roles": {
+    "realm": [
+      { "name": "UBAX_ADMIN", "description": "Administrateur plateforme UBAX" },
+      { "name": "UBAX_AGENT", "description": "Agent immobilier" },
+      { "name": "UBAX_PARTNER", "description": "Partenaire" },
+      { "name": "UBAX_TENANT", "description": "Locataire" },
+      { "name": "UBAX_OWNER", "description": "Proprietaire" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ubax-client",
+      "name": "UBAX Client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "test-client-secret",
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "fullScopeAllowed": true
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-ubax-client",
+      "email": "service-account-ubax-client@placeholder.org",
+      "enabled": true,
+      "serviceAccountClientId": "ubax-client",
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users", "manage-realm", "view-realm", "query-users", "query-realms"]
+      }
+    },
+    {
+      "username": "admin@ubax-test.io",
+      "email": "admin@ubax-test.io",
+      "firstName": "Admin",
+      "lastName": "Test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "admin-test-password", "temporary": false }],
+      "realmRoles": ["UBAX_ADMIN"]
+    },
+    {
+      "username": "agent@ubax-test.io",
+      "email": "agent@ubax-test.io",
+      "firstName": "Agent",
+      "lastName": "Test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "agent-test-password", "temporary": false }],
+      "realmRoles": ["UBAX_AGENT"]
+    },
+    {
+      "username": "partner@ubax-test.io",
+      "email": "partner@ubax-test.io",
+      "firstName": "Partner",
+      "lastName": "Test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "partner-test-password", "temporary": false }],
+      "realmRoles": ["UBAX_PARTNER"]
+    },
+    {
+      "username": "tenant@ubax-test.io",
+      "email": "tenant@ubax-test.io",
+      "firstName": "Tenant",
+      "lastName": "Test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "tenant-test-password", "temporary": false }],
+      "realmRoles": ["UBAX_TENANT"]
+    },
+    {
+      "username": "owner@ubax-test.io",
+      "email": "owner@ubax-test.io",
+      "firstName": "Owner",
+      "lastName": "Test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "owner-test-password", "temporary": false }],
+      "realmRoles": ["UBAX_OWNER"]
+    }
+  ]
+}
