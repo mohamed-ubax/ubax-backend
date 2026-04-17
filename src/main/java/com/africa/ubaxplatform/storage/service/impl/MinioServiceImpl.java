@@ -92,6 +92,11 @@ public class MinioServiceImpl implements MinioService {
   }
 
   @Override
+  public String buildPublicUrl(String relativePath) {
+    return endpoint + "/" + relativePath;
+  }
+
+  @Override
   public PresignedUrlResponse generatePresignedUrl(
       String bucket, String objectName, int expiresInSeconds) {
     try {

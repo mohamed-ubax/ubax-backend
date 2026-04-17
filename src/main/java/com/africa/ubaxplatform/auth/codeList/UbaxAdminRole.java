@@ -1,51 +1,40 @@
 package com.africa.ubaxplatform.auth.codeList;
 
 /**
- * Rôles internes du back-office d'administration de la plateforme UBAX.
+ * Sous-rôles opérationnels du back-office d'administration de la plateforme UBAX.
  *
- * <p>Ces rôles s'appliquent aux membres de l'équipe UBAX qui gèrent la plateforme en tant que
- * super-structure (distinct de la gestion interne des agences et hôtels partenaires).
+ * <p><b>Distinction avec {@link UserRole} :</b>
  *
- * <p>Correspondance Keycloak realm : {@code UBAX_SUPER_ADMIN} et {@code UBAX_ADMIN} couvrent les
- * accès au back-office. Les rôles plus fins ({@code FINANCE_MANAGER}, etc.) sont des sous-rôles
- * opérationnels attribués en complément.
+ * <ul>
+ *   <li>{@link UserRole#ADMIN} et {@link UserRole#SUPER_ADMIN} sont les rôles techniques persistés
+ *       en base et synchronisés avec Keycloak ({@code UBAX_ADMIN}, {@code UBAX_SUPER_ADMIN}). Ils
+ *       gouvernent l'accès au back-office en général.
+ *   <li>Les valeurs de cet enum ({@code FINANCE_MANAGER}, etc.) sont des <em>sous-rôles
+ *       opérationnels</em> qui affinent les permissions à l'intérieur du back-office. Ils ne
+ *       correspondent pas à des rôles realm Keycloak distincts et ne sont pas persistés dans {@code
+ *       User.roles} — ils sont portés par un attribut applicatif complémentaire.
+ * </ul>
  *
  * <pre>
  * ┌─────────────────────┬────────────────────────────────────────────────────────────────┐
- * │ Rôle                │ Périmètre d'accès                                              │
+ * │ Rôle (UserRole)     │ Périmètre                                                      │
  * ├─────────────────────┼────────────────────────────────────────────────────────────────┤
  * │ SUPER_ADMIN         │ Accès total : config système, gestion des admins, logs, audit  │
  * │ ADMIN               │ Opérations courantes : partenaires, utilisateurs, signalements  │
+ * ├─────────────────────┼────────────────────────────────────────────────────────────────┤
+ * │ Sous-rôle           │ Périmètre affiné (attribué en complément d'ADMIN)              │
+ * ├─────────────────────┼────────────────────────────────────────────────────────────────┤
  * │ FINANCE_MANAGER     │ Abonnements, commissions, revenus et rapports financiers        │
  * │ SUPPORT_MANAGER     │ Tickets et réclamations des partenaires et clients              │
  * │ PARTNER_MANAGER     │ Onboarding, activation et suspension des agences & hôtels       │
  * │ CONTENT_MODERATOR   │ Validation et modération des annonces publiées                  │
  * └─────────────────────┴────────────────────────────────────────────────────────────────┘
  * </pre>
+ *
+ * @see UserRole#ADMIN
+ * @see UserRole#SUPER_ADMIN
  */
 public enum UbaxAdminRole {
-
-  /**
-   * Super Administrateur UBAX.
-   *
-   * <p>Accès intégral à toutes les fonctionnalités du back-office : configuration système,
-   * paramètres du realm Keycloak, gestion des comptes administrateurs, consultation des logs
-   * d'audit et des métriques globales de la plateforme.
-   *
-   * <p>Keycloak realm role : {@code UBAX_SUPER_ADMIN}
-   */
-  SUPER_ADMIN,
-
-  /**
-   * Administrateur Plateforme.
-   *
-   * <p>Gestion opérationnelle courante : consultation et modération des partenaires, gestion des
-   * utilisateurs signalés, traitement des demandes d'inscription. Pas d'accès à la configuration
-   * système ni à la gestion des autres administrateurs.
-   *
-   * <p>Keycloak realm role : {@code UBAX_ADMIN}
-   */
-  ADMIN,
 
   /**
    * Responsable Finances Plateforme.
@@ -54,7 +43,7 @@ public enum UbaxAdminRole {
    * revenus globaux et génération des rapports financiers. Accès en lecture aux données de
    * facturation des partenaires.
    *
-   * <p>Keycloak realm role : {@code UBAX_ADMIN} (sous-rôle opérationnel)
+   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
    */
   FINANCE_MANAGER,
 
@@ -65,7 +54,7 @@ public enum UbaxAdminRole {
    * les clients. Escalade vers les équipes techniques si nécessaire. Pas d'accès aux données
    * financières.
    *
-   * <p>Keycloak realm role : {@code UBAX_ADMIN} (sous-rôle opérationnel)
+   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
    */
   SUPPORT_MANAGER,
 
@@ -76,7 +65,7 @@ public enum UbaxAdminRole {
    * activation des comptes, suspension en cas de non-conformité, et suivi de la performance des
    * agences et hôtels inscrits sur la plateforme.
    *
-   * <p>Keycloak realm role : {@code UBAX_ADMIN} (sous-rôle opérationnel)
+   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
    */
   PARTNER_MANAGER,
 
@@ -87,7 +76,7 @@ public enum UbaxAdminRole {
    * les partenaires. Peut masquer ou rejeter un contenu non conforme à la charte UBAX. Pas d'accès
    * aux données financières ni à la gestion des comptes utilisateurs.
    *
-   * <p>Keycloak realm role : {@code UBAX_ADMIN} (sous-rôle opérationnel)
+   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
    */
   CONTENT_MODERATOR
 }

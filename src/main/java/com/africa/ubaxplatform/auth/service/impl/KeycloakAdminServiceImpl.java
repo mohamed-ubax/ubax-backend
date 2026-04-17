@@ -11,6 +11,7 @@ import com.africa.ubaxplatform.common.exception.TokenRetrievalException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -29,6 +30,7 @@ import org.springframework.web.client.RestClient;
  * {@code realm-management → manage-users} et {@code realm-management → manage-roles}.
  */
 @Service
+@Slf4j
 public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   private final KeycloakProperties props;
