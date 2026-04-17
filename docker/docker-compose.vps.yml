@@ -162,8 +162,10 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HTTP_PORT: 8080
       KC_HTTP_RELATIVE_PATH: /auth
-      KC_HOSTNAME_URL: "http://${VPS_IP}/auth"
-      KC_HOSTNAME_ADMIN_URL: "http://${VPS_IP}/auth"
+      KC_HOSTNAME: ${VPS_IP}
+      KC_HOSTNAME_PATH: /auth
+      KC_HOSTNAME_PORT: 80
+      KC_HOSTNAME_ADMIN: ${VPS_IP}
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY_HEADERS: xforwarded
       KC_HTTPS_REQUIRED: none
@@ -231,7 +233,7 @@ services:
       postgres:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/actuator/health || exit 1"]
       interval: 30s
