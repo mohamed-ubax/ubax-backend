@@ -163,13 +163,10 @@ services:
       KC_HTTP_PORT: 8080
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HOSTNAME: ${VPS_IP}
-      KC_HOSTNAME_PATH: /auth
-      KC_HOSTNAME_PORT: 80
       KC_HOSTNAME_ADMIN: ${VPS_IP}
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY_HEADERS: xforwarded
-      KC_HTTPS_REQUIRED: none
-      KC_HTTP_ENABLED: "true"   
+      KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_LOG_LEVEL: info
       # Limiter la RAM JVM : Keycloak peut saturer la mémoire du VPS
@@ -180,11 +177,11 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo ok >&3 && exec 3>&-"]
-      interval: 15s
-      timeout: 5s
-      retries: 15
-      start_period: 30s
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/auth/health/ready || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
 
   # ─────────────────────────────────────────────────────────────────
   # Backend Spring Boot – image Docker Hub (ubaxproject/ubax-hub)
