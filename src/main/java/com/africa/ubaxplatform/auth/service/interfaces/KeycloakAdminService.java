@@ -83,6 +83,16 @@ public interface KeycloakAdminService {
   void deleteUser(String keycloakId);
 
   /**
+   * Désactive un utilisateur Keycloak ({@code enabled = false}).
+   *
+   * <p>Le compte est conservé dans Keycloak pour l'historique ; l'utilisateur ne peut plus se
+   * connecter. Utilisé pour la suppression logique des administrateurs UBAX.
+   *
+   * @param keycloakId identifiant Keycloak de l'utilisateur à désactiver
+   */
+  void disableUser(String keycloakId);
+
+  /**
    * Récupère tous les rôles realm définis dans Keycloak.
    *
    * @return liste des représentations de rôles (champs : {@code id}, {@code name}, {@code
@@ -142,6 +152,23 @@ public interface KeycloakAdminService {
    */
   String createPartnerAccount(
       String email, String companyName, String legalRepresentative, String phone)
+      throws CustomException;
+
+  /**
+   * Crée un compte Keycloak pour un administrateur interne UBAX.
+   *
+   * <p>Le username est l'email de l'administrateur. Aucun mot de passe n'est défini à la création ;
+   * {@code requiredActions: [UPDATE_PASSWORD]} force l'administrateur à définir son mot de passe
+   * via le lien envoyé par {@link #sendSetPasswordLink(String)}.
+   *
+   * @param email adresse email professionnelle (sert de username et d'email Keycloak)
+   * @param firstName prénom de l'administrateur
+   * @param lastName nom de famille de l'administrateur
+   * @param phone numéro de téléphone (optionnel, peut être {@code null})
+   * @return identifiant Keycloak (UUID) du compte créé
+   * @throws CustomException si l'email est déjà utilisé (409) ou si l'appel échoue
+   */
+  String createAdminAccount(String email, String firstName, String lastName, String phone)
       throws CustomException;
 
   /**

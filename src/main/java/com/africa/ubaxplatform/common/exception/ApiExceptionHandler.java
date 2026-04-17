@@ -4,10 +4,12 @@ import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
@@ -16,6 +18,20 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @RestControllerAdvice
 @Slf4j
 public class ApiExceptionHandler {
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<CustomResponse> handleValidationException(
+      MethodArgumentNotValidException e) {
+    String message =
+        e.getBindingResult().getFieldErrors().stream()
+            .map(err -> err.getField() + " : " + err.getDefaultMessage())
+            .collect(Collectors.joining(", "));
+    log.warn("Validation error: {}", message);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(
+            new CustomResponse(
+                Constants.Message.BAD_REQUEST_BODY, Constants.Status.BAD_REQUEST, message, null));
+  }
 
   @ExceptionHandler(CustomException.class)
   public ResponseEntity<CustomResponse> handleException(CustomException e) {

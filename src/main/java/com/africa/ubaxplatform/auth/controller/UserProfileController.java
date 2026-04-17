@@ -100,6 +100,7 @@ public class UserProfileController {
         };
 
     String objectName = keycloakId + extension;
+    String avatarPath = BUCKET_AVATARS + "/" + objectName;
     String avatarUrl;
     try {
       avatarUrl =
@@ -115,7 +116,7 @@ public class UserProfileController {
                   null));
     }
 
-    user.setAvatarUrl(avatarUrl);
+    user.setAvatarUrl(avatarPath);
     userRepository.save(user);
 
     return ResponseEntity.ok(

@@ -67,6 +67,17 @@ public interface MinioService {
    */
   String getPublicUrl(String bucket, String objectName);
 
+  /**
+   * Reconstruit l'URL complète d'accès à partir du chemin relatif stocké en base de données.
+   *
+   * <p>Permet de retrouver l'URL complète indépendamment de l'environnement de déploiement. Exemple
+   * : {@code "users-avatars/abc.jpg"} → {@code "http://localhost:9000/users-avatars/abc.jpg"}.
+   *
+   * @param relativePath chemin relatif de la forme {@code "bucket/objectName"} (jamais null)
+   * @return URL publique complète de l'objet
+   */
+  String buildPublicUrl(String relativePath);
+
   // ── Partner documents ──────────────────────────────────────────────
 
   /**
