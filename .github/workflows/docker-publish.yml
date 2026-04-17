@@ -186,7 +186,6 @@ jobs:
             set -e
             cd /opt/ubax
 
-            # Créer les répertoires de config si absents
             mkdir -p prometheus grafana/provisioning/datasources nginx postgres pgadmin
             mkdir -p /opt/jenkins/data
             chown -R 1000:1000 /opt/jenkins
@@ -194,10 +193,8 @@ jobs:
             TAG="${{ needs.build-push.outputs.image-tag }}"
             echo "==> Déploiement tag : $TAG"
 
-            # Mise à jour du tag dans .env
             sed -i "s/^BACKEND_TAG=.*/BACKEND_TAG=$TAG/" .env
 
-            # Connexion Docker Hub
             echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
               docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
@@ -213,25 +210,28 @@ jobs:
             done
             $pulled || { echo "❌ Pull échoué après 3 tentatives"; exit 1; }
 
-            # Démarrer tous les services (monitoring inclus), restart backend
-            docker compose -f docker-compose.vps.yml up -d --remove-orphans
+            # ── Restart uniquement le backend (Keycloak déjà healthy en prod) ──
+            docker compose -f docker-compose.vps.yml up -d --no-deps --remove-orphans backend
 
-            # Recharger nginx pour reconnecter au nouveau conteneur backend
+            # ── Attendre que le backend soit healthy ───────────────────────────
+            echo "==> Attente démarrage backend..."
+            for i in $(seq 1 20); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' ubax-backend-prod 2>/dev/null || echo "unknown")
+              echo "Attempt $i/20 – status: $STATUS"
+              [ "$STATUS" = "healthy" ] && break
+              [ $i -eq 20 ] && { echo "❌ Backend non healthy après 200s"; exit 1; }
+              sleep 10
+            done
+
             docker exec ubax-nginx-prod nginx -s reload || true
 
-            # ── Jenkins : démarrer s'il n'est pas déjà en cours ──
             if ! docker ps --format '{{.Names}}' | grep -q '^ubax-jenkins$'; then
-              echo "==> Jenkins non détecté, démarrage..."
               docker compose -f docker-compose.jenkins.yml up -d
-              echo "✅ Jenkins démarré sur le port 8090"
             else
-              echo "==> Jenkins déjà en cours d'exécution, mise à jour de la config..."
               docker compose -f docker-compose.jenkins.yml up -d --no-recreate
             fi
 
-            # Nettoyage des anciennes images
             docker image prune -f
-
             echo "==> Déploiement terminé ✓"
 
   # ═══════════════════════════════════════════════════════════════
