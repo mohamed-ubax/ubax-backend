@@ -166,6 +166,7 @@ services:
       KC_HOSTNAME_PATH: /auth
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY_HEADERS: xforwarded
+      KC_HTTPS_REQUIRED: none
       KC_HEALTH_ENABLED: "true"
       KC_LOG_LEVEL: info
       # Limiter la RAM JVM : Keycloak peut saturer la mémoire du VPS
