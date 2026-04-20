@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"/c/Users/snbam/Documents/ubax project/ubax-project/ubax-platform\" add CLAUDE.md)",
+      "Bash(git -C \"/c/Users/snbam/Documents/ubax project/ubax-project/ubax-platform\" status)",
+      "Bash(./mvnw compile *)"
+    ]
+  }
+}

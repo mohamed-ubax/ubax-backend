@@ -7,6 +7,11 @@ import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
@@ -48,12 +53,39 @@ public class UserProfileController {
   @Operation(
       summary = "Uploader / remplacer la photo de profil",
       description =
-          "Formats acceptés : JPEG, PNG, WEBP – taille maximale : 5 Mo. "
-              + "L'URL retournée est directement accessible si le bucket est public.",
+          "🔑 **Authentifié** – Upload ou remplace la photo de profil de l'utilisateur connecté.\n\n"
+              + "**Formats acceptés :** JPEG, PNG, WEBP – max 5 Mo.\n\n"
+              + "L'objet MinIO est nommé `{keycloakId}.{ext}` : uploader une nouvelle image remplace automatiquement l'ancienne.",
       tags = {"Mobile"})
   @SecurityRequirement(name = "bearerAuth")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Avatar mis à jour – `data` contient `avatarUrl`",
+        content = @Content(mediaType = "application/json")),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Fichier vide, type MIME non autorisé ou taille dépassée",
+        content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
+  })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "multipart/form-data",
+              schema =
+                  @Schema(
+                      type = "object",
+                      requiredProperties = {"file"})))
   public ResponseEntity<CustomResponse> uploadAvatar(
-      @RequestPart("file") MultipartFile file, JwtAuthenticationToken authentication) {
+      @Parameter(
+              description = "Image de profil (JPEG, PNG, WEBP – max 5 Mo)",
+              required = true,
+              content = @Content(schema = @Schema(type = "string", format = "binary")))
+          @RequestPart("file")
+          MultipartFile file,
+      JwtAuthenticationToken authentication) {
 
     if (file == null || file.isEmpty()) {
       return ResponseEntity.badRequest()
