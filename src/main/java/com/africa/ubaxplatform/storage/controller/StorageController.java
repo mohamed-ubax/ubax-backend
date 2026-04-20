@@ -8,12 +8,12 @@ import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import com.africa.ubaxplatform.storage.dto.PresignedUrlResponse;
 import com.africa.ubaxplatform.storage.dto.StorageUploadResponse;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -155,10 +155,7 @@ public class StorageController {
         responseCode = "400",
         description = "Fichier vide, bucket non autorisé, type MIME invalide ou taille dépassée",
         content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   @RequestBody(
       required = true,
@@ -242,10 +239,7 @@ public class StorageController {
         responseCode = "400",
         description = "Fichier vide, type MIME invalide ou taille dépassée",
         content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   @RequestBody(
       required = true,
@@ -253,7 +247,9 @@ public class StorageController {
           @Content(
               mediaType = "multipart/form-data",
               schema =
-                  @Schema(type = "object", requiredProperties = {"file"})))
+                  @Schema(
+                      type = "object",
+                      requiredProperties = {"file"})))
   public ResponseEntity<CustomResponse> uploadAgencyLogo(
       @Parameter(
               description = "Logo de l'agence (JPEG, PNG, WEBP – max 10 Mo)",
@@ -334,10 +330,7 @@ public class StorageController {
         responseCode = "400",
         description = "Bucket non autorisé ou durée invalide",
         content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   public ResponseEntity<CustomResponse> generatePresignedUrl(
       @Parameter(description = "Bucket cible", example = "properties-media") @RequestParam
@@ -395,14 +388,8 @@ public class StorageController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = PresignedUrlResponse.class))),
-    @ApiResponse(
-        responseCode = "400",
-        description = "Type MIME non autorisé",
-        content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "400", description = "Type MIME non autorisé", content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   public ResponseEntity<CustomResponse> presignPropertyMedia(
       @Parameter(description = "UUID du bien", required = true) @RequestParam UUID propertyId,
@@ -453,14 +440,8 @@ public class StorageController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = PresignedUrlResponse.class))),
-    @ApiResponse(
-        responseCode = "400",
-        description = "Type MIME non autorisé",
-        content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "400", description = "Type MIME non autorisé", content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   public ResponseEntity<CustomResponse> presignPropertyDocument(
       @Parameter(description = "UUID du bien", required = true) @RequestParam UUID propertyId,
@@ -510,14 +491,8 @@ public class StorageController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = PresignedUrlResponse.class))),
-    @ApiResponse(
-        responseCode = "400",
-        description = "Type MIME non autorisé",
-        content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "400", description = "Type MIME non autorisé", content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   public ResponseEntity<CustomResponse> presignTenantDocument(
       @Parameter(description = "Type MIME du fichier", example = "application/pdf", required = true)
@@ -565,14 +540,8 @@ public class StorageController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = PresignedUrlResponse.class))),
-    @ApiResponse(
-        responseCode = "400",
-        description = "Type MIME non autorisé",
-        content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "400", description = "Type MIME non autorisé", content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   public ResponseEntity<CustomResponse> presignAgencyLogo(
       @Parameter(description = "Type MIME de l'image", example = "image/png", required = true)
@@ -620,14 +589,8 @@ public class StorageController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = PresignedUrlResponse.class))),
-    @ApiResponse(
-        responseCode = "400",
-        description = "Type MIME non autorisé",
-        content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "400", description = "Type MIME non autorisé", content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   public ResponseEntity<CustomResponse> presignTicketAttachment(
       @Parameter(description = "UUID du ticket", required = true) @RequestParam UUID ticketId,

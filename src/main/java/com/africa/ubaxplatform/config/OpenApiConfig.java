@@ -69,20 +69,26 @@ import org.springframework.context.annotation.Configuration;
                     + "| `UBAX_OWNER` | `OWNER` | Propriétaire particulier |\n"
                     + "| `UBAX_AGENT` | `AGENT` | Agent rattaché à une agence |\n"
                     + "| `UBAX_CLIENT` | `CLIENT` | Acheteur / locataire |",
-            contact =
-                @Contact(name = "UBAX Platform", email = "tech@ubax.africa")),
+            contact = @Contact(name = "UBAX Platform", email = "tech@ubax.africa")),
     tags = {
-      @Tag(name = "Authentication", description = "🌐 **Public** – Connexion email, déconnexion, mot de passe oublié"),
-      @Tag(name = "Mobile", description = "🌐 **Public** – Inscription et connexion via téléphone (OTP SMS)"),
+      @Tag(
+          name = "Authentication",
+          description = "🌐 **Public** – Connexion email, déconnexion, mot de passe oublié"),
+      @Tag(
+          name = "Mobile",
+          description = "🌐 **Public** – Inscription et connexion via téléphone (OTP SMS)"),
       @Tag(
           name = "Administration Plateforme",
-          description = "👑 **SUPER_ADMIN** · 🛡 **ADMIN** – Gestion des comptes administrateurs internes UBAX"),
+          description =
+              "👑 **SUPER_ADMIN** · 🛡 **ADMIN** – Gestion des comptes administrateurs internes UBAX"),
       @Tag(
           name = "Partner",
-          description = "🌐 **Public** (soumission) · 🛡 **ADMIN** (décision) – Candidatures partenaires agences/hôtels"),
+          description =
+              "🌐 **Public** (soumission) · 🛡 **ADMIN** (décision) – Candidatures partenaires agences/hôtels"),
       @Tag(
           name = "Tenant",
-          description = "🔑 **Authentifié** (profil) · 🏢 **AGENCY / ADMIN** (qualification) – Dossiers locataires KYC"),
+          description =
+              "🔑 **Authentifié** (profil) · 🏢 **AGENCY / ADMIN** (qualification) – Dossiers locataires KYC"),
       @Tag(
           name = "Property",
           description =
@@ -99,13 +105,13 @@ import org.springframework.context.annotation.Configuration;
                   + "· `agencies-logos` · `users-avatars` · `ticket-attachments` · `partner-documents`"),
       @Tag(
           name = "Code List",
-          description = "🌐 **Public** (lecture) · 🛡 **ADMIN** (écriture) – Référentiels dynamiques (types, statuts, etc.)")
+          description =
+              "🌐 **Public** (lecture) · 🛡 **ADMIN** (écriture) – Référentiels dynamiques (types, statuts, etc.)")
     })
 @SecurityScheme(
     name = "bearerAuth",
     type = SecuritySchemeType.HTTP,
     scheme = "bearer",
     bearerFormat = "JWT",
-    description =
-        "JWT obtenu via `POST /v1/auth/login`. Format : `Authorization: Bearer <token>`")
+    description = "JWT obtenu via `POST /v1/auth/login`. Format : `Authorization: Bearer <token>`")
 public class OpenApiConfig {}

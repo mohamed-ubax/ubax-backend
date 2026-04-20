@@ -67,17 +67,17 @@ public class UserProfileController {
         responseCode = "400",
         description = "Fichier vide, type MIME non autorisé ou taille dépassée",
         content = @Content),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Token absent ou invalide",
-        content = @Content)
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
   })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       required = true,
       content =
           @Content(
               mediaType = "multipart/form-data",
-              schema = @Schema(type = "object", requiredProperties = {"file"})))
+              schema =
+                  @Schema(
+                      type = "object",
+                      requiredProperties = {"file"})))
   public ResponseEntity<CustomResponse> uploadAvatar(
       @Parameter(
               description = "Image de profil (JPEG, PNG, WEBP – max 5 Mo)",

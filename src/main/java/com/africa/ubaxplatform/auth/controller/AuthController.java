@@ -88,10 +88,7 @@ public class AuthController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = LoginResponse.class))),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Identifiants invalides",
-        content = @Content)
+    @ApiResponse(responseCode = "401", description = "Identifiants invalides", content = @Content)
   })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       required = true,
@@ -126,10 +123,7 @@ public class AuthController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = LoginResponse.class))),
-    @ApiResponse(
-        responseCode = "401",
-        description = "Identifiants invalides",
-        content = @Content)
+    @ApiResponse(responseCode = "401", description = "Identifiants invalides", content = @Content)
   })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       required = true,
@@ -186,12 +180,10 @@ public class AuthController {
   @Operation(
       tags = {"Mobile"},
       summary = "Inscription mobile – Étape 2 : Vérification OTP",
-      description = "🌐 **Public** – Vérifie le code OTP reçu par SMS. Le code est valide une seule fois.")
+      description =
+          "🌐 **Public** – Vérifie le code OTP reçu par SMS. Le code est valide une seule fois.")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "OTP vérifié avec succès",
-        content = @Content),
+    @ApiResponse(responseCode = "200", description = "OTP vérifié avec succès", content = @Content),
     @ApiResponse(
         responseCode = "400",
         description = "Code OTP invalide ou expiré",
@@ -330,10 +322,7 @@ public class AuthController {
           "🌐 **Public** – Génère et envoie un OTP par SMS au numéro fourni. Le numéro doit être enregistré.")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "OTP envoyé", content = @Content),
-    @ApiResponse(
-        responseCode = "404",
-        description = "Numéro non enregistré",
-        content = @Content)
+    @ApiResponse(responseCode = "404", description = "Numéro non enregistré", content = @Content)
   })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       required = true,
@@ -360,10 +349,7 @@ public class AuthController {
           "🌐 **Public** – Vérifie le code OTP reçu par SMS. Le code n'est pas consommé (étape 3 requise).")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "OTP valide", content = @Content),
-    @ApiResponse(
-        responseCode = "400",
-        description = "OTP invalide ou expiré",
-        content = @Content)
+    @ApiResponse(responseCode = "400", description = "OTP invalide ou expiré", content = @Content)
   })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       required = true,
@@ -392,10 +378,7 @@ public class AuthController {
         responseCode = "200",
         description = "Mot de passe réinitialisé",
         content = @Content),
-    @ApiResponse(
-        responseCode = "400",
-        description = "OTP invalide ou expiré",
-        content = @Content)
+    @ApiResponse(responseCode = "400", description = "OTP invalide ou expiré", content = @Content)
   })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       required = true,
@@ -426,7 +409,10 @@ public class AuthController {
               + "Permet à un administrateur de forcer un nouveau mot de passe sans passer par le flux email.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Mot de passe réinitialisé", content = @Content),
+    @ApiResponse(
+        responseCode = "200",
+        description = "Mot de passe réinitialisé",
+        content = @Content),
     @ApiResponse(
         responseCode = "401",
         description = "Token absent ou invalide",
