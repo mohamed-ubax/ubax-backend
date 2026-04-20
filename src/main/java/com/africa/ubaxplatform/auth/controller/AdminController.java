@@ -11,6 +11,8 @@ import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -58,18 +60,39 @@ public class AdminController {
   @Operation(
       summary = "Créer un administrateur UBAX",
       description =
-          "Crée un compte administrateur interne UBAX. "
-              + "Déclenche la création Keycloak, l'attribution du rôle (ADMIN ou SUPER_ADMIN), "
-              + "la synchronisation en base et l'envoi d'un email de définition du mot de passe. "
-              + "Réservé au Super Administrateur.")
+          "👑 **Rôle requis :** `SUPER_ADMIN`\n\n"
+              + "Crée un compte administrateur interne UBAX. "
+              + "Déclenche la création Keycloak, l'attribution du rôle (`ADMIN` ou `SUPER_ADMIN`), "
+              + "la synchronisation en base et l'envoi d'un email de définition du mot de passe.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "201", description = "Administrateur créé avec succès"),
-    @ApiResponse(responseCode = "400", description = "Données invalides ou rôle non autorisé"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle SUPER_ADMIN requis"),
-    @ApiResponse(responseCode = "409", description = "Email déjà utilisé")
+    @ApiResponse(
+        responseCode = "201",
+        description = "Administrateur créé avec succès",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AdminUserResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Données invalides ou rôle non autorisé",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle SUPER_ADMIN requis",
+        content = @Content),
+    @ApiResponse(responseCode = "409", description = "Email déjà utilisé", content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = CreateAdminRequest.class)))
   @PostMapping
   public ResponseEntity<CustomResponse> createAdmin(
       @Valid @RequestBody CreateAdminRequest request, HttpServletRequest httpRequest)
@@ -93,12 +116,26 @@ public class AdminController {
 
   @Operation(
       summary = "Lister les administrateurs UBAX",
-      description = "Retourne la liste de tous les administrateurs actifs de la plateforme.")
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne la liste de tous les administrateurs actifs de la plateforme.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Liste des administrateurs"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Liste des administrateurs",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AdminUserResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle ADMIN requis",
+        content = @Content)
   })
   @GetMapping
   public ResponseEntity<CustomResponse> listAdmins(HttpServletRequest httpRequest)
@@ -121,17 +158,38 @@ public class AdminController {
   @Operation(
       summary = "Affecter un rôle à un administrateur UBAX",
       description =
-          "Modifie le rôle d'un administrateur existant (ADMIN ↔ SUPER_ADMIN). "
-              + "L'ancien rôle est retiré dans Keycloak avant d'attribuer le nouveau. "
-              + "Réservé au Super Administrateur.")
+          "👑 **Rôle requis :** `SUPER_ADMIN`\n\n"
+              + "Modifie le rôle d'un administrateur existant (`ADMIN` ↔ `SUPER_ADMIN`). "
+              + "L'ancien rôle est retiré dans Keycloak avant d'attribuer le nouveau.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Rôle affecté avec succès"),
-    @ApiResponse(responseCode = "400", description = "Rôle invalide"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle SUPER_ADMIN requis"),
-    @ApiResponse(responseCode = "404", description = "Administrateur introuvable")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Rôle affecté avec succès",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AdminUserResponse.class))),
+    @ApiResponse(responseCode = "400", description = "Rôle invalide", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle SUPER_ADMIN requis",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Administrateur introuvable",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = AssignAdminRoleRequest.class)))
   @PutMapping("/{userId}/role")
   public ResponseEntity<CustomResponse> assignAdminRole(
       @PathVariable UUID userId,
@@ -157,16 +215,28 @@ public class AdminController {
   @Operation(
       summary = "Supprimer logiquement un administrateur UBAX",
       description =
-          "Effectue une suppression logique : désactive le compte Keycloak (enabled=false) "
-              + "et positionne deletedAt en base. Le compte n'est pas physiquement supprimé. "
-              + "Réservé au Super Administrateur.")
+          "👑 **Rôle requis :** `SUPER_ADMIN`\n\n"
+              + "Suppression logique : désactive le compte Keycloak (`enabled=false`) "
+              + "et positionne `deletedAt` en base. Le compte n'est pas physiquement supprimé.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Administrateur supprimé logiquement"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle SUPER_ADMIN requis"),
-    @ApiResponse(responseCode = "404", description = "Administrateur introuvable"),
-    @ApiResponse(responseCode = "409", description = "Compte déjà supprimé")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Administrateur supprimé logiquement",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle SUPER_ADMIN requis",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Administrateur introuvable",
+        content = @Content),
+    @ApiResponse(responseCode = "409", description = "Compte déjà supprimé", content = @Content)
   })
   @DeleteMapping("/{userId}")
   public ResponseEntity<CustomResponse> deleteAdmin(

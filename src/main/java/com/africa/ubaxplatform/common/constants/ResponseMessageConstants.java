@@ -51,6 +51,7 @@ public class ResponseMessageConstants {
   public static final String PROPERTY_CREATE_SUCCESS = "PROPERTY_CREATE_SUCCESS";
   public static final String PROPERTY_UPDATE_SUCCESS = "PROPERTY_UPDATE_SUCCESS";
   public static final String PROPERTY_DELETE_SUCCESS = "PROPERTY_DELETE_SUCCESS";
+  public static final String PROPERTY_STATUS_UPDATE_SUCCESS = "PROPERTY_STATUS_UPDATE_SUCCESS";
   public static final String PROPERTY_GET_FAILURE = "PROPERTY_GET_FAILURE";
   public static final String PROPERTY_GET_FAILURE_NOT_FOUND = "PROPERTY_GET_FAILURE_NOT_FOUND";
   public static final String PROPERTY_CREATE_FAILURE = "PROPERTY_CREATE_FAILURE";
@@ -62,6 +63,18 @@ public class ResponseMessageConstants {
   public static final String PROPERTY_DELETE_FAILURE = "PROPERTY_DELETE_FAILURE";
   public static final String PROPERTY_DELETE_FAILURE_NOT_FOUND =
       "PROPERTY_DELETE_FAILURE_NOT_FOUND";
+
+  // ── PROPERTY MEDIA ───────────────────────────────────────────────
+  public static final String PROPERTY_MEDIA_ADD_SUCCESS = "PROPERTY_MEDIA_ADD_SUCCESS";
+  public static final String PROPERTY_MEDIA_DELETE_SUCCESS = "PROPERTY_MEDIA_DELETE_SUCCESS";
+  public static final String PROPERTY_MEDIA_COVER_SUCCESS = "PROPERTY_MEDIA_COVER_SUCCESS";
+  public static final String PROPERTY_MEDIA_NOT_FOUND = "PROPERTY_MEDIA_NOT_FOUND";
+
+  // ── PROPERTY DOCUMENT ────────────────────────────────────────────
+  public static final String PROPERTY_DOCUMENT_ADD_SUCCESS = "PROPERTY_DOCUMENT_ADD_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_DELETE_SUCCESS = "PROPERTY_DOCUMENT_DELETE_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_VERIFY_SUCCESS = "PROPERTY_DOCUMENT_VERIFY_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_NOT_FOUND = "PROPERTY_DOCUMENT_NOT_FOUND";
 
   // ── PARTNER APPLICATION ─────────────────────────────────────────
   public static final String PARTNER_APPLICATION_SUBMIT_SUCCESS =
