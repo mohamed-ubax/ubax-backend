@@ -45,7 +45,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/payments")
 @RequiredArgsConstructor
-@Tag(name = "Payment", description = "Gestion des paiements (loyers, cautions, commissions, ventes)")
+@Tag(
+    name = "Payment",
+    description = "Gestion des paiements (loyers, cautions, commissions, ventes)")
 public class PaymentController {
 
   private final PaymentService paymentService;
@@ -103,7 +105,14 @@ public class PaymentController {
             Constants.Status.OK,
             ResponseMessageConstants.PAYMENT_GET_LIST_SUCCESS,
             paymentService.list(
-                caller.getSub(), status, type, propertyId, contractId, tenantId, from, to,
+                caller.getSub(),
+                status,
+                type,
+                propertyId,
+                contractId,
+                tenantId,
+                from,
+                to,
                 pageable)));
   }
 

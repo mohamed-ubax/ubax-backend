@@ -80,8 +80,7 @@ public class PaymentServiceImpl implements PaymentService {
   private void requireSameAgency(Payment payment, User caller) throws CustomException {
     if (payment.getAgency() == null) return;
     Agency callerAgency = caller.getAgency();
-    if (callerAgency == null
-        || !callerAgency.getId().equals(payment.getAgency().getId())) {
+    if (callerAgency == null || !callerAgency.getId().equals(payment.getAgency().getId())) {
       throw new CustomException(
           new UnAuthorizedException("Accès refusé – paiement appartenant à une autre agence"),
           ResponseMessageConstants.USER_FORBIDDEN);
@@ -199,11 +198,11 @@ public class PaymentServiceImpl implements PaymentService {
     User caller = resolveUser(callerKeycloakId);
 
     // ADMIN / SUPER_ADMIN voient tout (agencyId = null → aucun filtre sur l'agence)
-    UUID agencyId =
-        (caller.getAgency() != null) ? caller.getAgency().getId() : null;
+    UUID agencyId = (caller.getAgency() != null) ? caller.getAgency().getId() : null;
 
     return paymentRepo
-        .findWithFilters(agencyId, status, type, propertyId, contractId, tenantId, from, to, pageable)
+        .findWithFilters(
+            agencyId, status, type, propertyId, contractId, tenantId, from, to, pageable)
         .map(PaymentMapper::toResponse);
   }
 

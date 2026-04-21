@@ -17,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Deux tâches sont exécutées chaque nuit à 02h00 :
  *
  * <ol>
- *   <li>{@link #expireBoosts()} — désactive le flag {@code boosted} des biens dont
- *       {@code boostExpiresAt} est dépassé.
+ *   <li>{@link #expireBoosts()} — désactive le flag {@code boosted} des biens dont {@code
+ *       boostExpiresAt} est dépassé.
  *   <li>{@link #archiveExpiredProperties()} — passe en {@code ARCHIVED} les biens {@code PUBLISHED}
  *       dont {@code expiresAt} est dépassé.
  * </ol>
@@ -34,8 +34,8 @@ public class PropertySchedulerJob {
    * Désactive le boost des annonces dont la période payante est écoulée.
    *
    * <p>Tourne chaque nuit à 02h00. Remet {@code boosted = false} et {@code boostExpiresAt = null}
-   * sur tous les biens dont {@code boostExpiresAt < maintenant}. L'annonce reste visible mais
-   * n'est plus propulsée en tête des résultats.
+   * sur tous les biens dont {@code boostExpiresAt < maintenant}. L'annonce reste visible mais n'est
+   * plus propulsée en tête des résultats.
    *
    * <p>Cron : {@code 0 0 2 * * *} — chaque jour à 02:00:00.
    */
@@ -64,9 +64,9 @@ public class PropertySchedulerJob {
    * Archive les annonces publiées dont la date d'expiration est dépassée.
    *
    * <p>Tourne chaque nuit à 02h05 (décalage de 5 min après {@link #expireBoosts()}). Passe en
-   * {@code ARCHIVED} tous les biens en statut {@code PUBLISHED} dont {@code expiresAt < maintenant}.
-   * Les biens archivés disparaissent du portail public. Le partenaire peut les remettre en
-   * {@code DRAFT} pour les retravailler et republier.
+   * {@code ARCHIVED} tous les biens en statut {@code PUBLISHED} dont {@code expiresAt <
+   * maintenant}. Les biens archivés disparaissent du portail public. Le partenaire peut les
+   * remettre en {@code DRAFT} pour les retravailler et republier.
    *
    * <p>Cron : {@code 0 5 2 * * *} — chaque jour à 02:05:00.
    */

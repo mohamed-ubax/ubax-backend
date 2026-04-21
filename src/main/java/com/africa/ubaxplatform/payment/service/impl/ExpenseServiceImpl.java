@@ -70,8 +70,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
   private void requireSameAgency(Expense expense, User caller) throws CustomException {
     Agency callerAgency = caller.getAgency();
-    if (callerAgency == null
-        || !callerAgency.getId().equals(expense.getAgency().getId())) {
+    if (callerAgency == null || !callerAgency.getId().equals(expense.getAgency().getId())) {
       throw new CustomException(
           new UnAuthorizedException("Accès refusé – dépense appartenant à une autre agence"),
           ResponseMessageConstants.USER_FORBIDDEN);

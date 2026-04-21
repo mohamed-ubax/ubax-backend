@@ -41,9 +41,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
         AND e.expenseDate BETWEEN :from AND :to
       """)
   BigDecimal sumByAgencyAndPeriod(
-      @Param("agencyId") UUID agencyId,
-      @Param("from") LocalDate from,
-      @Param("to") LocalDate to);
+      @Param("agencyId") UUID agencyId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
   /** Somme des dépenses par catégorie pour un mois. */
   @Query(
@@ -55,7 +53,5 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
       GROUP BY e.category
       """)
   java.util.List<Object[]> sumByCategoryAndPeriod(
-      @Param("agencyId") UUID agencyId,
-      @Param("from") LocalDate from,
-      @Param("to") LocalDate to);
+      @Param("agencyId") UUID agencyId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

@@ -49,8 +49,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
         AND p.dueDate < :today
       ORDER BY p.dueDate ASC
       """)
-  List<Payment> findLateByAgency(
-      @Param("agencyId") UUID agencyId, @Param("today") LocalDate today);
+  List<Payment> findLateByAgency(@Param("agencyId") UUID agencyId, @Param("today") LocalDate today);
 
   /** Somme des paiements PAID pour une agence sur une période. */
   @Query(
@@ -62,9 +61,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
         AND p.paidDate BETWEEN :from AND :to
       """)
   BigDecimal sumPaidByAgencyAndPeriod(
-      @Param("agencyId") UUID agencyId,
-      @Param("from") LocalDate from,
-      @Param("to") LocalDate to);
+      @Param("agencyId") UUID agencyId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
   /** Somme des montants en retard (PENDING/PARTIAL) pour une agence. */
   @Query(
@@ -75,8 +72,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
         AND p.status IN ('PENDING', 'PARTIAL')
         AND p.dueDate < :today
       """)
-  BigDecimal sumOverdueByAgency(
-      @Param("agencyId") UUID agencyId, @Param("today") LocalDate today);
+  BigDecimal sumOverdueByAgency(@Param("agencyId") UUID agencyId, @Param("today") LocalDate today);
 
   List<Payment> findByContractIdOrderByDueDateDesc(UUID contractId);
 }

@@ -3,9 +3,9 @@ package com.africa.ubaxplatform.document.codeList;
 /**
  * Statut de génération d'un document PDF produit par la plateforme UBAX.
  *
- * <p>La génération des documents est traitée de façon asynchrone : un enregistrement
- * {@code Document} est créé immédiatement en statut {@code PENDING}, puis mis à jour par le
- * générateur une fois le PDF produit et uploadé dans MinIO.
+ * <p>La génération des documents est traitée de façon asynchrone : un enregistrement {@code
+ * Document} est créé immédiatement en statut {@code PENDING}, puis mis à jour par le générateur une
+ * fois le PDF produit et uploadé dans MinIO.
  *
  * <pre>
  *  PENDING ──► GENERATED ──► SENT
@@ -30,8 +30,8 @@ public enum DocumentStatus {
    * PDF généré et disponible dans MinIO.
    *
    * <p>Le fichier a été produit avec succès et uploadé dans le bucket {@code documents-generated}.
-   * L'URL MinIO est renseignée dans {@code Document.fileUrl}. Le document peut être téléchargé
-   * via une URL présignée GET générée à la demande.
+   * L'URL MinIO est renseignée dans {@code Document.fileUrl}. Le document peut être téléchargé via
+   * une URL présignée GET générée à la demande.
    */
   GENERATED,
 

@@ -19,9 +19,10 @@ package com.africa.ubaxplatform.contract.codeList;
  * </pre>
  *
  * <p><b>Règles métier :</b>
+ *
  * <ul>
- *   <li>Un contrat {@code ACTIVE} génère automatiquement les paiements {@code PENDING} mensuels
- *       via le {@code PaymentSchedulerJob}.
+ *   <li>Un contrat {@code ACTIVE} génère automatiquement les paiements {@code PENDING} mensuels via
+ *       le {@code PaymentSchedulerJob}.
  *   <li>Seul un contrat {@code ACTIVE} peut être lié à des tickets de maintenance.
  *   <li>Un contrat {@code TERMINATED} ou {@code EXPIRED} libère le bien (statut {@code PUBLISHED}).
  * </ul>
@@ -40,9 +41,9 @@ public enum ContractStatus {
    * En attente de signature par les parties.
    *
    * <p>Le contrat est finalisé et envoyé aux signataires (locataire et propriétaire / agence).
-   * Aucune modification des clauses n'est possible. Le bien est réservé ({@code RESERVED}) mais
-   * pas encore loué. Si aucune signature n'intervient dans le délai imparti, le contrat peut
-   * passer en {@code CANCELLED}.
+   * Aucune modification des clauses n'est possible. Le bien est réservé ({@code RESERVED}) mais pas
+   * encore loué. Si aucune signature n'intervient dans le délai imparti, le contrat peut passer en
+   * {@code CANCELLED}.
    */
   PENDING_SIGNATURE,
 
@@ -77,9 +78,8 @@ public enum ContractStatus {
    * Contrat annulé avant toute prise d'effet.
    *
    * <p>Applicable uniquement aux contrats en statut {@code DRAFT} ou {@code PENDING_SIGNATURE}.
-   * L'annulation peut être effectuée par l'agence, le propriétaire ou un administrateur. Un
-   * contrat {@code ACTIVE} ne peut pas être annulé directement — il doit passer par
-   * {@code TERMINATED}.
+   * L'annulation peut être effectuée par l'agence, le propriétaire ou un administrateur. Un contrat
+   * {@code ACTIVE} ne peut pas être annulé directement — il doit passer par {@code TERMINATED}.
    */
   CANCELLED
 }

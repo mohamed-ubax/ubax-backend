@@ -99,7 +99,8 @@ public class ExpenseController {
   @GetMapping("/{id}")
   @Operation(
       summary = "Détail d'une dépense",
-      description = "🏢 **Rôles requis :** `AGENCY` · `AGENT` · `PARTNER` · `ADMIN` · `SUPER_ADMIN`",
+      description =
+          "🏢 **Rôles requis :** `AGENCY` · `AGENT` · `PARTNER` · `ADMIN` · `SUPER_ADMIN`",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(

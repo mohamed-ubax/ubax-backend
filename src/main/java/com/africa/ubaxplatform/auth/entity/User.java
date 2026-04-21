@@ -67,8 +67,7 @@ public class User extends BaseEntity {
       name = "user_roles",
       schema = "administrative",
       joinColumns = @JoinColumn(name = "user_id"),
-      foreignKey = @ForeignKey(name = "fk_user_roles_user")
-      )
+      foreignKey = @ForeignKey(name = "fk_user_roles_user"))
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 30)
   @Builder.Default

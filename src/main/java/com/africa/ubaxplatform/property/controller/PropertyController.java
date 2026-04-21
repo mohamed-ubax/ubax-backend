@@ -9,15 +9,15 @@ import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentAddRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentResponse;
+import com.africa.ubaxplatform.property.dto.PropertyExpirationRequest;
 import com.africa.ubaxplatform.property.dto.PropertyMediaAddRequest;
 import com.africa.ubaxplatform.property.dto.PropertyMediaResponse;
 import com.africa.ubaxplatform.property.dto.PropertyResponse;
-import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
-import com.africa.ubaxplatform.property.dto.PropertyExpirationRequest;
 import com.africa.ubaxplatform.property.dto.PropertyStatusUpdateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyUpdateRequest;
 import com.africa.ubaxplatform.property.service.interfaces.PropertyService;
@@ -89,10 +89,10 @@ public class PropertyController {
       @RequestParam(required = false) UUID agencyId,
       @RequestParam(required = false) UUID ownerId,
       @PageableDefault(size = 20)
-      @SortDefault.SortDefaults({
-        @SortDefault(sort = "boosted", direction = Sort.Direction.DESC),
-        @SortDefault(sort = "publishedAt", direction = Sort.Direction.DESC)
-      })
+          @SortDefault.SortDefaults({
+            @SortDefault(sort = "boosted", direction = Sort.Direction.DESC),
+            @SortDefault(sort = "publishedAt", direction = Sort.Direction.DESC)
+          })
           Pageable pageable) {
     return ResponseEntity.ok(
         new CustomResponse(
@@ -855,7 +855,10 @@ public class PropertyController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = PropertyResponse.class))),
     @ApiResponse(responseCode = "400", description = "Données invalides", content = @Content),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
     @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
     @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
   })
@@ -895,7 +898,10 @@ public class PropertyController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = PropertyResponse.class))),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
     @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
     @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
   })
@@ -928,7 +934,10 @@ public class PropertyController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = PropertyResponse.class))),
     @ApiResponse(responseCode = "400", description = "Date invalide ou passée", content = @Content),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
     @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
     @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
   })
@@ -968,7 +977,10 @@ public class PropertyController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = PropertyResponse.class))),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
     @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
     @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
   })

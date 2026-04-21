@@ -10,23 +10,12 @@ import java.time.LocalDate;
 
 @Schema(description = "Requête de mise à jour du statut d'un paiement")
 public record PaymentStatusUpdateRequest(
-
-    @NotNull
-    @Schema(description = "Nouveau statut", example = "PAID")
-    PaymentStatus status,
-
+    @NotNull @Schema(description = "Nouveau statut", example = "PAID") PaymentStatus status,
     @Schema(description = "Mode de paiement", example = "BANK_TRANSFER")
-    PaymentMethod paymentMethod,
-
+        PaymentMethod paymentMethod,
     @DecimalMin("0")
-    @Schema(description = "Montant reçu (pour les paiements partiels)", example = "200000")
-    BigDecimal amountPaid,
-
-    @Schema(description = "Date de réception effective", example = "2025-10-03")
-    LocalDate paidDate,
-
-    @Schema(description = "URL du reçu (si disponible)")
-    String receiptUrl,
-
-    @Schema(description = "Note libre")
-    String note) {}
+        @Schema(description = "Montant reçu (pour les paiements partiels)", example = "200000")
+        BigDecimal amountPaid,
+    @Schema(description = "Date de réception effective", example = "2025-10-03") LocalDate paidDate,
+    @Schema(description = "URL du reçu (si disponible)") String receiptUrl,
+    @Schema(description = "Note libre") String note) {}
