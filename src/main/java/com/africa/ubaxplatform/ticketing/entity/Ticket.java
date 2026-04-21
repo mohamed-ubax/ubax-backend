@@ -29,17 +29,7 @@ import lombok.experimental.SuperBuilder;
  * tableau de bord comptable et décider si la charge est imputable au locataire ou au propriétaire.
  */
 @Entity
-@Table(
-    name = "tickets",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_ticket_contract", columnList = "contract_id"),
-      @Index(name = "idx_ticket_reporter", columnList = "reporter_id"),
-      @Index(name = "idx_ticket_assigned_to", columnList = "assigned_to"),
-      @Index(name = "idx_ticket_status", columnList = "status"),
-      @Index(name = "idx_ticket_priority", columnList = "priority"),
-      @Index(name = "idx_ticket_category", columnList = "category")
-    })
+@Table(name = "tickets", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor

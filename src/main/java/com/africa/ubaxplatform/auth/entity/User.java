@@ -10,7 +10,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -68,8 +67,7 @@ public class User extends BaseEntity {
       name = "user_roles",
       schema = "administrative",
       joinColumns = @JoinColumn(name = "user_id"),
-      foreignKey = @ForeignKey(name = "fk_user_roles_user"),
-      indexes = @Index(name = "idx_user_roles_role", columnList = "role"))
+      foreignKey = @ForeignKey(name = "fk_user_roles_user"))
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 30)
   @Builder.Default

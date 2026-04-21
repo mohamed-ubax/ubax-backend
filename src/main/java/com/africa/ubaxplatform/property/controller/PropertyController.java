@@ -9,10 +9,12 @@ import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentAddRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentResponse;
+import com.africa.ubaxplatform.property.dto.PropertyExpirationRequest;
 import com.africa.ubaxplatform.property.dto.PropertyMediaAddRequest;
 import com.africa.ubaxplatform.property.dto.PropertyMediaResponse;
 import com.africa.ubaxplatform.property.dto.PropertyResponse;
@@ -35,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -85,7 +88,11 @@ public class PropertyController {
       @RequestParam(required = false) BigDecimal maxPrice,
       @RequestParam(required = false) UUID agencyId,
       @RequestParam(required = false) UUID ownerId,
-      @PageableDefault(size = 20, sort = "publishedAt", direction = Sort.Direction.DESC)
+      @PageableDefault(size = 20)
+          @SortDefault.SortDefaults({
+            @SortDefault(sort = "boosted", direction = Sort.Direction.DESC),
+            @SortDefault(sort = "publishedAt", direction = Sort.Direction.DESC)
+          })
           Pageable pageable) {
     return ResponseEntity.ok(
         new CustomResponse(
@@ -826,5 +833,166 @@ public class PropertyController {
             Constants.Status.OK,
             ResponseMessageConstants.PROPERTY_DOCUMENT_DELETE_SUCCESS,
             null));
+  }
+
+  // ── Boost & Expiration (Admin) ─────────────────────────────────
+
+  @PatchMapping("/{id}/boost")
+  @Operation(
+      summary = "Activer / prolonger le boost d'une annonce",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Propulse l'annonce en tête des résultats de recherche pendant le nombre de jours indiqué. "
+              + "Si un boost est déjà actif, la date d'expiration est recalculée depuis maintenant. "
+              + "Le scheduler `PropertySchedulerJob` remet automatiquement `boosted = false` à l'expiration.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Boost activé",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PropertyResponse.class))),
+    @ApiResponse(responseCode = "400", description = "Données invalides", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
+    @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
+  })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = PropertyBoostRequest.class)))
+  public ResponseEntity<CustomResponse> boost(
+      @PathVariable UUID id,
+      @RequestBody @Valid PropertyBoostRequest request,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_STATUS_UPDATE_SUCCESS,
+            propertyService.boost(id, request)));
+  }
+
+  @DeleteMapping("/{id}/boost")
+  @Operation(
+      summary = "Retirer le boost d'une annonce",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Désactive immédiatement le boost. L'annonce reste publiée mais n'est plus mise en avant.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Boost retiré",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PropertyResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
+    @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> removeBoost(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_STATUS_UPDATE_SUCCESS,
+            propertyService.removeBoost(id)));
+  }
+
+  @PatchMapping("/{id}/expiration")
+  @Operation(
+      summary = "Définir la date d'expiration automatique d'une annonce",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "À la date `expiresAt`, le scheduler archive automatiquement l'annonce (statut → `ARCHIVED`). "
+              + "Utile pour les annonces à durée limitée ou les offres promotionnelles.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Expiration définie",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PropertyResponse.class))),
+    @ApiResponse(responseCode = "400", description = "Date invalide ou passée", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
+    @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
+  })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = PropertyExpirationRequest.class)))
+  public ResponseEntity<CustomResponse> setExpiration(
+      @PathVariable UUID id,
+      @RequestBody @Valid PropertyExpirationRequest request,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_STATUS_UPDATE_SUCCESS,
+            propertyService.setExpiration(id, request)));
+  }
+
+  @DeleteMapping("/{id}/expiration")
+  @Operation(
+      summary = "Supprimer la date d'expiration d'une annonce",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retire la date d'expiration : l'annonce restera publiée indéfiniment jusqu'à archivage manuel.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Expiration supprimée",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PropertyResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content),
+    @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> removeExpiration(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_STATUS_UPDATE_SUCCESS,
+            propertyService.removeExpiration(id)));
   }
 }

@@ -2,10 +2,12 @@ package com.africa.ubaxplatform.property.service.interfaces;
 
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentAddRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentResponse;
+import com.africa.ubaxplatform.property.dto.PropertyExpirationRequest;
 import com.africa.ubaxplatform.property.dto.PropertyMediaAddRequest;
 import com.africa.ubaxplatform.property.dto.PropertyMediaResponse;
 import com.africa.ubaxplatform.property.dto.PropertyResponse;
@@ -54,6 +56,18 @@ public interface PropertyService {
   /** Modération admin : met à jour le statut (PUBLISHED, REJECTED, etc.). */
   PropertyResponse updateStatus(UUID id, PropertyStatusUpdateRequest request)
       throws CustomException;
+
+  /** Admin : active ou prolonge le boost d'une annonce pour {@code boostDays} jours. */
+  PropertyResponse boost(UUID id, PropertyBoostRequest request) throws CustomException;
+
+  /** Admin : retire le boost d'une annonce immédiatement. */
+  PropertyResponse removeBoost(UUID id) throws CustomException;
+
+  /** Admin : définit la date d'expiration automatique d'une annonce publiée. */
+  PropertyResponse setExpiration(UUID id, PropertyExpirationRequest request) throws CustomException;
+
+  /** Admin : supprime la date d'expiration d'une annonce (l'annonce ne s'archivera pas). */
+  PropertyResponse removeExpiration(UUID id) throws CustomException;
 
   // ── Médias ─────────────────────────────────────────────────────
 

@@ -7,7 +7,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -44,14 +43,7 @@ import lombok.experimental.SuperBuilder;
  * </ol>
  */
 @Entity
-@Table(
-    name = "property_documents",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_prop_doc_property", columnList = "property_id"),
-      @Index(name = "idx_prop_doc_type", columnList = "doc_type"),
-      @Index(name = "idx_prop_doc_verified", columnList = "is_verified")
-    })
+@Table(name = "property_documents", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor
