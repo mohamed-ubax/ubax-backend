@@ -75,4 +75,22 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
   BigDecimal sumOverdueByAgency(@Param("agencyId") UUID agencyId, @Param("today") LocalDate today);
 
   List<Payment> findByContractIdOrderByDueDateDesc(UUID contractId);
+
+  /** Nombre de paiements d'une agence par statut (pour les KPIs du dashboard). */
+  @Query("SELECT COUNT(p) FROM Payment p WHERE p.agency.id = :agencyId AND p.status = :status")
+  long countByAgencyIdAndStatus(
+      @Param("agencyId") UUID agencyId, @Param("status") PaymentStatus status);
+
+  /** Décomposition du revenu encaissé par type de paiement sur une période. */
+  @Query(
+      """
+      SELECT p.paymentType, COALESCE(SUM(p.amountPaid), 0)
+      FROM Payment p
+      WHERE p.agency.id = :agencyId
+        AND p.status = 'PAID'
+        AND p.paidDate BETWEEN :from AND :to
+      GROUP BY p.paymentType
+      """)
+  List<Object[]> sumPaidByTypeAndPeriod(
+      @Param("agencyId") UUID agencyId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

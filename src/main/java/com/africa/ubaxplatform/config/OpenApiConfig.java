@@ -117,7 +117,15 @@ import org.springframework.context.annotation.Configuration;
                   + "**Catégories :** `MAINTENANCE · MARKETING · SALARY · UTILITIES · TAX · OTHER`\n\n"
                   + "**Centre de coût :** `AGENCY_GENERAL` (agence entière) · `PROPERTY_SPECIFIC` (bien précis — `propertyId` obligatoire)"),
       @Tag(
-          name = "Code List",
+          name = "Dashboard",
+          description =
+              "🏢 **AGENCY · AGENT · PARTNER · ADMIN · SUPER_ADMIN** – Tableau de bord analytique de l'espace agence.\n\n"
+                  + "**KPIs financiers :** `totalRevenue` · `totalExpenses` · `netRevenue` · `overdueAmount` · `recoveryRate`\n\n"
+                  + "**KPIs portfolio :** `totalProperties` · `publishedProperties` · `reservedProperties` · "
+                  + "`activeContracts` · `pendingPaymentsCount` · `latePaymentsCount` · `paidPaymentsCount`\n\n"
+                  + "**Décompositions :** `revenueByType` (par type de paiement) · `expensesByCategory` (par catégorie de dépense)"),
+      @Tag(
+          name = "CodeList",
           description =
               "🌐 **Public** (lecture) · 🛡 **ADMIN** (écriture) – Référentiels dynamiques (types, statuts, etc.)")
     })
