@@ -16,7 +16,7 @@ CREATE TABLE administrative.hotels (
     total_rooms              INTEGER,
     subscription_plan        VARCHAR(20)  NOT NULL,
     subscription_expires_at  TIMESTAMP WITH TIME ZONE,
-    is_verified              BOOLEAN      NOT NUL,
+    is_verified              BOOLEAN      NOT NULL,
     verified_at              TIMESTAMP WITH TIME ZONE,
     is_active                BOOLEAN      NOT NULL,
     deleted_at               TIMESTAMP WITH TIME ZONE,

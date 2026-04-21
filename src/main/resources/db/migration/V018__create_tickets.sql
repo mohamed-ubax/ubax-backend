@@ -39,7 +39,7 @@ CREATE INDEX idx_tickets_priority     ON administrative.tickets (priority);
 -- ── Messages ───────────────────────────────────────────────
 CREATE TABLE administrative.ticket_messages
 (
-    id                   UUID        NOT NULL DEFAULT PRIMARY KEY,
+    id                   UUID        NOT NULL PRIMARY KEY,
     ticket_id            UUID        NOT NULL REFERENCES administrative.tickets (id),
     sender_id            UUID        NOT NULL REFERENCES administrative.users (id),
     message              TEXT        NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE administrative.ticket_attachments
     file_name       VARCHAR(255),
     file_size       BIGINT,
     mime_type       VARCHAR(100),
-    attachment_type VARCHAR(30) NOT NUL,
+    attachment_type VARCHAR(30) NOT NULL,
     caption         VARCHAR(500),
     created_at      TIMESTAMP   NOT NULL,
     updated_at      TIMESTAMP   NOT NULL
