@@ -1,6 +1,6 @@
 # Analyse des Manques – Intégration Espace Agence UBAX
 
-> Généré le : 2026-04-20  
+> Généré le : 2026-04-20 · Mis à jour le : 2026-04-21  
 > Basé sur : captures d'écran "UBAX WEB AGENCE" (7 screens) + exploration du code existant
 
 ---
@@ -27,16 +27,16 @@ La navigation commune contient : **Tableau de bord · Biens · Réservations · 
 | Auth / Users | ✅ | ✅ | ✅ | Complet |
 | Partner (candidature) | ✅ | ✅ | ✅ | Complet |
 | Tenant (KYC locataire) | ✅ | ✅ | ✅ | Complet |
-| Property (biens) | ✅ | ❌ | ❌ | **Entités seules** |
+| Property (biens) | ✅ | ✅ | ✅ | ✅ **Terminé (P1)** |
 | Contract (contrats) | ✅ | ❌ | ❌ | **Entités seules** |
 | Ticketing | ✅ | ❌ | ❌ | **Entités seules** |
 | Document (PDF) | ✅ | ❌ | ❌ | **Entités seules** |
-| Payment | ❌ | ❌ | ❌ | **Vide** |
-| Analytics / Dashboard | ❌ | ❌ | ❌ | **Absent** |
+| Payment | ✅ | ✅ | ✅ | ✅ **Terminé (P1)** |
+| Analytics / Dashboard | ✅ | ✅ | ✅ | ✅ **Terminé (P1)** |
 | Appointments / Agenda | ❌ | ❌ | ❌ | **Absent** |
 | Prospects | ❌ | ❌ | ❌ | **Absent** |
-| Dépenses comptables | ❌ | ❌ | ❌ | **Absent** |
-| Rôles internes agence | ❌ | – | – | **Absent** |
+| Dépenses comptables | ✅ | ✅ | ✅ | ✅ **Terminé (P1 – inclus dans Payment)** |
+| Rôles internes agence | ✅ | ✅ | ✅ | ✅ **Terminé (P2)** |
 | Notifications in-app | ❌ | ❌ | ❌ | **Absent** |
 
 ---
@@ -305,19 +305,19 @@ Chaque nouveau module nécessite une migration versionnée :
 
 ## Ordre de priorité recommandé
 
-| Priorité | Module | Justification |
-|----------|--------|---------------|
-| 🔴 P1 | **Property Controllers + Services** | Bloquant pour tous les dashboards (KPIs basés sur les biens) |
-| 🔴 P1 | **Payment Module** | Bloquant pour le Comptable et les KPIs revenus du DG |
-| 🔴 P1 | **Dashboard Analytics** | Raison d'être de l'espace agence |
-| 🟠 P2 | **Ticketing Controllers** | Opérationnel pour l'Agent SAV |
-| 🟠 P2 | **Sous-rôles agence** | Nécessaire pour le RBAC par tableau de bord |
-| 🟠 P2 | **Prospects + Appointments** | Cœur du dashboard Commercial |
-| 🟡 P3 | **Contrats Controllers** | Déjà modélisé, effort faible |
-| 🟡 P3 | **Notifications in-app** | UX importante, effort modéré |
-| 🟡 P3 | **Export données** | Fonctionnalité complémentaire |
-| 🟢 P4 | **Réservations** | À spécifier davantage |
-| 🟢 P4 | **Scoring locataire** | Amélioration du module Tenant existant |
+| Priorité | Module | Justification | Statut |
+|----------|--------|---------------|--------|
+| 🔴 P1 | **Property Controllers + Services** | Bloquant pour tous les dashboards (KPIs basés sur les biens) | ✅ **Terminé** |
+| 🔴 P1 | **Payment Module** | Bloquant pour le Comptable et les KPIs revenus du DG | ✅ **Terminé** |
+| 🔴 P1 | **Dashboard Analytics** | Raison d'être de l'espace agence | ✅ **Terminé** |
+| 🟠 P2 | **Ticketing Controllers** | Opérationnel pour l'Agent SAV | ⏳ En attente |
+| 🟠 P2 | **Sous-rôles agence** | Nécessaire pour le RBAC par tableau de bord | ✅ **Terminé** |
+| 🟠 P2 | **Prospects + Appointments** | Cœur du dashboard Commercial | ⏳ En attente |
+| 🟡 P3 | **Contrats Controllers** | Déjà modélisé, effort faible | ⏳ En attente |
+| 🟡 P3 | **Notifications in-app** | UX importante, effort modéré | ⏳ En attente |
+| 🟡 P3 | **Export données** | Fonctionnalité complémentaire | ⏳ En attente |
+| 🟢 P4 | **Réservations** | À spécifier davantage | ⏳ En attente |
+| 🟢 P4 | **Scoring locataire** | Amélioration du module Tenant existant | ⏳ En attente |
 
 ---
 

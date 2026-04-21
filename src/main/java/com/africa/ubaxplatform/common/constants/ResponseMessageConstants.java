@@ -152,6 +152,16 @@ public class ResponseMessageConstants {
   public static final String DASHBOARD_GET_SUCCESS = "DASHBOARD_GET_SUCCESS";
   public static final String DASHBOARD_GET_FAILURE = "DASHBOARD_GET_FAILURE";
 
+  // ── AGENCY TEAM ─────────────────────────────────────────────────
+  public static final String AGENCY_TEAM_GET_LIST_SUCCESS = "AGENCY_TEAM_GET_LIST_SUCCESS";
+  public static final String AGENCY_TEAM_INVITE_SUCCESS = "AGENCY_TEAM_INVITE_SUCCESS";
+  public static final String AGENCY_TEAM_ROLE_UPDATE_SUCCESS = "AGENCY_TEAM_ROLE_UPDATE_SUCCESS";
+  public static final String AGENCY_TEAM_REMOVE_SUCCESS = "AGENCY_TEAM_REMOVE_SUCCESS";
+  public static final String AGENCY_TEAM_MEMBER_NOT_FOUND = "AGENCY_TEAM_MEMBER_NOT_FOUND";
+  public static final String AGENCY_TEAM_MEMBER_ALREADY_IN_AGENCY =
+      "AGENCY_TEAM_MEMBER_ALREADY_IN_AGENCY";
+  public static final String AGENCY_TEAM_CANNOT_REMOVE_SELF = "AGENCY_TEAM_CANNOT_REMOVE_SELF";
+
   // ── CODE LIST ───────────────────────────────────────────────────
   public static final String CODELIST_GET_SUCCESS = "CODELIST_GET_SUCCESS";
   public static final String CODELIST_POST_SUCCESS = "CODELIST_POST_SUCCESS";

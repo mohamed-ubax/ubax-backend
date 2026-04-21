@@ -1,7 +1,9 @@
 package com.africa.ubaxplatform.common.util;
 
+import com.africa.ubaxplatform.auth.codeList.PartnerRole;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.RequestUser;
+import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
@@ -107,6 +109,50 @@ public final class RoleGuard {
     throw new CustomException(
         new UnAuthorizedException("Accès refusé – rôle insuffisant"),
         ResponseMessageConstants.USER_FORBIDDEN);
+  }
+
+  // ── Vérifications du rôle partenaire interne (DB) ─────────────
+
+  /**
+   * Vérifie qu'un {@link User} (extrait de la base) possède au moins l'un des {@link PartnerRole}
+   * fournis.
+   *
+   * <p>Usage type dans un contrôleur :
+   *
+   * <pre>{@code
+   * RequestUser caller = RoleGuard.requireAnyRole(parser, request, UserRole.PARTNER);
+   * User dbUser = userRepository.findByKeycloakId(caller.getSub()).orElseThrow(...);
+   * RoleGuard.checkPartnerRole(dbUser, PartnerRole.DIRECTEUR_AGENCE);
+   * }</pre>
+   *
+   * @param user entité {@code User} chargée depuis la base de données
+   * @param roles liste des rôles partenaires acceptés (au moins un requis)
+   * @throws CustomException 403 si aucun rôle ne correspond ou si {@code partnerRole} est null
+   */
+  public static void checkPartnerRole(User user, PartnerRole... roles) throws CustomException {
+    PartnerRole actual = user.getPartnerRole();
+    if (actual != null) {
+      for (PartnerRole role : roles) {
+        if (actual == role) return;
+      }
+    }
+    throw new CustomException(
+        new UnAuthorizedException("Accès refusé – rôle partenaire insuffisant"),
+        ResponseMessageConstants.USER_FORBIDDEN);
+  }
+
+  /**
+   * Vérifie qu'un {@link User} est bien rattaché à une agence.
+   *
+   * @param user entité {@code User} chargée depuis la base de données
+   * @throws CustomException 403 si l'utilisateur n'est rattaché à aucune agence
+   */
+  public static void checkHasAgency(User user) throws CustomException {
+    if (!user.hasAgency()) {
+      throw new CustomException(
+          new UnAuthorizedException("Accès refusé – utilisateur non rattaché à une agence"),
+          ResponseMessageConstants.USER_FORBIDDEN);
+    }
   }
 
   // ── Extraction du token ────────────────────────────────────────

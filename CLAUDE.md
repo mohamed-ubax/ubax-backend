@@ -14,7 +14,8 @@
 
 ```
 src/main/java/com/africa/ubaxplatform/
-├── auth/           Authentification, inscription, OTP, gestion des admins
+├── auth/           Authentification, inscription, OTP, gestion des admins,
+│                   gestion de l'équipe agence (AgencyTeamController/Service)
 ├── partner/        Cycle de vie des candidatures partenaires (agences / hôtels)
 ├── tenant/         Gestion des locataires
 ├── property/       Propriétés, médias, documents
@@ -23,6 +24,8 @@ src/main/java/com/africa/ubaxplatform/
 ├── storage/        MinIO – upload/presigned URLs
 ├── notification/   Email (JavaMail + Thymeleaf) · SMS (LAfricaMobile)
 ├── ticketing/      Tickets de support
+├── payment/        Paiements (loyers, dépôts, commissions) et dépenses agence
+├── dashboard/      Analytics & KPIs par rôle (DG, Commercial, Comptable, SAV)
 ├── common/         BaseEntity, exceptions, CustomResponse, RoleGuard, utils
 └── config/         SecurityConfig, OpenApiConfig, CustomEntryPoint/AccessDenied
 ```
@@ -45,18 +48,46 @@ src/main/java/com/africa/ubaxplatform/
 | `PARTNER`       | `UBAX_PARTNER`     | Espace partenaire |
 | `CUSTOMER`      | `UBAX_CUSTOMER`    | Espace client |
 
-### Sous-rôles opérationnels (UbaxAdminRole)
+### Sous-rôles opérationnels back-office (UbaxAdminRole)
 Portés par un attribut applicatif (pas de rôle Keycloak distinct) :
 - `FINANCE_MANAGER` – finances, commissions, rapports
 - `SUPPORT_MANAGER` – tickets et réclamations
 - `PARTNER_MANAGER` – onboarding agences/hôtels
 - `CONTENT_MODERATOR` – modération des annonces
 
+### Sous-rôles internes partenaire (PartnerRole)
+Stockés dans `users.partner_role` (colonne DB, non présents dans le JWT Keycloak).
+Vérifié via `RoleGuard.checkPartnerRole(dbUser, PartnerRole.DIRECTEUR_AGENCE)` après
+chargement de l'entité `User` depuis la base.
+
+**Agence immobilière :**
+| PartnerRole | Périmètre |
+|-------------|-----------|
+| `DIRECTEUR_AGENCE` | Accès complet + gestion de l'équipe |
+| `COMMERCIAL` | Prospects, rendez-vous, biens |
+| `COMPTABLE_AGENCE` | Finances (solde masqué) |
+| `AGENT_SAV` | Tickets support |
+
+**Hôtel :**
+| PartnerRole | Périmètre |
+|-------------|-----------|
+| `GERANT_HOTEL` | Accès complet hôtel |
+| `RECEPTIONNISTE` | Réservations, check-in/out |
+| `COMPTABLE_HOTEL` | Facturation et revenus |
+| `RESPONSABLE_HEBERGEMENT` | Espaces et chambres |
+
 ### Vérification des rôles
 Utiliser `RoleGuard` pour les contrôles programmatiques dans les contrôleurs :
 ```java
+// Rôles Keycloak (JWT)
 RoleGuard.requireSuperAdmin(requestHeaderParser, httpRequest);
 RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+
+// Rôle interne partenaire (DB) — charger le User d'abord
+User dbUser = userRepository.findByKeycloakId(caller.getSub()).orElseThrow(...);
+RoleGuard.checkPartnerRole(dbUser, PartnerRole.DIRECTEUR_AGENCE);
+RoleGuard.checkHasAgency(dbUser);
 ```
 Le converter `KeycloakJwtRolesConverter` extrait les rôles realm Keycloak du JWT.
 
@@ -125,6 +156,17 @@ docker compose -f docker/docker-compose.yml up -d
 | `SECURITY_ENABLED` | `true` | Mettre à `false` uniquement en dev |
 | `DB_HOST/PORT/NAME` | `localhost/5433/db-ubax` | PostgreSQL |
 | `MINIO_ENDPOINT` | `http://localhost:9000` | Object storage |
+
+---
+
+## Migrations Flyway (dernières versions)
+
+| Version | Fichier | Description |
+|---------|---------|-------------|
+| V013 | create_properties.sql | Table `properties` et médias/docs |
+| V014 | create_payments.sql | Table `payments` |
+| V015 | create_expenses.sql | Table `expenses` |
+| V016 | add_partner_role_to_users.sql | Colonne `partner_role` sur `users` |
 
 ---
 

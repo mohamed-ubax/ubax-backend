@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.auth.entity;
 
+import com.africa.ubaxplatform.auth.codeList.PartnerRole;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.common.base.BaseEntity;
 import jakarta.persistence.CollectionTable;
@@ -151,6 +152,19 @@ public class User extends BaseEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "agency_id", foreignKey = @ForeignKey(name = "fk_user_agency"))
   private Agency agency;
+
+  /**
+   * Rôle interne du membre au sein de son agence ou hôtel partenaire.
+   *
+   * <p>Complète le rôle Keycloak ({@code UBAX_PARTNER} / {@code UBAX_AGENT}) avec une granularité
+   * applicative : {@code DIRECTEUR_AGENCE}, {@code COMMERCIAL}, {@code COMPTABLE_AGENCE}, {@code
+   * AGENT_SAV}, etc. Voir {@link PartnerRole} pour la liste complète.
+   *
+   * <p>{@code null} pour les utilisateurs qui ne font pas partie d'une structure partenaire.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "partner_role", length = 40)
+  private PartnerRole partnerRole;
 
   /** {@code true} si l'email a été confirmé via le lien Keycloak (VERIFY_EMAIL). */
   @Column(name = "is_email_verified", nullable = false)
