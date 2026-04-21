@@ -60,8 +60,8 @@ public class User extends BaseEntity {
 
   /**
    * Rôles fonctionnels dupliqués depuis le realm Keycloak. Utilisés pour les requêtes métier
-   * (filtrer les biens par agent, etc.). La vérification d'accès réelle reste assurée par Spring
-   * Security via le JWT. Valeurs : {@code CLIENT | OWNER | AGENT | AGENCY | ADMIN}
+   * (filtrer les biens par partenaire, etc.). La vérification d'accès réelle reste assurée par
+   * Spring Security via le JWT. Valeurs : {@code CLIENT | OWNER | PARTNER | ADMIN | SUPER_ADMIN}
    */
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(
@@ -145,20 +145,29 @@ public class User extends BaseEntity {
   private String avatarUrl;
 
   /**
-   * Agence immobilière à laquelle l'utilisateur est rattaché. Non null uniquement pour les rôles
-   * {@code AGENT} et {@code AGENCY}. Ignoré pour les rôles {@code CLIENT}, {@code OWNER} et {@code
-   * ADMIN}.
+   * Agence immobilière à laquelle l'utilisateur est rattaché. Non null uniquement pour les
+   * partenaires de type agence ({@code partnerRole} agence). Ignoré pour les rôles {@code CLIENT},
+   * {@code OWNER} et {@code ADMIN}.
    */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "agency_id", foreignKey = @ForeignKey(name = "fk_user_agency"))
   private Agency agency;
 
   /**
+   * Hôtel partenaire auquel l'utilisateur est rattaché. Non null uniquement pour les membres d'une
+   * structure hôtelière ({@code GERANT_HOTEL}, {@code RECEPTIONNISTE}, {@code COMPTABLE_HOTEL},
+   * {@code RESPONSABLE_HEBERGEMENT}). Mutuellement exclusif avec {@code agency}.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hotel_id", foreignKey = @ForeignKey(name = "fk_user_hotel"))
+  private Hotel hotel;
+
+  /**
    * Rôle interne du membre au sein de son agence ou hôtel partenaire.
    *
-   * <p>Complète le rôle Keycloak ({@code UBAX_PARTNER} / {@code UBAX_AGENT}) avec une granularité
-   * applicative : {@code DIRECTEUR_AGENCE}, {@code COMMERCIAL}, {@code COMPTABLE_AGENCE}, {@code
-   * AGENT_SAV}, etc. Voir {@link PartnerRole} pour la liste complète.
+   * <p>Complète le rôle Keycloak ({@code UBAX_PARTNER}) avec une granularité applicative : {@code
+   * DIRECTEUR_AGENCE}, {@code COMMERCIAL}, {@code COMPTABLE_AGENCE}, {@code AGENT_SAV}, etc. Voir
+   * {@link PartnerRole} pour la liste complète.
    *
    * <p>{@code null} pour les utilisateurs qui ne font pas partie d'une structure partenaire.
    */
@@ -226,5 +235,15 @@ public class User extends BaseEntity {
    */
   public boolean hasAgency() {
     return agency != null;
+  }
+
+  /** {@code true} si l'utilisateur est rattaché à un hôtel partenaire. */
+  public boolean hasHotel() {
+    return hotel != null;
+  }
+
+  /** {@code true} si l'utilisateur est rattaché à une structure partenaire (agence ou hôtel). */
+  public boolean hasPartnerOrganization() {
+    return agency != null || hotel != null;
   }
 }

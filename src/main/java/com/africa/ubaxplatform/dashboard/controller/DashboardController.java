@@ -76,8 +76,8 @@ public class DashboardController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
-            UserRole.AGENT,
+            UserRole.PARTNER,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);

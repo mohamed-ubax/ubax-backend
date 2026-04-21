@@ -1,4 +1,4 @@
- package com.africa.ubaxplatform.auth.service.interfaces;
+package com.africa.ubaxplatform.auth.service.interfaces;
 
 import com.africa.ubaxplatform.auth.dto.AgencyTeamMemberResponse;
 import com.africa.ubaxplatform.auth.dto.InviteTeamMemberRequest;
@@ -17,7 +17,7 @@ import java.util.UUID;
  * <p>Rôles Keycloak requis au niveau HTTP (Spring Security) :
  *
  * <ul>
- *   <li>Lecture : {@code UBAX_PARTNER} ou {@code UBAX_AGENT}
+ *   <li>Lecture : {@code UBAX_PARTNER}
  *   <li>Écriture (invite / update / remove) : {@code UBAX_PARTNER} + rôle interne {@code
  *       DIRECTEUR_AGENCE}
  * </ul>

@@ -43,8 +43,8 @@ public enum PropertyStatus {
    *
    * <p>Le partenaire a soumis l'annonce. Elle est invisible pour le grand public et en file
    * d'attente chez les modérateurs ({@link
-   * com.africa.ubaxplatform.auth.codeList.UbaxAdminRole#CONTENT_MODERATOR}). Le modérateur peut
-   * approuver (→ {@code PUBLISHED}) ou rejeter (→ {@code REJECTED}).
+   * com.africa.ubaxplatform.auth.codeList.UbaxAdminRole#OPERATIONS}). Le modérateur peut approuver
+   * (→ {@code PUBLISHED}) ou rejeter (→ {@code REJECTED}).
    */
   PENDING,
 

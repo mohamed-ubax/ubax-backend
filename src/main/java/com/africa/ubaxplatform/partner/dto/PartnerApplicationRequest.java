@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.partner.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -11,12 +12,28 @@ import lombok.Setter;
  * Corps de la requête publique de soumission d'une demande d'adhésion partenaire.
  *
  * <p>Accessible sans authentification : {@code POST /v1/partner/apply}.
+ *
+ * <p>Le champ {@code partnerType} détermine le type de structure :
+ *
+ * <ul>
+ *   <li>{@code AGENCE_IMMOBILIERE} – crée une entité {@code Agency} à l'approbation, rôle Keycloak
+ *       {@code UBAX_PARTNER}, rôle interne {@code DIRECTEUR_AGENCE}
+ *   <li>{@code HOTEL} – crée une entité {@code Hotel} à l'approbation, rôle Keycloak {@code
+ *       UBAX_PARTNER}, rôle interne {@code GERANT_HOTEL}
+ * </ul>
  */
 @Getter
 @Setter
 public class PartnerApplicationRequest {
 
   @NotBlank(message = "Le type de partenaire est obligatoire")
+  @Pattern(
+      regexp = "AGENCE_IMMOBILIERE|HOTEL",
+      message = "partnerType doit être AGENCE_IMMOBILIERE ou HOTEL")
+  @Schema(
+      description = "Type de structure partenaire",
+      allowableValues = {"AGENCE_IMMOBILIERE", "HOTEL"},
+      example = "AGENCE_IMMOBILIERE")
   private String partnerType;
 
   @NotBlank(message = "La raison sociale est obligatoire")

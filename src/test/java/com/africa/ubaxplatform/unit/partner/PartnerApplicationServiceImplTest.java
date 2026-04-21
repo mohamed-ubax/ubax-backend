@@ -385,7 +385,7 @@ class PartnerApplicationServiceImplTest {
       service.decide(id, ADMIN_KEYCLOAK_ID, ApplicationStatus.APPROVED, null);
 
       verify(agencyRepo).save(any(Agency.class));
-      verify(keycloakAdminService).assignRole("kc-agency-id", UserRole.AGENCY);
+      verify(keycloakAdminService).assignRole("kc-agency-id", UserRole.PARTNER);
 
       ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
       verify(userRepo).save(userCaptor.capture());

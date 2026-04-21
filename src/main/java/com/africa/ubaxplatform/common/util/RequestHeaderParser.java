@@ -108,21 +108,14 @@ public class RequestHeaderParser {
 
   /**
    * Identifie le rôle UBAX principal en cherchant, dans l'ordre de priorité, parmi les rôles du
-   * realm ({@code UBAX_SUPER_ADMIN > UBAX_ADMIN > UBAX_PARTNER > UBAX_AGENCY > UBAX_AGENT >
-   * UBAX_OWNER > UBAX_CLIENT}).
+   * realm ({@code UBAX_SUPER_ADMIN > UBAX_ADMIN > UBAX_PARTNER > UBAX_OWNER > UBAX_CLIENT}).
    *
    * <p>Retourne {@code UserRole.CLIENT} par défaut si aucun rôle UBAX n'est trouvé.
    */
   private UserRole resolveRole(RequestUser user) {
     // Ordre de priorité décroissante
     UserRole[] priority = {
-      UserRole.SUPER_ADMIN,
-      UserRole.ADMIN,
-      UserRole.PARTNER,
-      UserRole.AGENCY,
-      UserRole.AGENT,
-      UserRole.OWNER,
-      UserRole.CLIENT
+      UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.PARTNER, UserRole.OWNER, UserRole.CLIENT
     };
 
     for (UserRole candidate : priority) {

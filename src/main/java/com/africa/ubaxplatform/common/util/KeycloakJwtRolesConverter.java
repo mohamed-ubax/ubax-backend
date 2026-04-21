@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * GrantedAuthority} dans Spring Security.
  *
  * <p>Seuls les rôles préfixés {@code UBAX_} sont conservés (ex: {@code UBAX_ADMIN}, {@code
- * UBAX_AGENT}). Les rôles techniques Keycloak ({@code offline_access}, {@code uma_authorization},
+ * UBAX_PARTNER}). Les rôles techniques Keycloak ({@code offline_access}, {@code uma_authorization},
  * etc.) sont ignorés.
  *
  * <p>Avec {@link org.springframework.security.config.core.GrantedAuthorityDefaults

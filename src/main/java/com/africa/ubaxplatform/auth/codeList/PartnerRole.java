@@ -56,7 +56,7 @@ public enum PartnerRole {
    * biens immobiliers, réservations, finances avec solde en clair, gestion des employés et accès
    * aux archives. Peut ajouter, modifier et archiver tous les éléments.
    *
-   * <p>Keycloak realm role parent : {@code UBAX_AGENCY}
+   * <p>Keycloak realm role parent : {@code UBAX_PARTNER}
    */
   DIRECTEUR_AGENCE,
 
@@ -67,7 +67,7 @@ public enum PartnerRole {
    * conclus, demandes clientèles. Peut ajouter et modifier des biens. N'a pas accès aux finances ni
    * aux archives.
    *
-   * <p>Keycloak realm role parent : {@code UBAX_AGENT}
+   * <p>Keycloak realm role parent : {@code UBAX_PARTNER}
    */
   COMMERCIAL,
 
@@ -78,7 +78,7 @@ public enum PartnerRole {
    * transactions, liste des loyers en retard, ajout de dépenses. Le solde global est masqué ({@code
    * •••}) — visible uniquement pour le Directeur. Pas d'accès aux biens ni aux réservations.
    *
-   * <p>Keycloak realm role parent : {@code UBAX_AGENT}
+   * <p>Keycloak realm role parent : {@code UBAX_PARTNER}
    */
   COMPTABLE_AGENCE,
 
@@ -89,7 +89,7 @@ public enum PartnerRole {
    * d'intervention. Accès aux demandes clientèles pour traitement. Pas d'accès aux biens ni aux
    * finances.
    *
-   * <p>Keycloak realm role parent : {@code UBAX_AGENT}
+   * <p>Keycloak realm role parent : {@code UBAX_PARTNER}
    */
   AGENT_SAV,
 

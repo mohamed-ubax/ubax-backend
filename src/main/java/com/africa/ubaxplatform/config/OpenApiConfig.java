@@ -64,10 +64,8 @@ import org.springframework.context.annotation.Configuration;
                     + "|---|---|---|\n"
                     + "| `UBAX_SUPER_ADMIN` | `SUPER_ADMIN` | Total – configuration, gestion admins |\n"
                     + "| `UBAX_ADMIN` | `ADMIN` | Opérations courantes plateforme |\n"
-                    + "| `UBAX_PARTNER` | `PARTNER` | Espace partenaire |\n"
-                    + "| `UBAX_AGENCY` | `AGENCY` | Agence immobilière |\n"
+                    + "| `UBAX_PARTNER` | `PARTNER` | Partenaire (agence ou hôtel) – sous-rôles internes gérés en base via `PartnerRole` |\n"
                     + "| `UBAX_OWNER` | `OWNER` | Propriétaire particulier |\n"
-                    + "| `UBAX_AGENT` | `AGENT` | Agent rattaché à une agence |\n"
                     + "| `UBAX_CLIENT` | `CLIENT` | Acheteur / locataire |",
             contact = @Contact(name = "UBAX Platform", email = "tech@ubax.africa")),
     tags = {

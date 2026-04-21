@@ -219,7 +219,7 @@ public class TenantController {
       HttpServletRequest httpRequest)
       throws CustomException {
     RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AGENCY);
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
     Page<TenantResponse> page = tenantService.list(status, pageable);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -247,7 +247,7 @@ public class TenantController {
   public ResponseEntity<CustomResponse> getById(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AGENCY);
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
     TenantResponse response = tenantService.getById(id);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -285,7 +285,7 @@ public class TenantController {
             httpRequest,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN,
-            UserRole.AGENCY);
+            UserRole.PARTNER);
     TenantResponse response = tenantService.qualify(id, caller.getSub());
     return ResponseEntity.ok(
         new CustomResponse(
@@ -323,7 +323,7 @@ public class TenantController {
       HttpServletRequest httpRequest)
       throws CustomException {
     RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AGENCY);
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
     TenantResponse response = tenantService.reject(id, reason);
     return ResponseEntity.ok(
         new CustomResponse(

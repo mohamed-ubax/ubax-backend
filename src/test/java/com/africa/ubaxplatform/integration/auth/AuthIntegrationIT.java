@@ -241,7 +241,6 @@ class AuthIntegrationIT extends AbstractIntegrationTest {
       List<Map<String, Object>> roles = (List<Map<String, Object>>) response.getBody().getData();
       assertThat(roles).isNotEmpty();
       assertThat(roles).anyMatch(r -> "UBAX_ADMIN".equals(r.get("name")));
-      assertThat(roles).anyMatch(r -> "UBAX_AGENT".equals(r.get("name")));
       assertThat(roles).anyMatch(r -> "UBAX_PARTNER".equals(r.get("name")));
     }
 

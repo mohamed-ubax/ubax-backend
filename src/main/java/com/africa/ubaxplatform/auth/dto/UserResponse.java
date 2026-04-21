@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.auth.dto;
 
+import com.africa.ubaxplatform.auth.codeList.PartnerRole;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,10 +28,13 @@ public record UserResponse(
     // ── Avatar ───────────────────────────────────────────────────
     String avatarUrl,
 
-    // ── Rôles & agence ───────────────────────────────────────────
+    // ── Rôles & structure partenaire ─────────────────────────────
     Set<UserRole> roles,
+    PartnerRole partnerRole,
     UUID agencyId,
     String agencyName,
+    UUID hotelId,
+    String hotelName,
 
     // ── Vérifications ────────────────────────────────────────────
     boolean emailVerified,

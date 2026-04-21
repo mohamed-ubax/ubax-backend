@@ -2,9 +2,11 @@ package com.africa.ubaxplatform.partner.service.impl;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.mapper.AgencyMapper;
 import com.africa.ubaxplatform.auth.repository.AgencyRepository;
+import com.africa.ubaxplatform.auth.repository.HotelRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.common.constants.Constants;
@@ -53,6 +55,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   private final ApplicationStatusLogRepository statusLogRepo;
   private final UserRepository userRepo;
   private final AgencyRepository agencyRepo;
+  private final HotelRepository hotelRepo;
   private final KeycloakAdminService keycloakAdminService;
   private final EmailService emailService;
   private final MinioService minioService;
@@ -195,7 +198,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       boolean isAgency =
           Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE.equals(application.getPartnerType());
 
-      UserRole assignedRole = isAgency ? UserRole.AGENCY : UserRole.PARTNER;
+      UserRole assignedRole = UserRole.PARTNER;
 
       // 1. Créer le compte Keycloak (username = email, sans mot de passe)
       String keycloakId =
@@ -205,32 +208,38 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
               application.getLegalRepresentative(),
               application.getPhone());
 
-      // 2. Attribuer le rôle approprié
+      // 2. Attribuer le rôle Keycloak approprié
       keycloakAdminService.assignRole(keycloakId, assignedRole);
 
-      // 3a. Pour une agence immobilière : créer l'entité Agency
+      // 3. Créer l'entité de structure (Agency ou Hotel) et persister le User
       Agency agency = null;
+      Hotel hotel = null;
+
       if (isAgency) {
         agency = agencyRepo.save(agencyMapper.toAgency(application));
+      } else {
+        hotel = hotelRepo.save(agencyMapper.toHotel(application));
       }
 
-      // 3b. Persister l'utilisateur en base
-      userRepo.save(agencyMapper.toPartnerUser(application, keycloakId, assignedRole, agency));
+      // partnerRole initial (DIRECTEUR_AGENCE ou GERANT_HOTEL) est assigné dans le mapper
+      userRepo.save(
+          agencyMapper.toPartnerUser(application, keycloakId, assignedRole, agency, hotel));
 
       // 4. Envoyer le lien "Définir mon mot de passe" via Keycloak
       keycloakAdminService.sendSetPasswordLink(keycloakId);
 
       log.info(
-          "Compte {} provisionné avec succès : keycloakId={}, email={}",
+          "Compte {} provisionné avec succès : keycloakId={}, email={}, partnerType={}",
           assignedRole,
           keycloakId,
-          application.getEmail());
+          application.getEmail(),
+          application.getPartnerType());
 
     } catch (CustomException e) {
       // Ne pas faire échouer la décision si le provisionnement Keycloak échoue.
       // L'admin est alerté via les logs ; le compte peut être créé manuellement.
       log.error(
-          "[⚠️ PROVISIONNEMENT] Échec création compte pour la demande {} : {}",
+          "[PROVISIONNEMENT] Echec creation compte pour la demande {} : {}",
           application.getId(),
           e.getMessage());
     }
