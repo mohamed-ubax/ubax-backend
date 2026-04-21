@@ -195,7 +195,7 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       boolean isAgency =
           Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE.equals(application.getPartnerType());
 
-      UserRole assignedRole = isAgency ? UserRole.AGENCY : UserRole.PARTNER;
+      UserRole assignedRole = isAgency ? UserRole.PARTNER : UserRole.PARTNER;
 
       // 1. Créer le compte Keycloak (username = email, sans mot de passe)
       String keycloakId =

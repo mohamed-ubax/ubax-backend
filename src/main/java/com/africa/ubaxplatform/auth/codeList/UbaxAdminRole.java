@@ -3,80 +3,66 @@ package com.africa.ubaxplatform.auth.codeList;
 /**
  * Sous-rôles opérationnels du back-office d'administration de la plateforme UBAX.
  *
- * <p><b>Distinction avec {@link UserRole} :</b>
- *
- * <ul>
- *   <li>{@link UserRole#ADMIN} et {@link UserRole#SUPER_ADMIN} sont les rôles techniques persistés
- *       en base et synchronisés avec Keycloak ({@code UBAX_ADMIN}, {@code UBAX_SUPER_ADMIN}). Ils
- *       gouvernent l'accès au back-office en général.
- *   <li>Les valeurs de cet enum ({@code FINANCE_MANAGER}, etc.) sont des <em>sous-rôles
- *       opérationnels</em> qui affinent les permissions à l'intérieur du back-office. Ils ne
- *       correspondent pas à des rôles realm Keycloak distincts et ne sont pas persistés dans {@code
- *       User.roles} — ils sont portés par un attribut applicatif complémentaire.
- * </ul>
+ * <p>Ces rôles sont persistés dans {@code user_sub_roles} (scope {@code ubax_internal}) et non dans
+ * Keycloak. Ils affinent les permissions à l'intérieur du back-office en complément des rôles
+ * Keycloak {@code UBAX_ADMIN} et {@code UBAX_SUPER_ADMIN}.
  *
  * <pre>
- * ┌─────────────────────┬────────────────────────────────────────────────────────────────┐
- * │ Rôle (UserRole)     │ Périmètre                                                      │
- * ├─────────────────────┼────────────────────────────────────────────────────────────────┤
- * │ SUPER_ADMIN         │ Accès total : config système, gestion des admins, logs, audit  │
- * │ ADMIN               │ Opérations courantes : partenaires, utilisateurs, signalements  │
- * ├─────────────────────┼────────────────────────────────────────────────────────────────┤
- * │ Sous-rôle           │ Périmètre affiné (attribué en complément d'ADMIN)              │
- * ├─────────────────────┼────────────────────────────────────────────────────────────────┤
- * │ FINANCE_MANAGER     │ Abonnements, commissions, revenus et rapports financiers        │
- * │ SUPPORT_MANAGER     │ Tickets et réclamations des partenaires et clients              │
- * │ PARTNER_MANAGER     │ Onboarding, activation et suspension des agences & hôtels       │
- * │ CONTENT_MODERATOR   │ Validation et modération des annonces publiées                  │
- * └─────────────────────┴────────────────────────────────────────────────────────────────┘
+ * ┌────────────────────┬──────────────────────────────────────────────────────────────────┐
+ * │ Sous-rôle          │ Périmètre                                                        │
+ * ├────────────────────┼──────────────────────────────────────────────────────────────────┤
+ * │ DIRECTEUR_GENERAL  │ Vision globale — KPIs, revenus, partenaires, config système      │
+ * │ SUPPORT_CLIENT     │ Tickets et réclamations partenaires et clients                   │
+ * │ OPERATIONS         │ Onboarding partenaires, modération des annonces                  │
+ * │ FINANCE            │ Abonnements, commissions, revenus, rapports financiers            │
+ * │ COMMERCIAL         │ Acquisition partenaires, suivi commercial                        │
+ * └────────────────────┴──────────────────────────────────────────────────────────────────┘
  * </pre>
  *
+ * @see RoleScope#UBAX_INTERNAL
  * @see UserRole#ADMIN
  * @see UserRole#SUPER_ADMIN
  */
 public enum UbaxAdminRole {
 
   /**
-   * Responsable Finances Plateforme.
+   * Directeur Général UBAX.
    *
-   * <p>Suivi des abonnements partenaires, des commissions prélevées sur les transactions, des
-   * revenus globaux et génération des rapports financiers. Accès en lecture aux données de
-   * facturation des partenaires.
-   *
-   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
+   * <p>Accès complet au back-office : KPIs globaux, revenus de la plateforme, gestion des
+   * partenaires, configuration système. Seul rôle admin hors {@code SUPER_ADMIN} ayant une vision
+   * financière globale.
    */
-  FINANCE_MANAGER,
+  DIRECTEUR_GENERAL,
 
   /**
-   * Responsable Support Plateforme.
+   * Support Client.
    *
    * <p>Traitement des tickets et réclamations remontés par les partenaires (agences, hôtels) et par
-   * les clients. Escalade vers les équipes techniques si nécessaire. Pas d'accès aux données
-   * financières.
-   *
-   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
+   * les clients. Escalade vers les équipes techniques si nécessaire.
    */
-  SUPPORT_MANAGER,
+  SUPPORT_CLIENT,
 
   /**
-   * Gestionnaire Partenaires.
+   * Opérations.
    *
-   * <p>Suivi du cycle de vie des partenaires : onboarding (validation des dossiers d'adhésion),
-   * activation des comptes, suspension en cas de non-conformité, et suivi de la performance des
-   * agences et hôtels inscrits sur la plateforme.
-   *
-   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
+   * <p>Onboarding des partenaires (validation des dossiers d'adhésion, activation des comptes),
+   * modération des annonces publiées sur la plateforme.
    */
-  PARTNER_MANAGER,
+  OPERATIONS,
 
   /**
-   * Modérateur de Contenu.
+   * Finance.
    *
-   * <p>Validation et modération des annonces (biens immobiliers, offres hôtelières) publiées par
-   * les partenaires. Peut masquer ou rejeter un contenu non conforme à la charte UBAX. Pas d'accès
-   * aux données financières ni à la gestion des comptes utilisateurs.
-   *
-   * <p>Requiert {@link UserRole#ADMIN} ou {@link UserRole#SUPER_ADMIN} en rôle de base.
+   * <p>Suivi des abonnements partenaires, des commissions prélevées sur les transactions, des
+   * revenus globaux et génération des rapports financiers.
    */
-  CONTENT_MODERATOR
+  FINANCE,
+
+  /**
+   * Commercial.
+   *
+   * <p>Acquisition de nouveaux partenaires, suivi du pipeline commercial, gestion des offres et
+   * promotions pour les agences et hôtels.
+   */
+  COMMERCIAL
 }

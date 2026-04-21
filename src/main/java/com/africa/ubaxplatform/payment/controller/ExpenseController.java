@@ -83,8 +83,8 @@ public class ExpenseController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
-            UserRole.AGENT,
+            UserRole.PARTNER,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -123,8 +123,8 @@ public class ExpenseController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
-            UserRole.AGENT,
+            UserRole.PARTNER,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -174,8 +174,8 @@ public class ExpenseController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
-            UserRole.AGENT,
+            UserRole.PARTNER,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -210,8 +210,8 @@ public class ExpenseController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
-            UserRole.AGENT,
+            UserRole.PARTNER,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);

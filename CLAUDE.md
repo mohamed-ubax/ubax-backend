@@ -2,11 +2,12 @@
 
 ## Vue d'ensemble
 
-**ubax-platform** est le backend de la plateforme UBAX (Afrique) : marketplace immobilière/hôtelière permettant à des agences et hôtels partenaires de publier des annonces, gérer des locataires et des contrats.
+**ubax-platform** est le backend de la plateforme UBAX (Afrique) : marketplace immobilière/hôtelière permettant à des agences et hôtels partenaires de publier des annonces, gérer des locataires, des contrats, des paiements et leur équipe interne.
 
 - **Stack** : Spring Boot 3.4.5 · Java 21 · PostgreSQL · Keycloak · MinIO
 - **Port** : `9999` (local) · Context path : `/api`
 - **Realm Keycloak** : `ubax-plateform`
+- **Swagger UI** : `http://localhost:9999/api/swagger-ui.html`
 
 ---
 
@@ -14,16 +15,68 @@
 
 ```
 src/main/java/com/africa/ubaxplatform/
-├── auth/           Authentification, inscription, OTP, gestion des admins
-├── partner/        Cycle de vie des candidatures partenaires (agences / hôtels)
-├── tenant/         Gestion des locataires
-├── property/       Propriétés, médias, documents
-├── contract/       Contrats
-├── document/       Génération PDF (contrat, facture, reçu) via Thymeleaf
-├── storage/        MinIO – upload/presigned URLs
-├── notification/   Email (JavaMail + Thymeleaf) · SMS (LAfricaMobile)
-├── ticketing/      Tickets de support
+├── auth/           ✅ Auth, inscription OTP, reset password, admins, sous-rôles
+│   ├── codeList/       UserRole, UbaxAdminRole, AgenceRole, HotelRole, RoleScope
+│   ├── controller/     AuthController, AdminController, UserProfileController,
+│   │                   AgencyTeamController, UserSubRoleController
+│   ├── dto/
+│   ├── entity/         User, Agency, Hotel, OtpVerification, UserSubRole
+│   ├── mapper/         UserMapper, AgencyMapper
+│   ├── repository/     UserRepository, AgencyRepository, HotelRepository,
+│   │                   OtpVerificationRepository, UserSubRoleRepository
+│   └── service/
+├── partner/        ✅ Candidatures partenaires (agences / hôtels)
+│   ├── codeList/       ApplicationStatus
+│   ├── controller/     PartnerController
+│   ├── entity/         PartnerApplication, ApplicationStatusLog
+│   └── service/
+├── tenant/         ✅ Dossiers locataires (KYC)
+│   ├── codeList/       TenantStatus
+│   ├── controller/     TenantController
+│   ├── entity/         Tenant
+│   └── service/
+├── property/       ✅ Biens, médias, documents, modération, boost
+│   ├── codeList/       PropertyStatus
+│   ├── controller/     PropertyController
+│   ├── entity/         Property, PropertyMedia, PropertyDocument
+│   ├── scheduler/      PropertySchedulerJob
+│   └── service/
+├── payment/        ✅ Paiements et dépenses agence
+│   ├── codeList/       PaymentStatus, PaymentType, PaymentMethod,
+│   │                   ExpenseCategory, CostCenter
+│   ├── controller/     PaymentController, ExpenseController
+│   ├── entity/         Payment, Expense
+│   └── service/
+├── dashboard/      ✅ Analytics & KPIs par rôle (DG, Commercial, Comptable, SAV)
+│   ├── controller/     DashboardController
+│   ├── dto/            AgencyDashboardResponse, ExpenseBreakdownItem,
+│   │                   RevenueBreakdownItem
+│   └── service/
+├── storage/        ✅ MinIO – upload direct et URLs présignées
+│   ├── controller/     StorageController
+│   └── service/
+├── ticketing/      ✅ Entités + enums — controller/service à créer
+│   ├── codeList/       TicketStatus (enum), MessageType (enum)
+│   ├── entity/         Ticket, TicketAttachment, TicketMessage
+│   └── mapper/         TicketMapper
+├── contract/       ⏳ Entité présente — controller/service à créer
+│   ├── codeList/       ContractStatus
+│   └── entity/         Contract
+├── document/       ⏳ Génération PDF Thymeleaf — pas d'API REST
+│   ├── codeList/       DocumentStatus, DocumentType, RefType
+│   ├── entity/         Document
+│   └── generator/      ContractGenerator, InvoiceGenerator, ReceiptGenerator
+├── notification/   ⏳ Email (JavaMail) et SMS (LAfricaMobile) — pas d'entité in-app
+│   └── service/        EmailService, SmsService
 ├── common/         BaseEntity, exceptions, CustomResponse, RoleGuard, utils
+│   ├── base/           BaseEntity (id UUID, createdAt, updatedAt)
+│   ├── codelist/       LaCodeList (référentiels métier)
+│   ├── constants/      Constants, ResponseMessageConstants
+│   ├── exception/      CustomException, BadRequestException, ConflictException,
+│   │                   NotFoundException, UnAuthorizedException, StorageException
+│   ├── response/       CustomResponse
+│   └── util/           RoleGuard, RequestHeaderParser, KeycloakJwtRolesConverter,
+│                       OtpUtils
 └── config/         SecurityConfig, OpenApiConfig, CustomEntryPoint/AccessDenied
 ```
 
@@ -32,33 +85,118 @@ src/main/java/com/africa/ubaxplatform/
 ## Sécurité & Rôles
 
 ### Deux filter chains Spring Security
+
 | Ordre | Périmètre | Comportement |
 |-------|-----------|--------------|
 | 1 | Routes publiques (`WHITELIST`) | Aucun JWT requis |
 | 2 | Toutes les autres routes | JWT Keycloak obligatoire |
 
-### Hiérarchie des rôles
-| Rôle (UserRole) | Realm Keycloak | Périmètre |
-|-----------------|----------------|-----------|
-| `SUPER_ADMIN`   | `UBAX_SUPER_ADMIN` | Accès total, gestion admins, config |
-| `ADMIN`         | `UBAX_ADMIN`       | Opérations courantes |
-| `PARTNER`       | `UBAX_PARTNER`     | Espace partenaire |
-| `CUSTOMER`      | `UBAX_CUSTOMER`    | Espace client |
+Routes publiques : `/api-docs/**`, `/swagger-ui/**`, `/v1/auth/**` (sauf reset-password), `/v1/partner/apply`, `GET /v1/properties/**`, `GET /v1/code-list/type/**`.
 
-### Sous-rôles opérationnels (UbaxAdminRole)
-Portés par un attribut applicatif (pas de rôle Keycloak distinct) :
-- `FINANCE_MANAGER` – finances, commissions, rapports
-- `SUPPORT_MANAGER` – tickets et réclamations
-- `PARTNER_MANAGER` – onboarding agences/hôtels
-- `CONTENT_MODERATOR` – modération des annonces
+### Rôles Keycloak (`UserRole` enum) — Niveau 1
 
-### Vérification des rôles
-Utiliser `RoleGuard` pour les contrôles programmatiques dans les contrôleurs :
+| UserRole | Realm Keycloak | Périmètre |
+|----------|----------------|-----------|
+| `SUPER_ADMIN` | `UBAX_SUPER_ADMIN` | Accès total, gestion admins, config |
+| `ADMIN` | `UBAX_ADMIN` | Administration courante back-office |
+| `PARTNER` | `UBAX_PARTNER` | Partenaire agence **ou** hôtel |
+| `OWNER` | `UBAX_OWNER` | Propriétaire individuel |
+| `CLIENT` | `UBAX_CLIENT` | Locataire / acheteur |
+
+### Sous-rôles applicatifs — Niveau 2 (table `user_sub_roles`, hors JWT)
+
+Les sous-rôles affinent les accès à l'intérieur d'un rôle Keycloak. Persistés dans `user_sub_roles` avec un `scope`.
+
+**Scope `UBAX_INTERNAL` — pour `ADMIN` / `SUPER_ADMIN` (`UbaxAdminRole`) :**
+
+| Sous-rôle | Périmètre |
+|-----------|-----------|
+| `DIRECTEUR_GENERAL` | Vision globale, accès complet back-office |
+| `SUPPORT_CLIENT` | Tickets, réclamations partenaires et clients |
+| `OPERATIONS` | Onboarding partenaires, modération des annonces |
+| `FINANCE` | Abonnements, commissions, revenus, rapports financiers |
+| `COMMERCIAL` | Acquisition partenaires, suivi commercial |
+
+**Scope `AGENCE` — pour `PARTNER` agence (`AgenceRole`) :**
+
+| Sous-rôle | Tableau de bord | Périmètre |
+|-----------|-----------------|-----------|
+| `DIRECTEUR_AGENCE` | DG | Accès complet + gestion équipe |
+| `COMMERCIAL` | Commercial | Prospects, rendez-vous, biens |
+| `COMPTABLE_AGENCE` | Comptable | Finances (solde masqué) |
+| `AGENT_SAV` | SAV | Tickets et interventions |
+
+**Scope `HOTEL` — pour `PARTNER` hôtel (`HotelRole`) :**
+
+| Sous-rôle | Périmètre |
+|-----------|-----------|
+| `GERANT_HOTEL` | Accès complet hôtel |
+| `RECEPTIONNISTE` | Réservations, check-in/out |
+| `COMPTABLE_HOTEL` | Facturation et revenus |
+| `RESPONSABLE_HEBERGEMENT` | Espaces et chambres |
+
+### Vérification des rôles dans les contrôleurs
+
 ```java
-RoleGuard.requireSuperAdmin(requestHeaderParser, httpRequest);
+// Niveau 1 — Rôle Keycloak (JWT) — toujours en premier
+RequestUser caller = RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
 RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+RoleGuard.requireSuperAdmin(requestHeaderParser, httpRequest);
+
+// Niveau 2 — Sous-rôle applicatif (DB) — charger l'entité User d'abord
+User dbUser = userRepository.findByKeycloakId(caller.getSub()).orElseThrow(...);
+RoleGuard.checkAgenceRole(dbUser, subRoleRepo, AgenceRole.DIRECTEUR_AGENCE);
+RoleGuard.checkHotelRole(dbUser, subRoleRepo, HotelRole.GERANT_HOTEL);
+RoleGuard.checkAdminSubRole(dbUser, subRoleRepo, UbaxAdminRole.FINANCE);
 ```
-Le converter `KeycloakJwtRolesConverter` extrait les rôles realm Keycloak du JWT.
+
+`KeycloakJwtRolesConverter` extrait les rôles realm (`UBAX_*`) du JWT et les expose comme `GrantedAuthority`.
+
+---
+
+## Conventions de code
+
+- **Formatage** : Google Java Format via `fmt-maven-plugin` — appliqué automatiquement à chaque build (`./mvnw compile`)
+- **Lombok** : `@Getter`, `@Setter`, `@NoArgsConstructor`, `@AllArgsConstructor`, `@SuperBuilder` sur les entités ; `@RequiredArgsConstructor` sur les services et controllers
+- **Entités** : toutes étendent `BaseEntity` (id UUID auto-généré, createdAt, updatedAt) via `@SuperBuilder`
+- **Soft delete** : champ `deletedAt` (`LocalDateTime`, null = actif) — jamais de suppression physique
+- **Réponses API** : toujours `CustomResponse(status, statusCode, message, data)` — le champ `data` accepte un objet ou une `Page<?>` (auto-convertie avec métadonnées de pagination)
+- **Exceptions** : hiérarchie `CustomException` capturée par `ApiExceptionHandler` → réponse JSON normalisée
+- **Mappers** : classes statiques `*Mapper` avec méthode `toResponse(Entity)` — pas de MapStruct
+- **Services** : interface dans `service/interfaces/` + implémentation dans `service/impl/` ; `@Transactional` sur les méthodes d'écriture, `@Transactional(readOnly = true)` sur les lectures
+- **Messages de réponse** : constantes dans `ResponseMessageConstants` — convention `DOMAINE_OPERATION_SUCCES|FAILURE`
+- **Enums vs String** : utiliser des enums pour les états de cycle de vie (TicketStatus, PaymentStatus, etc.) — sécurité compile-time. Utiliser String pour les listes configurables UI (catégorie, priorité) — seedées dans `la_code_list`
+
+### Pattern contrôleur type
+
+```java
+@RestController
+@RequestMapping("/v1/module")
+@RequiredArgsConstructor
+@Tag(name = "...", description = "...")
+public class ModuleController {
+
+  private final ModuleService moduleService;
+  private final RequestHeaderParser requestHeaderParser;
+
+  @PostMapping
+  @Operation(summary = "...", security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({ @ApiResponse(responseCode = "201", ...), ... })
+  public ResponseEntity<CustomResponse> create(
+      @RequestBody @Valid CreateRequest request,
+      HttpServletRequest httpRequest) throws CustomException {
+
+    RequestUser caller = RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    ModuleResponse response = moduleService.create(caller.getSub(), request);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.CREATED,
+            ResponseMessageConstants.MODULE_CREATE_SUCCESS,
+            response));
+  }
+}
+```
 
 ---
 
@@ -66,8 +204,156 @@ Le converter `KeycloakJwtRolesConverter` extrait les rôles realm Keycloak du JW
 
 - **Schéma** : `administrative`
 - **Migrations** : Flyway (`src/main/resources/db/migration/V*__*.sql`)
-- `ddl-auto: none` – Flyway est la seule source de vérité pour le schéma
-- Toute nouvelle table/colonne = nouvelle migration versionnée
+- `ddl-auto: none` — Flyway est **la seule** source de vérité pour le schéma
+- Toute nouvelle table ou colonne = nouvelle migration versionnée (ne jamais modifier une migration existante)
+
+### Toutes les migrations
+
+| Version | Fichier | Tables / colonnes |
+|---------|---------|-------------------|
+| V001 | `create_schema.sql` | Schéma `administrative` |
+| V002 | `create_users.sql` | `users`, `user_roles` |
+| V003 | `create_otp_verifications.sql` | `otp_verifications` |
+| V004 | `create_partner_applications.sql` | `partner_applications` |
+| V005 | `create_application_status_logs.sql` | `application_status_logs` |
+| V006 | `add_storage_slug_to_partner_applications.sql` | `storage_slug` sur `partner_applications` |
+| V007 | `create_la_code_list.sql` | `la_code_list` |
+| V008 | `create_agencies.sql` | `agencies` |
+| V009 | `add_agency_id_to_users.sql` | `agency_id` sur `users` |
+| V010 | `create_tenants.sql` | `tenants` |
+| V011 | `create_contracts.sql` | `contracts` |
+| V012 | `drop_stale_role_column_from_users.sql` | Suppression colonne obsolète |
+| V013 | `create_properties.sql` | `properties`, `property_media`, `property_documents` |
+| V014 | `create_payments.sql` | `payments` |
+| V015 | `create_expenses.sql` | `expenses` |
+| V016 | `create_user_sub_roles.sql` | `user_sub_roles` (id, user_id, role, scope, created_at) |
+| V017 | `create_hotels.sql` | `hotels` + `hotel_id` sur `users` |
+| V018 | `create_tickets.sql` | `tickets`, `ticket_messages`, `ticket_attachments` |
+| V019 | `seed_ticket_code_lists.sql` | Seed `la_code_list` (TICKET_CATEGORY, TICKET_PRIORITY, TICKET_ATTACHMENT_TYPE) |
+
+Prochaine version disponible : **V020**
+
+---
+
+## Endpoints opérationnels — référence rapide
+
+### Auth & Admin
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/auth/login` | Public | Login email |
+| `POST` | `/v1/auth/login/phone` | Public | Login téléphone |
+| `POST` | `/v1/auth/register/send-otp` | Public | OTP inscription |
+| `POST` | `/v1/auth/register/verify-otp` | Public | Vérifier OTP |
+| `POST` | `/v1/auth/register/complete` | Public | Finaliser inscription |
+| `POST` | `/v1/auth/logout` | Public | Logout |
+| `POST` | `/v1/auth/forgot-password` | Public | Email reset |
+| `POST` | `/v1/auth/forgot-password/send-otp` | Public | OTP reset SMS |
+| `POST` | `/v1/auth/forgot-password/verify-otp` | Public | Vérifier OTP reset |
+| `POST` | `/v1/auth/forgot-password/reset` | Public | Reset via OTP |
+| `POST` | `/v1/auth/reset-password` | `ADMIN` | Reset forcé |
+| `GET` | `/v1/auth/roles` | `ADMIN` | Liste rôles Keycloak |
+| `POST` | `/v1/auth/users/{keycloakId}/roles` | `ADMIN` | Assigner rôle |
+| `DELETE` | `/v1/auth/users/{keycloakId}/roles` | `ADMIN` | Retirer rôle |
+| `POST` | `/v1/admin/users` | `SUPER_ADMIN` | Créer admin |
+| `GET` | `/v1/admin/users` | `ADMIN` | Lister admins |
+| `PUT` | `/v1/admin/users/{userId}/role` | `SUPER_ADMIN` | Changer rôle admin |
+| `DELETE` | `/v1/admin/users/{userId}` | `SUPER_ADMIN` | Supprimer admin |
+| `POST` | `/v1/users/me/avatar` | Authentifié | Mettre à jour avatar |
+
+### Sous-rôles (User Sub-Roles)
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/admin/users/{userId}/sub-roles` | `SUPER_ADMIN` | Assigner des sous-rôles |
+| `GET` | `/v1/admin/users/{userId}/sub-roles` | `ADMIN` | Consulter les sous-rôles |
+| `DELETE` | `/v1/admin/users/{userId}/sub-roles/{role}` | `SUPER_ADMIN` | Révoquer un sous-rôle |
+
+### Agency Team
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/agency/team` | `PARTNER` | Lister membres |
+| `POST` | `/v1/agency/team` | `PARTNER` + `DIRECTEUR_AGENCE` | Ajouter membre |
+| `PUT` | `/v1/agency/team/{userId}/role` | `PARTNER` + `DIRECTEUR_AGENCE` | Changer rôle |
+| `DELETE` | `/v1/agency/team/{userId}` | `PARTNER` + `DIRECTEUR_AGENCE` | Retirer membre |
+
+### Partner
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/partner/apply` | Public | Soumettre candidature |
+| `GET` | `/v1/partner/admin/applications` | `ADMIN` | Liste paginée |
+| `GET` | `/v1/partner/admin/applications/{id}` | `ADMIN` | Détail |
+| `PATCH` | `/v1/partner/admin/applications/{id}/decision` | `ADMIN` | Décision |
+
+### Tenant
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/tenants/profile` | `CLIENT` | Soumettre dossier |
+| `GET` | `/v1/tenants/profile` | Authentifié | Voir mon dossier |
+| `PATCH` | `/v1/tenants/profile` | Authentifié | Mettre à jour |
+| `GET` | `/v1/tenants` | `ADMIN/PARTNER` | Liste paginée |
+| `GET` | `/v1/tenants/{id}` | `ADMIN/PARTNER` | Détail |
+| `PATCH` | `/v1/tenants/{id}/qualify` | `ADMIN/PARTNER` | Qualifier |
+| `PATCH` | `/v1/tenants/{id}/reject` | `ADMIN/PARTNER` | Rejeter |
+| `DELETE` | `/v1/tenants/{id}` | `ADMIN` | Archiver |
+
+### Property
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/properties` | Public | Liste paginée + filtres |
+| `GET` | `/v1/properties/{id}` | Public | Détail |
+| `GET` | `/v1/properties/mine` | `PARTNER/OWNER` | Mes biens |
+| `POST` | `/v1/properties` | `PARTNER/OWNER` | Créer brouillon |
+| `PUT` | `/v1/properties/{id}` | `PARTNER/OWNER` | Mettre à jour |
+| `PATCH` | `/v1/properties/{id}/submit` | `PARTNER/OWNER` | Soumettre en modération |
+| `DELETE` | `/v1/properties/{id}` | `PARTNER/OWNER` | Archiver |
+| `PATCH` | `/v1/properties/{id}/status` | `ADMIN` | Modérer (approuver/rejeter) |
+| `POST` | `/v1/properties/{id}/media/upload` | `PARTNER/OWNER` | Upload direct média |
+| `POST` | `/v1/properties/{id}/media` | `PARTNER/OWNER` | Lier média pré-uploadé |
+| `GET` | `/v1/properties/{id}/media` | Public | Liste médias |
+| `PATCH` | `/v1/properties/{id}/media/{mediaId}/cover` | `PARTNER/OWNER` | Photo couverture |
+| `DELETE` | `/v1/properties/{id}/media/{mediaId}` | `PARTNER/OWNER` | Supprimer média |
+| `POST` | `/v1/properties/{id}/documents` | `PARTNER/OWNER` | Ajouter document |
+| `GET` | `/v1/properties/{id}/documents` | Authentifié | Liste documents |
+| `PATCH` | `/v1/properties/{id}/documents/{docId}/verify` | `ADMIN` | Vérifier document |
+| `DELETE` | `/v1/properties/{id}/documents/{docId}` | `PARTNER/OWNER` | Supprimer document |
+| `PATCH` | `/v1/properties/{id}/boost` | `ADMIN` | Activer boost |
+| `DELETE` | `/v1/properties/{id}/boost` | `ADMIN` | Retirer boost |
+| `PATCH` | `/v1/properties/{id}/expiration` | `ADMIN` | Fixer expiration |
+| `DELETE` | `/v1/properties/{id}/expiration` | `ADMIN` | Retirer expiration |
+
+### Payment & Expense
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/payments` | `PARTNER/ADMIN` | Liste paginée + filtres |
+| `GET` | `/v1/payments/late` | `PARTNER/ADMIN` | Loyers en retard |
+| `GET` | `/v1/payments/{id}` | `PARTNER/ADMIN` | Détail |
+| `POST` | `/v1/payments` | `PARTNER/ADMIN` | Enregistrer paiement |
+| `PATCH` | `/v1/payments/{id}/status` | `PARTNER/ADMIN` | Mettre à jour statut |
+| `DELETE` | `/v1/payments/{id}` | `PARTNER/ADMIN` | Supprimer |
+| `GET` | `/v1/expenses` | `PARTNER/ADMIN` | Liste paginée + filtres |
+| `GET` | `/v1/expenses/{id}` | `PARTNER/ADMIN` | Détail |
+| `POST` | `/v1/expenses` | `PARTNER/ADMIN` | Enregistrer dépense |
+| `DELETE` | `/v1/expenses/{id}` | `PARTNER/ADMIN` | Supprimer |
+
+### Dashboard & Storage
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/dashboard/agency` | `PARTNER/ADMIN` | KPIs agence par sous-rôle |
+| `POST` | `/v1/storage/upload` | Authentifié | Upload direct multipart |
+| `POST` | `/v1/storage/upload/agency-logo` | Authentifié | Upload logo agence |
+| `GET` | `/v1/storage/presign` | Authentifié | URL présignée générique |
+| `GET` | `/v1/storage/presign/property-media` | Authentifié | URL présignée média bien |
+| `GET` | `/v1/storage/presign/property-document` | Authentifié | URL présignée doc bien |
+| `GET` | `/v1/storage/presign/tenant-document` | Authentifié | URL présignée KYC |
+| `GET` | `/v1/storage/presign/agency-logo` | Authentifié | URL présignée logo |
+| `GET` | `/v1/storage/presign/ticket-attachment` | Authentifié | URL présignée ticket |
 
 ---
 
@@ -77,16 +363,23 @@ Le converter `KeycloakJwtRolesConverter` extrait les rôles realm Keycloak du JW
 docker/docker-compose.yml   # PostgreSQL, Keycloak, MinIO, pgAdmin, Prometheus, Grafana
 ```
 
-Variables d'environnement dans `docker/.env` (modifié sur la branche courante).
-
-Commandes utiles :
 ```bash
-# Démarrer l'infra
 docker compose -f docker/docker-compose.yml up -d
-
-# Build + run de l'application
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+---
+
+## Variables d'environnement clés
+
+| Variable | Défaut local | Description |
+|----------|-------------|-------------|
+| `KEYCLOAK_CLIENT_ID` | – | **Requis** – client Keycloak |
+| `KEYCLOAK_CLIENT_SECRET` | – | **Requis** – secret client |
+| `BOOTSTRAP_ENABLED` | `true` | Créer le super admin au 1er démarrage |
+| `SECURITY_ENABLED` | `true` | Mettre à `false` uniquement en dev |
+| `DB_HOST/PORT/NAME` | `localhost/5433/db-ubax` | PostgreSQL |
+| `MINIO_ENDPOINT` | `http://localhost:9000` | Object storage |
 
 ---
 
@@ -104,30 +397,6 @@ docker compose -f docker/docker-compose.yml up -d
 
 ---
 
-## Conventions de code
-
-- **Formatage** : Google Java Format via `fmt-maven-plugin` (s'applique à chaque build)
-- **Lombok** : `@Data`, `@Builder`, `@RequiredArgsConstructor` partout
-- **Réponses API** : toujours `CustomResponse` (body / status / message / data)
-- **Exceptions** : hiérarchie `CustomException` → handlers dans `ApiExceptionHandler`
-- **Mappers** : classes dédiées `*Mapper` (pas de MapStruct, mapping manuel)
-- **Interfaces / Implémentations** : `service/interfaces/` + `service/impl/`
-
----
-
-## Variables d'environnement clés
-
-| Variable | Défaut local | Description |
-|----------|-------------|-------------|
-| `KEYCLOAK_CLIENT_ID` | – | **Requis** – client Keycloak |
-| `KEYCLOAK_CLIENT_SECRET` | – | **Requis** – secret client |
-| `BOOTSTRAP_ENABLED` | `true` | Créer le super admin au 1er démarrage |
-| `SECURITY_ENABLED` | `true` | Mettre à `false` uniquement en dev |
-| `DB_HOST/PORT/NAME` | `localhost/5433/db-ubax` | PostgreSQL |
-| `MINIO_ENDPOINT` | `http://localhost:9000` | Object storage |
-
----
-
 ## Buckets MinIO
 
 `users-avatars`, `agencies-logos`, `properties-media`, `property-documents`,
@@ -139,10 +408,3 @@ docker compose -f docker/docker-compose.yml up -d
 
 - Actuator : `/actuator/health`, `/actuator/info`, `/actuator/prometheus`
 - Prometheus + Grafana inclus dans le docker-compose
-
----
-
-## Swagger / OpenAPI
-
-- URL locale : `http://localhost:9999/api/swagger-ui.html`
-- Auth : Bearer Token (JWT Keycloak)

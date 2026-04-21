@@ -1,7 +1,13 @@
 package com.africa.ubaxplatform.common.util;
 
+import com.africa.ubaxplatform.auth.codeList.AgenceRole;
+import com.africa.ubaxplatform.auth.codeList.HotelRole;
+import com.africa.ubaxplatform.auth.codeList.RoleScope;
+import com.africa.ubaxplatform.auth.codeList.UbaxAdminRole;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.RequestUser;
+import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.auth.repository.UserSubRoleRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
@@ -11,31 +17,32 @@ import jakarta.servlet.http.HttpServletRequest;
 /**
  * Utilitaire centralisé de vérification des rôles utilisateur.
  *
- * <p>Toutes les méthodes sont statiques. Usage type dans un contrôleur :
+ * <p><b>Deux niveaux de vérification :</b>
+ *
+ * <ol>
+ *   <li><b>Rôle Keycloak (JWT)</b> — via {@link RequestUser} extrait du Bearer token. Méthodes :
+ *       {@code require*}, {@code checkAnyRole}.
+ *   <li><b>Sous-rôle DB</b> — via l'entité {@link User} chargée en base. Méthodes : {@code
+ *       checkSubRole}, {@code checkAgenceRole}, {@code checkHotelRole}, {@code checkAdminSubRole}.
+ * </ol>
+ *
+ * <p><b>Pattern type dans un contrôleur :</b>
  *
  * <pre>{@code
- * RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
- * }</pre>
- *
- * <p>Pour récupérer l'utilisateur en même temps que la vérification :
- *
- * <pre>{@code
- * RequestUser user = RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+ * // 1. Vérifier le rôle Keycloak
+ * RequestUser caller = RoleGuard.requireAnyRole(parser, request, UserRole.PARTNER);
+ * // 2. Charger l'entité User en base
+ * User dbUser = userRepository.findByKeycloakId(caller.getSub()).orElseThrow(...);
+ * // 3. Vérifier le sous-rôle applicatif
+ * RoleGuard.checkAgenceRole(dbUser, subRoleRepo, AgenceRole.DIRECTEUR_AGENCE);
  * }</pre>
  */
 public final class RoleGuard {
 
   private RoleGuard() {}
 
-  // ── Vérifications combinées (parse + check) ────────────────────
+  // ── Niveau 1 : Rôle Keycloak (JWT) ────────────────────────────
 
-  /**
-   * Extrait l'utilisateur du JWT et vérifie qu'il possède le rôle {@code ADMIN} ou {@code
-   * SUPER_ADMIN}.
-   *
-   * @return l'utilisateur extrait du token
-   * @throws CustomException 401 si le token est absent/invalide, 403 si le rôle est insuffisant
-   */
   public static RequestUser requireAdmin(RequestHeaderParser parser, HttpServletRequest request)
       throws CustomException {
     RequestUser user = extractUser(parser, request);
@@ -43,13 +50,6 @@ public final class RoleGuard {
     return user;
   }
 
-  /**
-   * Extrait l'utilisateur du JWT et vérifie qu'il possède exclusivement le rôle {@code
-   * SUPER_ADMIN}.
-   *
-   * @return l'utilisateur extrait du token
-   * @throws CustomException 401 si le token est absent/invalide, 403 si le rôle est insuffisant
-   */
   public static RequestUser requireSuperAdmin(
       RequestHeaderParser parser, HttpServletRequest request) throws CustomException {
     RequestUser user = extractUser(parser, request);
@@ -57,25 +57,11 @@ public final class RoleGuard {
     return user;
   }
 
-  /**
-   * Extrait l'utilisateur du JWT et vérifie qu'il est authentifié (token valide, peu importe le
-   * rôle).
-   *
-   * @return l'utilisateur extrait du token
-   * @throws CustomException 401 si le token est absent ou invalide
-   */
   public static RequestUser requireAuthenticated(
       RequestHeaderParser parser, HttpServletRequest request) throws CustomException {
     return extractUser(parser, request);
   }
 
-  /**
-   * Extrait l'utilisateur du JWT et vérifie qu'il possède au moins l'un des rôles fournis.
-   *
-   * @param roles liste des rôles acceptés (au moins un requis)
-   * @return l'utilisateur extrait du token
-   * @throws CustomException 401 si le token est absent/invalide, 403 si aucun rôle ne correspond
-   */
   public static RequestUser requireAnyRole(
       RequestHeaderParser parser, HttpServletRequest request, UserRole... roles)
       throws CustomException {
@@ -84,29 +70,89 @@ public final class RoleGuard {
     return user;
   }
 
-  // ── Vérifications sur un RequestUser déjà extrait ─────────────
-
-  /**
-   * Vérifie qu'un {@link RequestUser} possède le rôle {@code ADMIN} ou {@code SUPER_ADMIN}.
-   *
-   * @throws CustomException 403 si le rôle est insuffisant
-   */
   public static void checkAdmin(RequestUser user) throws CustomException {
     checkAnyRole(user, UserRole.ADMIN, UserRole.SUPER_ADMIN);
   }
 
-  /**
-   * Vérifie qu'un {@link RequestUser} possède au moins l'un des rôles fournis.
-   *
-   * @throws CustomException 403 si aucun rôle ne correspond
-   */
   public static void checkAnyRole(RequestUser user, UserRole... roles) throws CustomException {
     for (UserRole role : roles) {
       if (user.hasRole(role)) return;
     }
     throw new CustomException(
-        new UnAuthorizedException("Accès refusé – rôle insuffisant"),
+        new UnAuthorizedException("Accès refusé – rôle Keycloak insuffisant"),
         ResponseMessageConstants.USER_FORBIDDEN);
+  }
+
+  // ── Niveau 2 : Sous-rôle DB ───────────────────────────────────
+
+  /**
+   * Vérifie qu'un utilisateur possède un sous-rôle agence donné dans {@code user_sub_roles}.
+   *
+   * @throws CustomException 403 si le sous-rôle est absent
+   */
+  public static void checkAgenceRole(
+      User dbUser, UserSubRoleRepository subRoleRepo, AgenceRole... roles) throws CustomException {
+    for (AgenceRole role : roles) {
+      if (subRoleRepo.existsByUserIdAndRoleAndScope(
+          dbUser.getId(), role.name(), RoleScope.AGENCE)) {
+        return;
+      }
+    }
+    throw new CustomException(
+        new UnAuthorizedException("Accès refusé – sous-rôle agence insuffisant"),
+        ResponseMessageConstants.USER_FORBIDDEN);
+  }
+
+  /**
+   * Vérifie qu'un utilisateur possède un sous-rôle hôtel donné dans {@code user_sub_roles}.
+   *
+   * @throws CustomException 403 si le sous-rôle est absent
+   */
+  public static void checkHotelRole(
+      User dbUser, UserSubRoleRepository subRoleRepo, HotelRole... roles) throws CustomException {
+    for (HotelRole role : roles) {
+      if (subRoleRepo.existsByUserIdAndRoleAndScope(dbUser.getId(), role.name(), RoleScope.HOTEL)) {
+        return;
+      }
+    }
+    throw new CustomException(
+        new UnAuthorizedException("Accès refusé – sous-rôle hôtel insuffisant"),
+        ResponseMessageConstants.USER_FORBIDDEN);
+  }
+
+  /**
+   * Vérifie qu'un utilisateur possède un sous-rôle admin interne UBAX dans {@code user_sub_roles}.
+   *
+   * @throws CustomException 403 si le sous-rôle est absent
+   */
+  public static void checkAdminSubRole(
+      User dbUser, UserSubRoleRepository subRoleRepo, UbaxAdminRole... roles)
+      throws CustomException {
+    for (UbaxAdminRole role : roles) {
+      if (subRoleRepo.existsByUserIdAndRoleAndScope(
+          dbUser.getId(), role.name(), RoleScope.UBAX_INTERNAL)) {
+        return;
+      }
+    }
+    throw new CustomException(
+        new UnAuthorizedException("Accès refusé – sous-rôle admin insuffisant"),
+        ResponseMessageConstants.USER_FORBIDDEN);
+  }
+
+  /**
+   * Vérifie qu'un utilisateur possède au moins un sous-rôle dans un scope donné.
+   *
+   * @throws CustomException 403 si aucun sous-rôle du scope n'est assigné
+   */
+  public static void checkHasSubRole(
+      User dbUser, UserSubRoleRepository subRoleRepo, String role, RoleScope scope)
+      throws CustomException {
+    if (!subRoleRepo.existsByUserIdAndRoleAndScope(dbUser.getId(), role, scope)) {
+      throw new CustomException(
+          new UnAuthorizedException(
+              "Accès refusé – sous-rôle '" + role + "' (scope " + scope + ") manquant"),
+          ResponseMessageConstants.USER_FORBIDDEN);
+    }
   }
 
   // ── Extraction du token ────────────────────────────────────────
