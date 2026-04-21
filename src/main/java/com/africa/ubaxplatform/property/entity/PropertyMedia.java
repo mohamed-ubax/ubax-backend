@@ -6,7 +6,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -37,15 +36,7 @@ import lombok.experimental.SuperBuilder;
  * cette photo qui s'affiche dans les résultats de recherche et le carrousel en premier.
  */
 @Entity
-@Table(
-    name = "property_media",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_property_media_property", columnList = "property_id"),
-      @Index(name = "idx_property_media_type", columnList = "media_type"),
-      @Index(name = "idx_property_media_cover", columnList = "property_id, is_cover"),
-      @Index(name = "idx_property_media_sort_order", columnList = "property_id, sort_order")
-    })
+@Table(name = "property_media", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor

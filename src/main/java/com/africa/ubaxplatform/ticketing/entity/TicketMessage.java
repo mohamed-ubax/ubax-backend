@@ -21,14 +21,7 @@ import lombok.experimental.SuperBuilder;
  * locataire.
  */
 @Entity
-@Table(
-    name = "ticket_messages",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_ticket_msg_ticket", columnList = "ticket_id"),
-      @Index(name = "idx_ticket_msg_sender", columnList = "sender_id"),
-      @Index(name = "idx_ticket_msg_type", columnList = "message_type")
-    })
+@Table(name = "ticket_messages", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor

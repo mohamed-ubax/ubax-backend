@@ -15,6 +15,8 @@ import com.africa.ubaxplatform.property.dto.PropertyDocumentResponse;
 import com.africa.ubaxplatform.property.dto.PropertyMediaAddRequest;
 import com.africa.ubaxplatform.property.dto.PropertyMediaResponse;
 import com.africa.ubaxplatform.property.dto.PropertyResponse;
+import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
+import com.africa.ubaxplatform.property.dto.PropertyExpirationRequest;
 import com.africa.ubaxplatform.property.dto.PropertyStatusUpdateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyUpdateRequest;
 import com.africa.ubaxplatform.property.entity.Property;
@@ -307,6 +309,43 @@ public class PropertyServiceImpl implements PropertyService {
       property.setPublishedAt(LocalDateTime.now());
     }
 
+    return PropertyMapper.toResponse(propertyRepo.save(property));
+  }
+
+  // ── Configuration admin (boost / expiration) ───────────────────
+
+  @Override
+  @Transactional
+  public PropertyResponse boost(UUID id, PropertyBoostRequest req) throws CustomException {
+    Property property = resolveProperty(id);
+    property.setBoosted(true);
+    property.setBoostExpiresAt(LocalDateTime.now().plusDays(req.boostDays()));
+    return PropertyMapper.toResponse(propertyRepo.save(property));
+  }
+
+  @Override
+  @Transactional
+  public PropertyResponse removeBoost(UUID id) throws CustomException {
+    Property property = resolveProperty(id);
+    property.setBoosted(false);
+    property.setBoostExpiresAt(null);
+    return PropertyMapper.toResponse(propertyRepo.save(property));
+  }
+
+  @Override
+  @Transactional
+  public PropertyResponse setExpiration(UUID id, PropertyExpirationRequest req)
+      throws CustomException {
+    Property property = resolveProperty(id);
+    property.setExpiresAt(req.expiresAt());
+    return PropertyMapper.toResponse(propertyRepo.save(property));
+  }
+
+  @Override
+  @Transactional
+  public PropertyResponse removeExpiration(UUID id) throws CustomException {
+    Property property = resolveProperty(id);
+    property.setExpiresAt(null);
     return PropertyMapper.toResponse(propertyRepo.save(property));
   }
 

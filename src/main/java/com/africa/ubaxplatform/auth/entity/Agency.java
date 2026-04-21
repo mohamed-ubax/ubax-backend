@@ -4,7 +4,6 @@ import com.africa.ubaxplatform.common.base.BaseEntity;
 import com.africa.ubaxplatform.common.constants.Constants;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
@@ -29,19 +28,7 @@ import lombok.experimental.SuperBuilder;
  * null = agence désactivée.
  */
 @Entity
-@Table(
-    name = "agencies",
-    schema = "administrative",
-    uniqueConstraints = {
-      @UniqueConstraint(name = "uq_agencies_email", columnNames = "email"),
-      @UniqueConstraint(name = "uq_agencies_phone", columnNames = "phone")
-    },
-    indexes = {
-      @Index(name = "idx_agencies_verified", columnList = "is_verified"),
-      @Index(name = "idx_agencies_active", columnList = "is_active"),
-      @Index(name = "idx_agencies_deleted_at", columnList = "deleted_at"),
-      @Index(name = "idx_agencies_city", columnList = "city")
-    })
+@Table(name = "agencies", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor

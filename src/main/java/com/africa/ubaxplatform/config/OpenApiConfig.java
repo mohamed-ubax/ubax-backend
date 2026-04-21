@@ -104,6 +104,19 @@ import org.springframework.context.annotation.Configuration;
                   + "**Buckets :** `properties-media` · `property-documents` · `tenant-documents` "
                   + "· `agencies-logos` · `users-avatars` · `ticket-attachments` · `partner-documents`"),
       @Tag(
+          name = "Payment",
+          description =
+              "🏢 **AGENCY · AGENT · PARTNER · ADMIN · SUPER_ADMIN** – Gestion des paiements (loyers, cautions, commissions, ventes).\n\n"
+                  + "**Statuts :** `PENDING → PAID | PARTIAL | LATE | CANCELLED`\n\n"
+                  + "**Calcul automatique à la création :** `PAID` si `paidDate` + `amountPaid ≥ amount` · "
+                  + "`PARTIAL` si paiement incomplet · `LATE` si échéance dépassée · sinon `PENDING`"),
+      @Tag(
+          name = "Expense",
+          description =
+              "🏢 **AGENCY · AGENT · PARTNER · ADMIN · SUPER_ADMIN** – Dépenses comptables de l'agence.\n\n"
+                  + "**Catégories :** `MAINTENANCE · MARKETING · SALARY · UTILITIES · TAX · OTHER`\n\n"
+                  + "**Centre de coût :** `AGENCY_GENERAL` (agence entière) · `PROPERTY_SPECIFIC` (bien précis — `propertyId` obligatoire)"),
+      @Tag(
           name = "Code List",
           description =
               "🌐 **Public** (lecture) · 🛡 **ADMIN** (écriture) – Référentiels dynamiques (types, statuts, etc.)")

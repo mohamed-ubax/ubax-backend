@@ -1,0 +1,82 @@
+package com.africa.ubaxplatform.payment.repository;
+
+import com.africa.ubaxplatform.payment.codeList.PaymentStatus;
+import com.africa.ubaxplatform.payment.codeList.PaymentType;
+import com.africa.ubaxplatform.payment.entity.Payment;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface PaymentRepository extends JpaRepository<Payment, UUID> {
+
+  @Query(
+      """
+      SELECT p FROM Payment p
+      WHERE (:agencyId   IS NULL OR p.agency.id     = :agencyId)
+        AND (:status     IS NULL OR p.status         = :status)
+        AND (:type       IS NULL OR p.paymentType    = :type)
+        AND (:propertyId IS NULL OR p.property.id   = :propertyId)
+        AND (:contractId IS NULL OR p.contract.id   = :contractId)
+        AND (:tenantId   IS NULL OR p.tenant.id     = :tenantId)
+        AND (:from       IS NULL OR p.dueDate       >= :from)
+        AND (:to         IS NULL OR p.dueDate       <= :to)
+      """)
+  Page<Payment> findWithFilters(
+      @Param("agencyId") UUID agencyId,
+      @Param("status") PaymentStatus status,
+      @Param("type") PaymentType type,
+      @Param("propertyId") UUID propertyId,
+      @Param("contractId") UUID contractId,
+      @Param("tenantId") UUID tenantId,
+      @Param("from") LocalDate from,
+      @Param("to") LocalDate to,
+      Pageable pageable);
+
+  /** Paiements en retard : échéance dépassée et statut PENDING ou PARTIAL. */
+  @Query(
+      """
+      SELECT p FROM Payment p
+      WHERE p.agency.id = :agencyId
+        AND p.status IN ('PENDING', 'PARTIAL')
+        AND p.dueDate < :today
+      ORDER BY p.dueDate ASC
+      """)
+  List<Payment> findLateByAgency(
+      @Param("agencyId") UUID agencyId, @Param("today") LocalDate today);
+
+  /** Somme des paiements PAID pour une agence sur une période. */
+  @Query(
+      """
+      SELECT COALESCE(SUM(p.amountPaid), 0)
+      FROM Payment p
+      WHERE p.agency.id = :agencyId
+        AND p.status = 'PAID'
+        AND p.paidDate BETWEEN :from AND :to
+      """)
+  BigDecimal sumPaidByAgencyAndPeriod(
+      @Param("agencyId") UUID agencyId,
+      @Param("from") LocalDate from,
+      @Param("to") LocalDate to);
+
+  /** Somme des montants en retard (PENDING/PARTIAL) pour une agence. */
+  @Query(
+      """
+      SELECT COALESCE(SUM(p.amount - COALESCE(p.amountPaid, 0)), 0)
+      FROM Payment p
+      WHERE p.agency.id = :agencyId
+        AND p.status IN ('PENDING', 'PARTIAL')
+        AND p.dueDate < :today
+      """)
+  BigDecimal sumOverdueByAgency(
+      @Param("agencyId") UUID agencyId, @Param("today") LocalDate today);
+
+  List<Payment> findByContractIdOrderByDueDateDesc(UUID contractId);
+}

@@ -38,13 +38,7 @@ import lombok.experimental.SuperBuilder;
  * </ul>
  */
 @Entity
-@Table(
-    name = "ticket_attachments",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_ticket_attach_ticket", columnList = "ticket_id"),
-      @Index(name = "idx_ticket_attach_uploader", columnList = "uploaded_by")
-    })
+@Table(name = "ticket_attachments", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor

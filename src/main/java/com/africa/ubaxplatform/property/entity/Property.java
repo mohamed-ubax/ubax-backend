@@ -10,7 +10,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -40,18 +39,7 @@ import lombok.experimental.SuperBuilder;
  * cartographique (Google Maps / Mapbox) et les recherches géospatiales via l'index PostgreSQL GIST.
  */
 @Entity
-@Table(
-    name = "properties",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_properties_status", columnList = "status"),
-      @Index(name = "idx_properties_city", columnList = "city"),
-      @Index(name = "idx_properties_owner", columnList = "owner_id"),
-      @Index(name = "idx_properties_agency", columnList = "agency_id"),
-      @Index(name = "idx_properties_price", columnList = "price"),
-      @Index(name = "idx_properties_type_tx", columnList = "property_type, transaction_type"),
-      @Index(name = "idx_properties_published_at", columnList = "published_at")
-    })
+@Table(name = "properties", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor
