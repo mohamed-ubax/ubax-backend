@@ -9,6 +9,9 @@ spring:
   application:
     name: ubax-platform
 
+  jackson:
+    default-property-inclusion: non_null
+
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
 

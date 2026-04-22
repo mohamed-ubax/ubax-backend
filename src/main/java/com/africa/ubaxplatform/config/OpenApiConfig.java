@@ -84,11 +84,12 @@ import org.springframework.context.annotation.Configuration;
                     + "| `UBAX_OWNER` | `OWNER` | Propriétaire particulier |\n"
                     + "| `UBAX_CLIENT` | `CLIENT` | Acheteur / locataire |\n\n"
                     + "## Sous-rôles applicatifs (Niveau 2 — table `user_sub_roles`)\n"
-                    + "| Scope | Sous-rôles autorisés | Pour qui |\n"
-                    + "|---|---|---|\n"
-                    + "| `UBAX_INTERNAL` | DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL | ADMIN / SUPER_ADMIN |\n"
-                    + "| `AGENCE` | DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV | PARTNER agence |\n"
-                    + "| `HOTEL` | GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT | PARTNER hôtel |",
+                    + "| Scope | Sous-rôles | Qui assigne | Endpoint |\n"
+                    + "|---|---|---|---|\n"
+                    + "| `UBAX_INTERNAL` | DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL | `SUPER_ADMIN` | `/v1/admin/users/{id}/sub-roles` |\n"
+                    + "| `AGENCE` | DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV | `PARTNER` (même agence) | `/v1/agency/team/{id}/sub-roles` |\n"
+                    + "| `HOTEL` | GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT | `PARTNER` (même hôtel) | `/v1/hotel/team/{id}/sub-roles` |\n\n"
+                    + "> Un utilisateur peut cumuler plusieurs sous-rôles. L'auto-assignation est autorisée pour les scopes AGENCE et HOTEL.",
             contact = @Contact(name = "UBAX Platform", email = "tech@ubax.africa")),
     tags = {
       @Tag(
@@ -104,12 +105,36 @@ import org.springframework.context.annotation.Configuration;
       @Tag(
           name = "User Sub-Roles",
           description =
-              "👑 **SUPER_ADMIN / ADMIN** – Gestion des sous-rôles applicatifs (table `user_sub_roles`).\n\n"
-                  + "Ces sous-rôles affinent les accès à l'intérieur d'un rôle Keycloak et ne sont **pas portés par le JWT**.\n\n"
-                  + "**Scopes :** `UBAX_INTERNAL` (admins) · `AGENCE` (partenaires agence) · `HOTEL` (partenaires hôtel)\n\n"
-                  + "**UBAX_INTERNAL :** DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL\n\n"
-                  + "**AGENCE :** DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV\n\n"
-                  + "**HOTEL :** GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT"),
+              "👑 **SUPER_ADMIN** – Gestion des sous-rôles internes UBAX (scope `UBAX_INTERNAL` uniquement).\n\n"
+                  + "Ces sous-rôles ne sont **pas portés par le JWT** — ils sont vérifiés en base à chaque appel.\n\n"
+                  + "**Sous-rôles UBAX_INTERNAL :** DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL\n\n"
+                  + "> ⚠️ Les scopes `AGENCE` et `HOTEL` sont gérés exclusivement via **Agency Team** et **Hotel Team**."),
+      @Tag(
+          name = "Agency Team",
+          description =
+              "🏢 **PARTNER (même agence)** – Gestion de l'équipe agence.\n\n"
+                  + "| Méthode | Endpoint | Description |\n"
+                  + "|---|---|---|\n"
+                  + "| `GET` | `/v1/agency/team` | Lister les membres de l'équipe |\n"
+                  + "| `POST` | `/v1/agency/team` | Inviter un nouveau membre (email set-password envoyé) |\n"
+                  + "| `POST` | `/v1/agency/team/{id}/sub-roles` | Assigner des sous-rôles (cumulatif) |\n"
+                  + "| `GET` | `/v1/agency/team/{id}/sub-roles` | Consulter les sous-rôles d'un membre |\n"
+                  + "| `DELETE` | `/v1/agency/team/{id}/sub-roles/{role}` | Révoquer un sous-rôle |\n\n"
+                  + "**Sous-rôles disponibles :** `DIRECTEUR_AGENCE` · `COMMERCIAL` · `COMPTABLE_AGENCE` · `AGENT_SAV`\n\n"
+                  + "> L'auto-assignation est autorisée. Les sous-rôles sont cumulatifs."),
+      @Tag(
+          name = "Hotel Team",
+          description =
+              "🏨 **PARTNER (même hôtel)** – Gestion de l'équipe hôtel.\n\n"
+                  + "| Méthode | Endpoint | Description |\n"
+                  + "|---|---|---|\n"
+                  + "| `GET` | `/v1/hotel/team` | Lister les membres de l'équipe |\n"
+                  + "| `POST` | `/v1/hotel/team` | Inviter un nouveau membre (email set-password envoyé) |\n"
+                  + "| `POST` | `/v1/hotel/team/{id}/sub-roles` | Assigner des sous-rôles (cumulatif) |\n"
+                  + "| `GET` | `/v1/hotel/team/{id}/sub-roles` | Consulter les sous-rôles d'un membre |\n"
+                  + "| `DELETE` | `/v1/hotel/team/{id}/sub-roles/{role}` | Révoquer un sous-rôle |\n\n"
+                  + "**Sous-rôles disponibles :** `GERANT_HOTEL` · `RECEPTIONNISTE` · `COMPTABLE_HOTEL` · `RESPONSABLE_HEBERGEMENT`\n\n"
+                  + "> L'auto-assignation est autorisée. Les sous-rôles sont cumulatifs."),
       @Tag(
           name = "Partner",
           description =
@@ -158,7 +183,12 @@ import org.springframework.context.annotation.Configuration;
       @Tag(
           name = "CodeList",
           description =
-              "🌐 **Public** (lecture) · 🛡 **ADMIN** (écriture) – Référentiels dynamiques (types, statuts, etc.)")
+              "🌐 **Public** (lecture par type) · 🛡 **ADMIN** (lecture restreinte + écriture) – Référentiels dynamiques.\n\n"
+                  + "**Types sous-rôles :**\n"
+                  + "- `ROLE_AGENCE` → sous-rôles agence (public) : DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV\n"
+                  + "- `ROLE_HOTEL` → sous-rôles hôtel (public) : GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT\n"
+                  + "- `ROLE_UBAX_INTERNAL` → sous-rôles internes UBAX **(ADMIN uniquement)** : DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL\n\n"
+                  + "> Pour `ROLE_UBAX_INTERNAL`, utiliser `GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL`.")
     })
 @SecurityScheme(
     name = "bearerAuth",

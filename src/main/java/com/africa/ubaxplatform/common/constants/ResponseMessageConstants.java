@@ -42,6 +42,7 @@ public class ResponseMessageConstants {
   public static final String USER_CREATE_FAILURE = "USER_CREATE_FAILURE";
   public static final String USER_CREATE_FAILURE_ALREADY_EXISTS =
       "USER_CREATE_FAILURE_ALREADY_EXISTS";
+  public static final String TEAM_MEMBER_CREATE_SUCCESS = "TEAM_MEMBER_CREATE_SUCCESS";
   public static final String USER_UPDATE_FAILURE = "USER_UPDATE_FAILURE";
   public static final String USER_DELETE_FAILURE = "USER_DELETE_FAILURE";
 
