@@ -11,9 +11,12 @@ import static org.mockito.Mockito.when;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.mapper.AgencyMapper;
+import com.africa.ubaxplatform.auth.mapper.HotelMapper;
 import com.africa.ubaxplatform.auth.repository.AgencyRepository;
+import com.africa.ubaxplatform.auth.repository.HotelRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.common.constants.Constants;
@@ -65,11 +68,13 @@ class PartnerApplicationServiceImplTest {
   @Mock private ApplicationStatusLogRepository statusLogRepo;
   @Mock private UserRepository userRepo;
   @Mock private AgencyRepository agencyRepo;
+  @Mock private HotelRepository hotelRepo;
   @Mock private KeycloakAdminService keycloakAdminService;
   @Mock private EmailService emailService;
   @Mock private MinioService minioService;
   @Spy private PartnerApplicationMapper mapper = new PartnerApplicationMapper();
   @Spy private AgencyMapper agencyMapper = new AgencyMapper();
+  @Spy private HotelMapper hotelMapper = new HotelMapper();
   @InjectMocks private PartnerApplicationServiceImpl service;
 
   private static final String ADMIN_EMAIL = "admin@ubax.com";
@@ -158,7 +163,6 @@ class PartnerApplicationServiceImplTest {
 
       when(applicationRepo.existsByEmailAndStatusNot(req.getEmail(), ApplicationStatus.REJECTED))
           .thenReturn(false);
-      when(minioService.initPartnerDirectory(req.getCompanyName())).thenReturn("acme-sarl");
 
       assertThatThrownBy(() -> service.apply(req, rccm, dfe, bail, logo))
           .isInstanceOf(CustomException.class)
@@ -221,12 +225,12 @@ class PartnerApplicationServiceImplTest {
           .thenReturn(false);
       when(minioService.initPartnerDirectory(anyString())).thenReturn("acme-sarl");
 
-      // Type MIME invalide pour un document légal
       MockMultipartFile invalidFile =
           new MockMultipartFile("rccm", "rccm.exe", "application/x-msdownload", new byte[100]);
+      MockMultipartFile validDfe = PartnerTestFixtures.pdfFile("dfe");
 
-      assertThatThrownBy(() -> service.apply(req, invalidFile, null, null, null))
-          .isInstanceOf(CustomException.class);
+      assertThatThrownBy(() -> service.apply(req, invalidFile, validDfe, null, null))
+          .isInstanceOf(BadRequestException.class);
 
       verify(applicationRepo, never()).save(any());
     }
@@ -239,13 +243,13 @@ class PartnerApplicationServiceImplTest {
           .thenReturn(false);
       when(minioService.initPartnerDirectory(anyString())).thenReturn("acme-sarl");
 
-      // Fichier > 10 Mo
       byte[] largeContent = new byte[11 * 1024 * 1024];
       MockMultipartFile largeFile =
           new MockMultipartFile("rccm", "rccm.pdf", "application/pdf", largeContent);
+      MockMultipartFile validDfe = PartnerTestFixtures.pdfFile("dfe");
 
-      assertThatThrownBy(() -> service.apply(req, largeFile, null, null, null))
-          .isInstanceOf(CustomException.class);
+      assertThatThrownBy(() -> service.apply(req, largeFile, validDfe, null, null))
+          .isInstanceOf(BadRequestException.class);
 
       verify(applicationRepo, never()).save(any());
     }
@@ -339,7 +343,7 @@ class PartnerApplicationServiceImplTest {
   class Decide {
 
     @Test
-    @DisplayName("Succès – APPROVED sans type agence, email envoyé")
+    @DisplayName("Succès – APPROVED type hôtel, Hotel créé et email envoyé")
     void decide_approved_nonAgency_sendsApprovedEmail() throws CustomException {
       UUID id = UUID.randomUUID();
       PartnerApplication app =
@@ -353,6 +357,7 @@ class PartnerApplicationServiceImplTest {
       when(keycloakAdminService.createPartnerAccount(
               anyString(), anyString(), anyString(), anyString()))
           .thenReturn("kc-partner-id");
+      when(hotelRepo.save(any(Hotel.class))).thenAnswer(inv -> inv.getArgument(0));
 
       PartnerApplicationResponse response =
           service.decide(id, ADMIN_KEYCLOAK_ID, ApplicationStatus.APPROVED, null);
@@ -602,6 +607,7 @@ class PartnerApplicationServiceImplTest {
       when(keycloakAdminService.createPartnerAccount(
               anyString(), anyString(), anyString(), anyString()))
           .thenReturn("kc-id");
+      when(hotelRepo.save(any(Hotel.class))).thenAnswer(inv -> inv.getArgument(0));
 
       service.decide(id, ADMIN_KEYCLOAK_ID, ApplicationStatus.APPROVED, null);
 
