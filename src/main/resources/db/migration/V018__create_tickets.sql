@@ -5,7 +5,7 @@
 -- ============================================================
 
 -- ── Tickets ────────────────────────────────────────────────
-CREATE TABLE administrative.tickets
+CREATE TABLE IF NOT EXISTS administrative.tickets
 (
     id                       UUID         NOT NULL PRIMARY KEY,
     contract_id              UUID         NOT NULL REFERENCES administrative.contracts (id),
@@ -30,14 +30,14 @@ CREATE TABLE administrative.tickets
     updated_at               TIMESTAMP    NOT NULL
 );
 
-CREATE INDEX idx_tickets_contract_id  ON administrative.tickets (contract_id);
-CREATE INDEX idx_tickets_reporter_id  ON administrative.tickets (reporter_id);
-CREATE INDEX idx_tickets_assigned_to  ON administrative.tickets (assigned_to);
-CREATE INDEX idx_tickets_status       ON administrative.tickets (status);
-CREATE INDEX idx_tickets_priority     ON administrative.tickets (priority);
+CREATE INDEX IF NOT EXISTS idx_tickets_contract_id  ON administrative.tickets (contract_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_reporter_id  ON administrative.tickets (reporter_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_assigned_to  ON administrative.tickets (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tickets_status       ON administrative.tickets (status);
+CREATE INDEX IF NOT EXISTS idx_tickets_priority     ON administrative.tickets (priority);
 
 -- ── Messages ───────────────────────────────────────────────
-CREATE TABLE administrative.ticket_messages
+CREATE TABLE IF NOT EXISTS administrative.ticket_messages
 (
     id                   UUID        NOT NULL PRIMARY KEY,
     ticket_id            UUID        NOT NULL REFERENCES administrative.tickets (id),
@@ -52,11 +52,11 @@ CREATE TABLE administrative.ticket_messages
     updated_at           TIMESTAMP   NOT NULL
 );
 
-CREATE INDEX idx_ticket_messages_ticket_id ON administrative.ticket_messages (ticket_id);
-CREATE INDEX idx_ticket_messages_sender_id ON administrative.ticket_messages (sender_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id ON administrative.ticket_messages (ticket_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_messages_sender_id ON administrative.ticket_messages (sender_id);
 
 -- ── Pièces jointes ─────────────────────────────────────────
-CREATE TABLE administrative.ticket_attachments
+CREATE TABLE IF NOT EXISTS administrative.ticket_attachments
 (
     id              UUID        NOT NULL,
     ticket_id       UUID        NOT NULL REFERENCES administrative.tickets (id),
@@ -71,4 +71,4 @@ CREATE TABLE administrative.ticket_attachments
     updated_at      TIMESTAMP   NOT NULL
 );
 
-CREATE INDEX idx_ticket_attachments_ticket_id ON administrative.ticket_attachments (ticket_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_attachments_ticket_id ON administrative.ticket_attachments (ticket_id);

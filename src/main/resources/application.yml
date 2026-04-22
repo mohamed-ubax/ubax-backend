@@ -46,6 +46,7 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
     out-of-order: false
+    validate-on-migrate: false
 
   # ─── Keycloak OAuth2 Resource Server ─────────────────────────────
   security:
