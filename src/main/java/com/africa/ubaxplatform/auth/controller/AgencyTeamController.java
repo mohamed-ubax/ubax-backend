@@ -22,6 +22,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -51,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
         "🏢 **PARTNER (même agence)** — Gestion des sous-rôles internes agence.\n\n"
             + "**Rôles disponibles :** DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV\n\n"
             + "Un membre peut cumuler plusieurs sous-rôles. L'auto-assignation est autorisée.")
+@Slf4j
 public class AgencyTeamController {
 
   private final UserRoleService userRoleService;
@@ -105,6 +107,7 @@ public class AgencyTeamController {
       throws CustomException {
     RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
     String callerKeycloakId = authentication.getName();
+    log.info("callerKeycloakId : {}", callerKeycloakId);
     var result = userRoleService.getTeamMembers(callerKeycloakId, RoleScope.AGENCE);
     return ResponseEntity.ok(
         new CustomResponse(
