@@ -35,6 +35,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   private final KeycloakProperties props;
   private final RestClient restClient;
+  private static final String UBAX_PREFIX = "UBAX_";
 
   public KeycloakAdminServiceImpl(KeycloakProperties props) {
     this.props = props;
@@ -105,7 +106,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   @Override
   public void assignRole(String keycloakId, UserRole role) throws CustomException {
     String adminToken = getAdminToken();
-    String roleName = "UBAX_" + role.name();
+    String roleName = UBAX_PREFIX + role.name();
 
     try {
       Map<String, Object> roleRepresentation =
@@ -140,7 +141,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   @Override
   public void removeRole(String keycloakId, UserRole role) throws CustomException {
     String adminToken = getAdminToken();
-    String roleName = "UBAX_" + role.name();
+    String roleName = UBAX_PREFIX + role.name();
 
     try {
       Map<String, Object> roleRepresentation =

@@ -27,10 +27,12 @@ public record UserResponse(
     // ── Avatar ───────────────────────────────────────────────────
     String avatarUrl,
 
-    // ── Rôles & agence ───────────────────────────────────────────
+    // ── Rôles & structure ────────────────────────────────────────
     Set<UserRole> roles,
     UUID agencyId,
     String agencyName,
+    UUID hotelId,
+    String hotelName,
 
     // ── Vérifications ────────────────────────────────────────────
     boolean emailVerified,

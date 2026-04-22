@@ -24,4 +24,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r IN :roles")
   List<User> findAdminUsers(@Param("roles") Set<UserRole> roles);
+
+  List<User> findByAgencyIdAndDeletedAtIsNull(UUID agencyId);
+
+  List<User> findByHotelIdAndDeletedAtIsNull(UUID hotelId);
 }

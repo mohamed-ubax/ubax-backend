@@ -1,6 +1,8 @@
 package com.africa.ubaxplatform.auth.service.interfaces;
 
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
+import com.africa.ubaxplatform.auth.dto.AddTeamMemberRequest;
+import com.africa.ubaxplatform.auth.dto.UserResponse;
 import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import java.util.List;
@@ -75,5 +77,42 @@ public interface UserRoleService {
   /** Révoque un sous-rôle d'un membre de la structure du PARTNER appelant. */
   void revokePartnerSubRole(
       String callerKeycloakId, UUID targetUserId, String role, RoleScope scope)
+      throws CustomException;
+
+  /**
+   * Retourne la liste des membres de la structure du PARTNER appelant (agence ou hôtel).
+   *
+   * @param callerKeycloakId keycloak ID du PARTNER appelant
+   * @param scope AGENCE ou HOTEL
+   */
+  List<UserResponse> getTeamMembers(String callerKeycloakId, RoleScope scope)
+      throws CustomException;
+
+  /**
+   * Retourne la liste des membres d'une agence — accès admin back-office.
+   *
+   * @param agencyId identifiant de l'agence
+   */
+  List<UserResponse> getAgencyMembersForAdmin(UUID agencyId);
+
+  /**
+   * Retourne la liste des membres d'un hôtel — accès admin back-office.
+   *
+   * @param hotelId identifiant de l'hôtel
+   */
+  List<UserResponse> getHotelMembersForAdmin(UUID hotelId);
+
+  /**
+   * Crée un nouveau membre d'équipe dans la structure du PARTNER appelant.
+   *
+   * <p>Crée le compte Keycloak (rôle PARTNER, action UPDATE_PASSWORD), envoie l'email de définition
+   * du mot de passe, crée l'entité User en DB liée à l'agence/hôtel, puis assigne les sous-rôles
+   * fournis. En cas d'échec après la création Keycloak, le compte est supprimé en rollback.
+   *
+   * @param callerKeycloakId keycloak ID du PARTNER appelant
+   * @param request données du nouveau membre
+   * @param scope AGENCE ou HOTEL
+   */
+  UserResponse addTeamMember(String callerKeycloakId, AddTeamMemberRequest request, RoleScope scope)
       throws CustomException;
 }

@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.auth.controller;
 
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
+import com.africa.ubaxplatform.auth.dto.AddTeamMemberRequest;
 import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.service.interfaces.UserRoleService;
 import com.africa.ubaxplatform.common.constants.Constants;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.UUID;
@@ -53,6 +55,64 @@ public class AgencyTeamController {
 
   private final UserRoleService userRoleService;
   private final RequestHeaderParser requestHeaderParser;
+
+  @PostMapping
+  @Operation(
+      summary = "Inviter un nouveau membre dans l'équipe agence",
+      description =
+          "🏢 **Rôle requis :** `PARTNER` de la même agence.\n\n"
+              + "Crée un compte PARTNER pour le nouveau membre, l'attache à votre agence, "
+              + "assigne les sous-rôles fournis et envoie un email permettant à l'employé de "
+              + "définir son mot de passe. Les autres informations du profil seront complétées "
+              + "par l'utilisateur lui-même.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "201", description = "Membre créé et email envoyé"),
+    @ApiResponse(responseCode = "400", description = "Données invalides ou sous-rôles incorrects"),
+    @ApiResponse(responseCode = "403", description = "Pas PARTNER de cette agence"),
+    @ApiResponse(responseCode = "409", description = "Email déjà utilisé")
+  })
+  public ResponseEntity<CustomResponse> addMember(
+      @RequestBody @Valid AddTeamMemberRequest request,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    var result = userRoleService.addTeamMember(callerKeycloakId, request, RoleScope.AGENCE);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(
+            new CustomResponse(
+                Constants.Message.SUCCESS_BODY,
+                Constants.Status.CREATED,
+                ResponseMessageConstants.TEAM_MEMBER_CREATE_SUCCESS,
+                result));
+  }
+
+  @GetMapping
+  @Operation(
+      summary = "Lister les membres de l'équipe agence",
+      description =
+          "🏢 **Rôle requis :** `PARTNER` de la même agence.\n\n"
+              + "Retourne tous les membres actifs de votre agence avec leurs informations de profil.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste retournée"),
+    @ApiResponse(responseCode = "403", description = "Pas PARTNER de cette agence")
+  })
+  public ResponseEntity<CustomResponse> getTeamMembers(
+      JwtAuthenticationToken authentication, HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    var result = userRoleService.getTeamMembers(callerKeycloakId, RoleScope.AGENCE);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_SUCCESS,
+            result));
+  }
 
   @PostMapping("/{userId}/sub-roles")
   @Operation(

@@ -2,20 +2,26 @@ package com.africa.ubaxplatform.auth.service.impl;
 
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
+import com.africa.ubaxplatform.auth.dto.AddTeamMemberRequest;
+import com.africa.ubaxplatform.auth.dto.UserResponse;
 import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.entity.UserSubRole;
+import com.africa.ubaxplatform.auth.mapper.UserMapper;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.repository.UserSubRoleRepository;
+import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.auth.service.interfaces.UserRoleService;
 import com.africa.ubaxplatform.common.codelist.entity.LaCodeList;
 import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
+import com.africa.ubaxplatform.common.exception.ConflictException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -33,6 +39,7 @@ public class UserRoleServiceImpl implements UserRoleService {
   private final UserSubRoleRepository subRoleRepo;
   private final UserRepository userRepo;
   private final LaCodeListRepository codeListRepo;
+  private final KeycloakAdminService keycloakAdminService;
 
   @Override
   @Transactional
@@ -219,6 +226,116 @@ public class UserRoleServiceImpl implements UserRoleService {
         targetUserId,
         role,
         scope);
+  }
+
+  // ── Listes de membres ─────────────────────────────────────────────
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<UserResponse> getTeamMembers(String callerKeycloakId, RoleScope scope)
+      throws CustomException {
+    User caller = findByKeycloakId(callerKeycloakId);
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+
+    return switch (scope) {
+      case AGENCE -> {
+        if (caller.getAgency() == null) {
+          throw new CustomException(
+              new BadRequestException("Vous n'êtes rattaché à aucune agence"));
+        }
+        yield userRepo.findByAgencyIdAndDeletedAtIsNull(caller.getAgency().getId()).stream()
+            .map(UserMapper::toResponse)
+            .toList();
+      }
+      case HOTEL -> {
+        if (caller.getHotel() == null) {
+          throw new CustomException(new BadRequestException("Vous n'êtes rattaché à aucun hôtel"));
+        }
+        yield userRepo.findByHotelIdAndDeletedAtIsNull(caller.getHotel().getId()).stream()
+            .map(UserMapper::toResponse)
+            .toList();
+      }
+      default ->
+          throw new CustomException(new BadRequestException("Scope non supporté : " + scope));
+    };
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<UserResponse> getAgencyMembersForAdmin(UUID agencyId) {
+    return userRepo.findByAgencyIdAndDeletedAtIsNull(agencyId).stream()
+        .map(UserMapper::toResponse)
+        .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<UserResponse> getHotelMembersForAdmin(UUID hotelId) {
+    return userRepo.findByHotelIdAndDeletedAtIsNull(hotelId).stream()
+        .map(UserMapper::toResponse)
+        .toList();
+  }
+
+  // ── Ajout d'un membre d'équipe ────────────────────────────────────
+
+  @Override
+  @Transactional
+  public UserResponse addTeamMember(
+      String callerKeycloakId, AddTeamMemberRequest request, RoleScope scope)
+      throws CustomException {
+
+    User caller = findByKeycloakId(callerKeycloakId);
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+
+    if (userRepo.existsByEmail(request.getEmail())) {
+      throw new CustomException(
+          new ConflictException("Un compte avec cet email existe déjà : " + request.getEmail()));
+    }
+
+    String keycloakId = null;
+    try {
+      keycloakId =
+          keycloakAdminService.createAdminAccount(
+              request.getEmail(),
+              request.getFirstName(),
+              request.getLastName(),
+              request.getPhone());
+
+      keycloakAdminService.assignRole(keycloakId, UserRole.PARTNER);
+      keycloakAdminService.sendSetPasswordLink(keycloakId);
+
+      User member =
+          User.builder()
+              .keycloakId(keycloakId)
+              .firstName(request.getFirstName())
+              .lastName(request.getLastName())
+              .email(request.getEmail())
+              .phone(request.getPhone())
+              .roles(new HashSet<>(Set.of(UserRole.PARTNER)))
+              .agency(scope == RoleScope.AGENCE ? caller.getAgency() : null)
+              .hotel(scope == RoleScope.HOTEL ? caller.getHotel() : null)
+              .build();
+
+      member = userRepo.save(member);
+
+      if (request.getSubRoles() != null && !request.getSubRoles().isEmpty()) {
+        validateRolesForScope(request.getSubRoles(), scope);
+        for (String role : request.getSubRoles()) {
+          subRoleRepo.save(UserSubRole.builder().user(member).role(role).scope(scope).build());
+        }
+      }
+
+      log.info("Membre ajouté : caller={}, new={}, scope={}", callerKeycloakId, keycloakId, scope);
+      return UserMapper.toResponse(member);
+
+    } catch (CustomException e) {
+      if (keycloakId != null) {
+        keycloakAdminService.deleteUser(keycloakId);
+      }
+      throw e;
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────

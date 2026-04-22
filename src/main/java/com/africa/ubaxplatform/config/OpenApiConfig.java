@@ -112,17 +112,29 @@ import org.springframework.context.annotation.Configuration;
       @Tag(
           name = "Agency Team",
           description =
-              "🏢 **PARTNER (même agence)** – Gestion des sous-rôles de l'équipe agence (scope `AGENCE`).\n\n"
-                  + "**Sous-rôles disponibles :** DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV\n\n"
-                  + "Un PARTNER peut assigner des rôles à ses collègues **ou à lui-même** (auto-assignation). "
-                  + "Les rôles sont **cumulatifs** — assigner ne remplace pas les rôles existants."),
+              "🏢 **PARTNER (même agence)** – Gestion de l'équipe agence.\n\n"
+                  + "| Méthode | Endpoint | Description |\n"
+                  + "|---|---|---|\n"
+                  + "| `GET` | `/v1/agency/team` | Lister les membres de l'équipe |\n"
+                  + "| `POST` | `/v1/agency/team` | Inviter un nouveau membre (email set-password envoyé) |\n"
+                  + "| `POST` | `/v1/agency/team/{id}/sub-roles` | Assigner des sous-rôles (cumulatif) |\n"
+                  + "| `GET` | `/v1/agency/team/{id}/sub-roles` | Consulter les sous-rôles d'un membre |\n"
+                  + "| `DELETE` | `/v1/agency/team/{id}/sub-roles/{role}` | Révoquer un sous-rôle |\n\n"
+                  + "**Sous-rôles disponibles :** `DIRECTEUR_AGENCE` · `COMMERCIAL` · `COMPTABLE_AGENCE` · `AGENT_SAV`\n\n"
+                  + "> L'auto-assignation est autorisée. Les sous-rôles sont cumulatifs."),
       @Tag(
           name = "Hotel Team",
           description =
-              "🏨 **PARTNER (même hôtel)** – Gestion des sous-rôles de l'équipe hôtel (scope `HOTEL`).\n\n"
-                  + "**Sous-rôles disponibles :** GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT\n\n"
-                  + "Un PARTNER peut assigner des rôles à ses collègues **ou à lui-même** (auto-assignation). "
-                  + "Les rôles sont **cumulatifs** — assigner ne remplace pas les rôles existants."),
+              "🏨 **PARTNER (même hôtel)** – Gestion de l'équipe hôtel.\n\n"
+                  + "| Méthode | Endpoint | Description |\n"
+                  + "|---|---|---|\n"
+                  + "| `GET` | `/v1/hotel/team` | Lister les membres de l'équipe |\n"
+                  + "| `POST` | `/v1/hotel/team` | Inviter un nouveau membre (email set-password envoyé) |\n"
+                  + "| `POST` | `/v1/hotel/team/{id}/sub-roles` | Assigner des sous-rôles (cumulatif) |\n"
+                  + "| `GET` | `/v1/hotel/team/{id}/sub-roles` | Consulter les sous-rôles d'un membre |\n"
+                  + "| `DELETE` | `/v1/hotel/team/{id}/sub-roles/{role}` | Révoquer un sous-rôle |\n\n"
+                  + "**Sous-rôles disponibles :** `GERANT_HOTEL` · `RECEPTIONNISTE` · `COMPTABLE_HOTEL` · `RESPONSABLE_HEBERGEMENT`\n\n"
+                  + "> L'auto-assignation est autorisée. Les sous-rôles sont cumulatifs."),
       @Tag(
           name = "Partner",
           description =
