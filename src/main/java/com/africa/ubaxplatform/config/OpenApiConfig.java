@@ -84,11 +84,12 @@ import org.springframework.context.annotation.Configuration;
                     + "| `UBAX_OWNER` | `OWNER` | Propriétaire particulier |\n"
                     + "| `UBAX_CLIENT` | `CLIENT` | Acheteur / locataire |\n\n"
                     + "## Sous-rôles applicatifs (Niveau 2 — table `user_sub_roles`)\n"
-                    + "| Scope | Sous-rôles autorisés | Pour qui |\n"
-                    + "|---|---|---|\n"
-                    + "| `UBAX_INTERNAL` | DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL | ADMIN / SUPER_ADMIN |\n"
-                    + "| `AGENCE` | DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV | PARTNER agence |\n"
-                    + "| `HOTEL` | GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT | PARTNER hôtel |",
+                    + "| Scope | Sous-rôles | Qui assigne | Endpoint |\n"
+                    + "|---|---|---|---|\n"
+                    + "| `UBAX_INTERNAL` | DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL | `SUPER_ADMIN` | `/v1/admin/users/{id}/sub-roles` |\n"
+                    + "| `AGENCE` | DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV | `PARTNER` (même agence) | `/v1/agency/team/{id}/sub-roles` |\n"
+                    + "| `HOTEL` | GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT | `PARTNER` (même hôtel) | `/v1/hotel/team/{id}/sub-roles` |\n\n"
+                    + "> Un utilisateur peut cumuler plusieurs sous-rôles. L'auto-assignation est autorisée pour les scopes AGENCE et HOTEL.",
             contact = @Contact(name = "UBAX Platform", email = "tech@ubax.africa")),
     tags = {
       @Tag(
@@ -104,12 +105,24 @@ import org.springframework.context.annotation.Configuration;
       @Tag(
           name = "User Sub-Roles",
           description =
-              "👑 **SUPER_ADMIN / ADMIN** – Gestion des sous-rôles applicatifs (table `user_sub_roles`).\n\n"
-                  + "Ces sous-rôles affinent les accès à l'intérieur d'un rôle Keycloak et ne sont **pas portés par le JWT**.\n\n"
-                  + "**Scopes :** `UBAX_INTERNAL` (admins) · `AGENCE` (partenaires agence) · `HOTEL` (partenaires hôtel)\n\n"
-                  + "**UBAX_INTERNAL :** DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL\n\n"
-                  + "**AGENCE :** DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV\n\n"
-                  + "**HOTEL :** GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT"),
+              "👑 **SUPER_ADMIN** – Gestion des sous-rôles internes UBAX (scope `UBAX_INTERNAL` uniquement).\n\n"
+                  + "Ces sous-rôles ne sont **pas portés par le JWT** — ils sont vérifiés en base à chaque appel.\n\n"
+                  + "**Sous-rôles UBAX_INTERNAL :** DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL\n\n"
+                  + "> ⚠️ Les scopes `AGENCE` et `HOTEL` sont gérés exclusivement via **Agency Team** et **Hotel Team**."),
+      @Tag(
+          name = "Agency Team",
+          description =
+              "🏢 **PARTNER (même agence)** – Gestion des sous-rôles de l'équipe agence (scope `AGENCE`).\n\n"
+                  + "**Sous-rôles disponibles :** DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV\n\n"
+                  + "Un PARTNER peut assigner des rôles à ses collègues **ou à lui-même** (auto-assignation). "
+                  + "Les rôles sont **cumulatifs** — assigner ne remplace pas les rôles existants."),
+      @Tag(
+          name = "Hotel Team",
+          description =
+              "🏨 **PARTNER (même hôtel)** – Gestion des sous-rôles de l'équipe hôtel (scope `HOTEL`).\n\n"
+                  + "**Sous-rôles disponibles :** GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT\n\n"
+                  + "Un PARTNER peut assigner des rôles à ses collègues **ou à lui-même** (auto-assignation). "
+                  + "Les rôles sont **cumulatifs** — assigner ne remplace pas les rôles existants."),
       @Tag(
           name = "Partner",
           description =
