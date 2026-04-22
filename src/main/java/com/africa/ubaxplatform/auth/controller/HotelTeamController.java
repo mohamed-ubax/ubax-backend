@@ -34,11 +34,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Gestion des sous-rôles de l'équipe d'un hôtel partenaire.
  *
- * <p>Accessible par tout PARTNER appartenant au même hôtel, y compris pour
- * s'auto-assigner des sous-rôles. Les rôles sont cumulatifs.
+ * <p>Accessible par tout PARTNER appartenant au même hôtel, y compris pour s'auto-assigner des
+ * sous-rôles. Les rôles sont cumulatifs.
  *
- * <p>Scope concerné : {@code HOTEL} — valeurs : GERANT_HOTEL, RECEPTIONNISTE,
- * COMPTABLE_HOTEL, RESPONSABLE_HEBERGEMENT.
+ * <p>Scope concerné : {@code HOTEL} — valeurs : GERANT_HOTEL, RECEPTIONNISTE, COMPTABLE_HOTEL,
+ * RESPONSABLE_HEBERGEMENT.
  */
 @RestController
 @RequestMapping("/v1/hotel/team")
@@ -91,8 +91,7 @@ public class HotelTeamController {
   @GetMapping("/{userId}/sub-roles")
   @Operation(
       summary = "Consulter les sous-rôles hôtel d'un membre",
-      description =
-          "🛡 **Rôle requis :** `PARTNER` du même hôtel.",
+      description = "🛡 **Rôle requis :** `PARTNER` du même hôtel.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "200", description = "Liste des sous-rôles retournée")
   public ResponseEntity<CustomResponse> getSubRoles(
@@ -115,8 +114,7 @@ public class HotelTeamController {
   @DeleteMapping("/{userId}/sub-roles/{role}")
   @Operation(
       summary = "Révoquer un sous-rôle hôtel d'un membre",
-      description =
-          "🛡 **Rôle requis :** `PARTNER` du même hôtel.",
+      description = "🛡 **Rôle requis :** `PARTNER` du même hôtel.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Sous-rôle révoqué"),

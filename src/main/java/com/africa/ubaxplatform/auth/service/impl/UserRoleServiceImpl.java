@@ -1,9 +1,6 @@
 package com.africa.ubaxplatform.auth.service.impl;
 
-import com.africa.ubaxplatform.auth.codeList.AgenceRole;
-import com.africa.ubaxplatform.auth.codeList.HotelRole;
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
-import com.africa.ubaxplatform.auth.codeList.UbaxAdminRole;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.entity.User;
@@ -11,13 +8,14 @@ import com.africa.ubaxplatform.auth.entity.UserSubRole;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.repository.UserSubRoleRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.UserRoleService;
+import com.africa.ubaxplatform.common.codelist.entity.LaCodeList;
+import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -32,17 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class UserRoleServiceImpl implements UserRoleService {
 
-  private static final Set<String> UBAX_INTERNAL_ROLES =
-      Arrays.stream(UbaxAdminRole.values()).map(Enum::name).collect(Collectors.toSet());
-
-  private static final Set<String> AGENCE_ROLES =
-      Arrays.stream(AgenceRole.values()).map(Enum::name).collect(Collectors.toSet());
-
-  private static final Set<String> HOTEL_ROLES =
-      Arrays.stream(HotelRole.values()).map(Enum::name).collect(Collectors.toSet());
-
   private final UserSubRoleRepository subRoleRepo;
   private final UserRepository userRepo;
+  private final LaCodeListRepository codeListRepo;
 
   @Override
   @Transactional
@@ -131,12 +121,17 @@ public class UserRoleServiceImpl implements UserRoleService {
   }
 
   private void validateRolesForScope(List<String> roles, RoleScope scope) throws CustomException {
-    Set<String> allowed =
+    String codeListType =
         switch (scope) {
-          case UBAX_INTERNAL -> UBAX_INTERNAL_ROLES;
-          case AGENCE -> AGENCE_ROLES;
-          case HOTEL -> HOTEL_ROLES;
+          case UBAX_INTERNAL -> "ROLE_UBAX_INTERNAL";
+          case AGENCE -> "ROLE_AGENCE";
+          case HOTEL -> "ROLE_HOTEL";
         };
+
+    Set<String> allowed =
+        codeListRepo.findAllByType(codeListType).stream()
+            .map(LaCodeList::getValue)
+            .collect(Collectors.toSet());
 
     List<String> invalid = roles.stream().filter(r -> !allowed.contains(r)).toList();
     if (!invalid.isEmpty()) {
@@ -170,9 +165,14 @@ public class UserRoleServiceImpl implements UserRoleService {
     List<UserSubRole> assigned = new ArrayList<>();
     for (String role : roles) {
       if (!subRoleRepo.existsByUserIdAndRoleAndScope(targetUserId, role, scope)) {
-        assigned.add(subRoleRepo.save(UserSubRole.builder().user(target).role(role).scope(scope).build()));
-        log.info("Sous-rôle partner assigné : callerId={}, targetId={}, role={}, scope={}",
-            caller.getId(), targetUserId, role, scope);
+        assigned.add(
+            subRoleRepo.save(UserSubRole.builder().user(target).role(role).scope(scope).build()));
+        log.info(
+            "Sous-rôle partner assigné : callerId={}, targetId={}, role={}, scope={}",
+            caller.getId(),
+            targetUserId,
+            role,
+            scope);
       }
     }
     return assigned.stream().map(this::toResponse).toList();
@@ -213,20 +213,32 @@ public class UserRoleServiceImpl implements UserRoleService {
           new NotFoundException("Sous-rôle introuvable : " + role + " [" + scope + "]"));
     }
     subRoleRepo.deleteByUserIdAndRoleAndScope(targetUserId, role, scope);
-    log.info("Sous-rôle partner révoqué : callerId={}, targetId={}, role={}, scope={}",
-        caller.getId(), targetUserId, role, scope);
+    log.info(
+        "Sous-rôle partner révoqué : callerId={}, targetId={}, role={}, scope={}",
+        caller.getId(),
+        targetUserId,
+        role,
+        scope);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────
 
   private User findByKeycloakId(String keycloakId) throws CustomException {
-    return userRepo.findByKeycloakId(keycloakId)
-        .orElseThrow(() -> new CustomException(new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND)));
+    return userRepo
+        .findByKeycloakId(keycloakId)
+        .orElseThrow(
+            () ->
+                new CustomException(
+                    new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND)));
   }
 
   private User findById(UUID userId) throws CustomException {
-    return userRepo.findById(userId)
-        .orElseThrow(() -> new CustomException(new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND)));
+    return userRepo
+        .findById(userId)
+        .orElseThrow(
+            () ->
+                new CustomException(
+                    new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND)));
   }
 
   private void validateCallerIsPartner(User caller) throws CustomException {
@@ -239,7 +251,8 @@ public class UserRoleServiceImpl implements UserRoleService {
   private void validatePartnerScope(RoleScope scope) throws CustomException {
     if (scope == RoleScope.UBAX_INTERNAL) {
       throw new CustomException(
-          new BadRequestException("Le scope UBAX_INTERNAL est réservé aux administrateurs système"));
+          new BadRequestException(
+              "Le scope UBAX_INTERNAL est réservé aux administrateurs système"));
     }
   }
 
@@ -247,7 +260,8 @@ public class UserRoleServiceImpl implements UserRoleService {
       throws CustomException {
     switch (scope) {
       case AGENCE -> {
-        if (caller.getAgency() == null || target.getAgency() == null
+        if (caller.getAgency() == null
+            || target.getAgency() == null
             || !caller.getAgency().getId().equals(target.getAgency().getId())) {
           throw new CustomException(
               new UnAuthorizedException(
@@ -255,7 +269,8 @@ public class UserRoleServiceImpl implements UserRoleService {
         }
       }
       case HOTEL -> {
-        if (caller.getHotel() == null || target.getHotel() == null
+        if (caller.getHotel() == null
+            || target.getHotel() == null
             || !caller.getHotel().getId().equals(target.getHotel().getId())) {
           throw new CustomException(
               new UnAuthorizedException(

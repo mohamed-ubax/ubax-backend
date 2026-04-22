@@ -2,10 +2,10 @@ package com.africa.ubaxplatform.auth.controller;
 
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
 import com.africa.ubaxplatform.auth.dto.AssignSubRolesRequest;
-import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.auth.service.interfaces.UserRoleService;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
+import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
@@ -34,8 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Gestion des sous-rôles internes UBAX (scope {@code UBAX_INTERNAL}).
  *
- * <p>Réservé au SUPER_ADMIN. Les scopes AGENCE et HOTEL sont délégués à
- * {@code AgencyTeamController} et {@code HotelTeamController}.
+ * <p>Réservé au SUPER_ADMIN. Les scopes AGENCE et HOTEL sont délégués à {@code
+ * AgencyTeamController} et {@code HotelTeamController}.
  */
 @RestController
 @RequestMapping("/v1/admin/users/{userId}/sub-roles")

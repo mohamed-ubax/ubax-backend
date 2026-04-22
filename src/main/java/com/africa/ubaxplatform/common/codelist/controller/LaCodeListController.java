@@ -5,6 +5,7 @@ import com.africa.ubaxplatform.common.codelist.service.interfaces.LaCodeListServ
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
@@ -71,7 +72,8 @@ public class LaCodeListController {
 
   /**
    * Retourne toutes les valeurs d'un type de code list. Endpoint principal pour peupler les selects
-   * du frontend.
+   * du frontend. Le type {@code ROLE_UBAX_INTERNAL} est restreint — utiliser {@code GET
+   * /v1/code-list/admin/type/{type}} à la place.
    *
    * <p>Exemple : {@code GET /v1/code-list/type/PROPERTY_TYPE}
    */
@@ -79,11 +81,14 @@ public class LaCodeListController {
   @Operation(
       summary = "Liste des valeurs par type",
       description =
-          "Retourne toutes les entrées d'un type donné. Utiliser les constantes de type : "
-              + "PROPERTY_TYPE, TRANSACTION_TYPE, PROPERTY_CONDITION, PROPERTY_DOCUMENT_TYPE, "
-              + "MEDIA_TYPE, PARTNER_TYPE, EMPLOYMENT_STATUS, ID_DOCUMENT_TYPE, "
-              + "TICKET_CATEGORY, TICKET_PRIORITY, TICKET_ATTACHMENT_TYPE, COST_IMPUTED_TO, "
-              + "CONTRACT_TYPE, SUBSCRIPTION_PLAN, ALERT_FREQUENCY, NEWSLETTER_FREQUENCY, DISPLAY_MODE.",
+          "🌐 **Public** — Retourne toutes les entrées d'un type donné.\n\n"
+              + "**Types disponibles :** PROPERTY_TYPE · TRANSACTION_TYPE · PROPERTY_CONDITION · "
+              + "PROPERTY_DOCUMENT_TYPE · MEDIA_TYPE · PARTNER_TYPE · EMPLOYMENT_STATUS · ID_DOCUMENT_TYPE · "
+              + "TICKET_CATEGORY · TICKET_PRIORITY · TICKET_ATTACHMENT_TYPE · COST_IMPUTED_TO · "
+              + "CONTRACT_TYPE · SUBSCRIPTION_PLAN · ALERT_FREQUENCY · NEWSLETTER_FREQUENCY · DISPLAY_MODE · "
+              + "**ROLE_AGENCE** · **ROLE_HOTEL**\n\n"
+              + "> ⚠️ `ROLE_UBAX_INTERNAL` est restreint. "
+              + "Utiliser `GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL` (ADMIN requis).",
       tags = {"CodeList"})
   @ApiResponse(
       responseCode = "200",
@@ -92,8 +97,54 @@ public class LaCodeListController {
           @Content(
               mediaType = MediaType.APPLICATION_JSON_VALUE,
               schema = @Schema(implementation = LaCodeListDto.class)))
-  public ResponseEntity<CustomResponse> findAllByType(@PathVariable String type) {
+  @ApiResponse(responseCode = "403", description = "Type restreint — utiliser /admin/type/")
+  public ResponseEntity<CustomResponse> findAllByType(@PathVariable String type)
+      throws CustomException {
+    if ("ROLE_UBAX_INTERNAL".equals(type)) {
+      throw new CustomException(
+          new UnAuthorizedException(
+              "Le type ROLE_UBAX_INTERNAL est restreint. "
+                  + "Utiliser GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL (ADMIN requis)."));
+    }
     log.info("Récupération des code lists de type : {}", type);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.CODELIST_GET_SUCCESS,
+            codeListService.findAllByType(type).stream().map(LaCodeListDto::from)));
+  }
+
+  /**
+   * Retourne toutes les valeurs d'un type de code list — accès réservé aux admins. Donne accès au
+   * type restreint {@code ROLE_UBAX_INTERNAL} inaccessible via l'endpoint public.
+   *
+   * <p>Exemple : {@code GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL}
+   */
+  @GetMapping("/admin/type/{type}")
+  @Operation(
+      summary = "Liste des valeurs par type (admin)",
+      description =
+          "🛡 **Rôle requis :** `ADMIN` ou `SUPER_ADMIN`.\n\n"
+              + "Identique à `GET /v1/code-list/type/{type}` mais accessible uniquement aux admins. "
+              + "Donne accès au type **`ROLE_UBAX_INTERNAL`** (sous-rôles internes UBAX) "
+              + "non exposé sur l'endpoint public.\n\n"
+              + "**Types utiles via cet endpoint :** ROLE_UBAX_INTERNAL",
+      tags = {"CodeList"},
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponse(
+      responseCode = "200",
+      description = "Liste récupérée avec succès",
+      content =
+          @Content(
+              mediaType = MediaType.APPLICATION_JSON_VALUE,
+              schema = @Schema(implementation = LaCodeListDto.class)))
+  @ApiResponse(responseCode = "401", description = "Token manquant ou invalide")
+  @ApiResponse(responseCode = "403", description = "Rôle insuffisant")
+  public ResponseEntity<CustomResponse> findAllByTypeAdmin(
+      @PathVariable String type, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+    log.info("Récupération admin des code lists de type : {}", type);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,

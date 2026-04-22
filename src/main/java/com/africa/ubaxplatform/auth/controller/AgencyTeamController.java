@@ -34,12 +34,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Gestion des sous-rôles de l'équipe d'une agence immobilière.
  *
- * <p>Accessible par tout PARTNER appartenant à la même agence, y compris pour
- * s'auto-assigner des sous-rôles. Les rôles sont cumulatifs : assigner ne remplace
- * pas les rôles existants.
+ * <p>Accessible par tout PARTNER appartenant à la même agence, y compris pour s'auto-assigner des
+ * sous-rôles. Les rôles sont cumulatifs : assigner ne remplace pas les rôles existants.
  *
- * <p>Scope concerné : {@code AGENCE} — valeurs : DIRECTEUR_AGENCE, COMMERCIAL,
- * COMPTABLE_AGENCE, AGENT_SAV.
+ * <p>Scope concerné : {@code AGENCE} — valeurs : DIRECTEUR_AGENCE, COMMERCIAL, COMPTABLE_AGENCE,
+ * AGENT_SAV.
  */
 @RestController
 @RequestMapping("/v1/agency/team")
@@ -92,8 +91,7 @@ public class AgencyTeamController {
   @GetMapping("/{userId}/sub-roles")
   @Operation(
       summary = "Consulter les sous-rôles agence d'un membre",
-      description =
-          "🛡 **Rôle requis :** `PARTNER` de la même agence.",
+      description = "🛡 **Rôle requis :** `PARTNER` de la même agence.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "200", description = "Liste des sous-rôles retournée")
   public ResponseEntity<CustomResponse> getSubRoles(
@@ -116,8 +114,7 @@ public class AgencyTeamController {
   @DeleteMapping("/{userId}/sub-roles/{role}")
   @Operation(
       summary = "Révoquer un sous-rôle agence d'un membre",
-      description =
-          "🛡 **Rôle requis :** `PARTNER` de la même agence.",
+      description = "🛡 **Rôle requis :** `PARTNER` de la même agence.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Sous-rôle révoqué"),

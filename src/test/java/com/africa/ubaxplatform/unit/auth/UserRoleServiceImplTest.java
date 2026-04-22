@@ -17,6 +17,8 @@ import com.africa.ubaxplatform.auth.entity.UserSubRole;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.repository.UserSubRoleRepository;
 import com.africa.ubaxplatform.auth.service.impl.UserRoleServiceImpl;
+import com.africa.ubaxplatform.common.codelist.entity.LaCodeList;
+import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.testHelper.SharedTestFixtures;
@@ -38,8 +40,35 @@ class UserRoleServiceImplTest {
 
   @Mock private UserSubRoleRepository subRoleRepo;
   @Mock private UserRepository userRepo;
+  @Mock private LaCodeListRepository codeListRepo;
 
   @InjectMocks private UserRoleServiceImpl service;
+
+  private List<LaCodeList> agenceCodeList() {
+    return List.of(
+        codeListEntry("ROLE_AGENCE", AgenceRole.DIRECTEUR_AGENCE.name()),
+        codeListEntry("ROLE_AGENCE", AgenceRole.COMMERCIAL.name()),
+        codeListEntry("ROLE_AGENCE", AgenceRole.COMPTABLE_AGENCE.name()),
+        codeListEntry("ROLE_AGENCE", AgenceRole.AGENT_SAV.name()));
+  }
+
+  private List<LaCodeList> ubaxInternalCodeList() {
+    return List.of(
+        codeListEntry("ROLE_UBAX_INTERNAL", UbaxAdminRole.FINANCE.name()),
+        codeListEntry("ROLE_UBAX_INTERNAL", UbaxAdminRole.DIRECTEUR_GENERAL.name()),
+        codeListEntry("ROLE_UBAX_INTERNAL", UbaxAdminRole.SUPPORT_CLIENT.name()),
+        codeListEntry("ROLE_UBAX_INTERNAL", UbaxAdminRole.OPERATIONS.name()),
+        codeListEntry("ROLE_UBAX_INTERNAL", UbaxAdminRole.COMMERCIAL.name()));
+  }
+
+  private LaCodeList codeListEntry(String type, String value) {
+    return LaCodeList.builder()
+        .type(type)
+        .value(value)
+        .description(value)
+        .isSystemAssign(true)
+        .build();
+  }
 
   private User buildPartnerUser() {
     return SharedTestFixtures.buildPartnerUser();
@@ -65,6 +94,7 @@ class UserRoleServiceImplTest {
       UserSubRole saved = SharedTestFixtures.buildSubRole(partner, role, RoleScope.AGENCE);
 
       when(userRepo.findById(userId)).thenReturn(Optional.of(partner));
+      when(codeListRepo.findAllByType("ROLE_AGENCE")).thenReturn(agenceCodeList());
       when(subRoleRepo.existsByUserIdAndRoleAndScope(userId, role, RoleScope.AGENCE))
           .thenReturn(false);
       when(subRoleRepo.save(any(UserSubRole.class))).thenReturn(saved);
@@ -89,6 +119,7 @@ class UserRoleServiceImplTest {
       String role = AgenceRole.COMMERCIAL.name();
 
       when(userRepo.findById(userId)).thenReturn(Optional.of(partner));
+      when(codeListRepo.findAllByType("ROLE_AGENCE")).thenReturn(agenceCodeList());
       when(subRoleRepo.existsByUserIdAndRoleAndScope(userId, role, RoleScope.AGENCE))
           .thenReturn(true);
 

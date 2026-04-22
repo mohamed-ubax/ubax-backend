@@ -171,7 +171,12 @@ import org.springframework.context.annotation.Configuration;
       @Tag(
           name = "CodeList",
           description =
-              "🌐 **Public** (lecture) · 🛡 **ADMIN** (écriture) – Référentiels dynamiques (types, statuts, etc.)")
+              "🌐 **Public** (lecture par type) · 🛡 **ADMIN** (lecture restreinte + écriture) – Référentiels dynamiques.\n\n"
+                  + "**Types sous-rôles :**\n"
+                  + "- `ROLE_AGENCE` → sous-rôles agence (public) : DIRECTEUR_AGENCE · COMMERCIAL · COMPTABLE_AGENCE · AGENT_SAV\n"
+                  + "- `ROLE_HOTEL` → sous-rôles hôtel (public) : GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT\n"
+                  + "- `ROLE_UBAX_INTERNAL` → sous-rôles internes UBAX **(ADMIN uniquement)** : DIRECTEUR_GENERAL · SUPPORT_CLIENT · OPERATIONS · FINANCE · COMMERCIAL\n\n"
+                  + "> Pour `ROLE_UBAX_INTERNAL`, utiliser `GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL`.")
     })
 @SecurityScheme(
     name = "bearerAuth",

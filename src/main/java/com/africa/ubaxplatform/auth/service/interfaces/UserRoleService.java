@@ -68,15 +68,11 @@ public interface UserRoleService {
       String callerKeycloakId, UUID targetUserId, List<String> roles, RoleScope scope)
       throws CustomException;
 
-  /**
-   * Retourne les sous-rôles d'un membre de la structure du PARTNER appelant.
-   */
+  /** Retourne les sous-rôles d'un membre de la structure du PARTNER appelant. */
   List<UserSubRoleResponse> getPartnerSubRoles(
       String callerKeycloakId, UUID targetUserId, RoleScope scope) throws CustomException;
 
-  /**
-   * Révoque un sous-rôle d'un membre de la structure du PARTNER appelant.
-   */
+  /** Révoque un sous-rôle d'un membre de la structure du PARTNER appelant. */
   void revokePartnerSubRole(
       String callerKeycloakId, UUID targetUserId, String role, RoleScope scope)
       throws CustomException;
