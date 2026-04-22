@@ -51,7 +51,10 @@ public class UserRoleServiceImpl implements UserRoleService {
     User user =
         userRepo
             .findById(userId)
-            .orElseThrow(() -> new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND));
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND)));
 
     validateScopeCompatibility(user, scope);
     validateRolesForScope(roles, scope);
@@ -82,8 +85,9 @@ public class UserRoleServiceImpl implements UserRoleService {
   @Transactional
   public void revokeSubRole(UUID userId, String role, RoleScope scope) throws CustomException {
     if (!subRoleRepo.existsByUserIdAndRoleAndScope(userId, role, scope)) {
-      throw new NotFoundException(
-          "Sous-rôle introuvable : userId=" + userId + ", role=" + role + ", scope=" + scope);
+      throw new CustomException(
+          new NotFoundException(
+              "Sous-rôle introuvable : userId=" + userId + ", role=" + role + ", scope=" + scope));
     }
     subRoleRepo.deleteByUserIdAndRoleAndScope(userId, role, scope);
     log.info("Sous-rôle révoqué : userId={}, role={}, scope={}", userId, role, scope);
@@ -97,7 +101,7 @@ public class UserRoleServiceImpl implements UserRoleService {
 
   // ── Validation ────────────────────────────────────────────────────
 
-  private void validateScopeCompatibility(User user, RoleScope scope) {
+  private void validateScopeCompatibility(User user, RoleScope scope) throws CustomException {
     boolean isAdmin =
         user.getRoles().contains(UserRole.ADMIN) || user.getRoles().contains(UserRole.SUPER_ADMIN);
     boolean isPartner = user.getRoles().contains(UserRole.PARTNER);
@@ -105,24 +109,27 @@ public class UserRoleServiceImpl implements UserRoleService {
     switch (scope) {
       case UBAX_INTERNAL -> {
         if (!isAdmin) {
-          throw new BadRequestException(
-              "Le scope UBAX_INTERNAL est réservé aux utilisateurs ADMIN et SUPER_ADMIN");
+          throw new CustomException(
+              (new BadRequestException(
+                  "Le scope UBAX_INTERNAL est réservé aux utilisateurs ADMIN et SUPER_ADMIN")));
         }
       }
       case AGENCE -> {
         if (!isPartner) {
-          throw new BadRequestException("Le scope AGENCE est réservé aux utilisateurs PARTNER");
+          throw new CustomException(
+              (new BadRequestException("Le scope AGENCE est réservé aux utilisateurs PARTNER")));
         }
       }
       case HOTEL -> {
         if (!isPartner) {
-          throw new BadRequestException("Le scope HOTEL est réservé aux utilisateurs PARTNER");
+          throw new CustomException(
+              (new BadRequestException("Le scope HOTEL est réservé aux utilisateurs PARTNER")));
         }
       }
     }
   }
 
-  private void validateRolesForScope(List<String> roles, RoleScope scope) {
+  private void validateRolesForScope(List<String> roles, RoleScope scope) throws CustomException {
     Set<String> allowed =
         switch (scope) {
           case UBAX_INTERNAL -> UBAX_INTERNAL_ROLES;
@@ -132,13 +139,14 @@ public class UserRoleServiceImpl implements UserRoleService {
 
     List<String> invalid = roles.stream().filter(r -> !allowed.contains(r)).toList();
     if (!invalid.isEmpty()) {
-      throw new BadRequestException(
-          "Rôles invalides pour le scope "
-              + scope
-              + " : "
-              + invalid
-              + ". Valeurs autorisées : "
-              + allowed);
+      throw new CustomException(
+          new BadRequestException(
+              "Rôles invalides pour le scope "
+                  + scope
+                  + " : "
+                  + invalid
+                  + ". Valeurs autorisées : "
+                  + allowed));
     }
   }
 

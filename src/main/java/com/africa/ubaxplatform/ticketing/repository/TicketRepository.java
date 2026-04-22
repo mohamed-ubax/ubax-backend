@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.ticketing.repository;
 
+import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import com.africa.ubaxplatform.ticketing.entity.Ticket;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -23,7 +24,7 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
       "SELECT t FROM Ticket t WHERE t.contract.property.agency.id = :agencyId"
           + " AND t.status = :status ORDER BY t.createdAt DESC")
   Page<Ticket> findByAgencyIdAndStatus(
-      @Param("agencyId") UUID agencyId, @Param("status") String status, Pageable pageable);
+      @Param("agencyId") UUID agencyId, @Param("status") TicketStatus status, Pageable pageable);
 
   /** Tickets d'une agence assignés à un agent spécifique. */
   @Query(
@@ -36,5 +37,6 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
   @Query(
       "SELECT COUNT(t) FROM Ticket t WHERE t.contract.property.agency.id = :agencyId"
           + " AND t.status = :status")
-  long countByAgencyIdAndStatus(@Param("agencyId") UUID agencyId, @Param("status") String status);
+  long countByAgencyIdAndStatus(
+      @Param("agencyId") UUID agencyId, @Param("status") TicketStatus status);
 }

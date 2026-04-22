@@ -24,6 +24,8 @@ import com.africa.ubaxplatform.partner.repository.ApplicationStatusLogRepository
 import com.africa.ubaxplatform.partner.repository.PartnerApplicationRepository;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
+
+import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -78,7 +80,10 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       MultipartFile rccm,
       MultipartFile dfe,
       MultipartFile bail,
-      MultipartFile logo) {
+      MultipartFile logo) throws CustomException {
+    if(!request.getPartnerType().equals(Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE) && !request.getPartnerType().equals(Constants.CodeList.PartnerType.HOTEL)){
+      throw new CustomException(new BadRequestException("Veuillez saisir un partenaire valide"));
+    }
     if (applicationRepo.existsByEmailAndStatusNot(request.getEmail(), ApplicationStatus.REJECTED)) {
       throw new ConflictException(ResponseMessageConstants.PARTNER_APPLICATION_ALREADY_EXISTS);
     }
@@ -86,7 +91,23 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     // 1. Créer la structure de répertoires MinIO
     String slug = minioService.initPartnerDirectory(request.getCompanyName());
 
-    // 2. Uploader les documents dans les bons sous-répertoires
+    if (rccm == null || rccm.isEmpty()) {
+      throw new CustomException(new FileNotFoundException("Le fichier RCCM est obligatoire"));
+    }
+
+    if (dfe == null || dfe.isEmpty()) {
+      throw new CustomException(new FileNotFoundException("Le fichier DFE est obligatoire"));
+    }
+
+    if (request.getPartnerType().equals(Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE)) {
+      if (bail == null || bail.isEmpty()) {
+        throw new CustomException(new FileNotFoundException("Le contrat de bail est obligatoire pour une agence"));
+      }
+    }
+
+    if (logo == null || logo.isEmpty()) {
+      throw new CustomException(new FileNotFoundException("Le logo est obligatoire"));
+    }
     String rccmUrl = uploadLegal(slug, rccm, "rccm");
     String dfeUrl = uploadLegal(slug, dfe, "dfe");
     String bailUrl = uploadLegal(slug, bail, "bail");

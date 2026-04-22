@@ -147,6 +147,10 @@ public class ResponseMessageConstants {
   public static final String TICKET_GET_FAILURE_NOT_FOUND = "TICKET_GET_FAILURE_NOT_FOUND";
   public static final String TICKET_CREATE_FAILURE = "TICKET_CREATE_FAILURE";
   public static final String TICKET_UPDATE_FAILURE_NOT_FOUND = "TICKET_UPDATE_FAILURE_NOT_FOUND";
+  public static final String TICKET_MESSAGE_CREATE_SUCCESS = "TICKET_MESSAGE_CREATE_SUCCESS";
+  public static final String TICKET_MESSAGE_GET_LIST_SUCCESS = "TICKET_MESSAGE_GET_LIST_SUCCESS";
+  public static final String TICKET_ATTACHMENT_GET_LIST_SUCCESS =
+      "TICKET_ATTACHMENT_GET_LIST_SUCCESS";
 
   // ── DASHBOARD ───────────────────────────────────────────────────
   public static final String DASHBOARD_GET_SUCCESS = "DASHBOARD_GET_SUCCESS";
