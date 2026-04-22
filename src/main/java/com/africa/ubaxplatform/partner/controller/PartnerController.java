@@ -141,7 +141,8 @@ public class PartnerController {
               description = "Logo de l'entreprise (JPEG/PNG/WEBP – max 5 Mo)",
               content = @Content(schema = @Schema(type = "string", format = "binary")))
           @RequestPart(value = "logo", required = false)
-          MultipartFile logo) {
+          MultipartFile logo)
+      throws CustomException {
 
     PartnerApplicationResponse response =
         partnerApplicationService.apply(request, rccm, dfe, bail, logo);

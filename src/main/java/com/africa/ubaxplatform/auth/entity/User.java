@@ -144,13 +144,21 @@ public class User extends BaseEntity {
   private String avatarUrl;
 
   /**
-   * Agence immobilière à laquelle l'utilisateur est rattaché. Non null uniquement pour les rôles
-   * {@code AGENT} et {@code AGENCY}. Ignoré pour les rôles {@code CLIENT}, {@code OWNER} et {@code
-   * ADMIN}.
+   * Agence immobilière à laquelle l'utilisateur est rattaché. Non null uniquement pour les
+   * partenaires agence (scope {@code agence}). Ignoré pour les rôles {@code CLIENT}, {@code OWNER}
+   * et {@code ADMIN}.
    */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "agency_id", foreignKey = @ForeignKey(name = "fk_user_agency"))
   private Agency agency;
+
+  /**
+   * Hôtel auquel l'utilisateur est rattaché. Non null uniquement pour les partenaires hôtel (scope
+   * {@code hotel}). Ignoré pour les autres rôles.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hotel_id", foreignKey = @ForeignKey(name = "fk_user_hotel"))
+  private Hotel hotel;
 
   /** {@code true} si l'email a été confirmé via le lien Keycloak (VERIFY_EMAIL). */
   @Column(name = "is_email_verified", nullable = false)
@@ -206,11 +214,13 @@ public class User extends BaseEntity {
     return deletedAt != null;
   }
 
-  /**
-   * {@code true} si l'utilisateur est rattaché à une agence. Vrai uniquement pour les rôles AGENT
-   * et AGENCY.
-   */
+  /** {@code true} si l'utilisateur est rattaché à une agence. */
   public boolean hasAgency() {
     return agency != null;
+  }
+
+  /** {@code true} si l'utilisateur est rattaché à un hôtel. */
+  public boolean hasHotel() {
+    return hotel != null;
   }
 }

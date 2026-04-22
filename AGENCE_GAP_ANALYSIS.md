@@ -1,6 +1,6 @@
 # Analyse des Manques – Intégration Espace Agence UBAX
 
-> Généré le : 2026-04-20  
+> Généré le : 2026-04-20 · Mis à jour le : 2026-04-21  
 > Basé sur : captures d'écran "UBAX WEB AGENCE" (7 screens) + exploration du code existant
 
 ---
@@ -25,18 +25,20 @@ La navigation commune contient : **Tableau de bord · Biens · Réservations · 
 | Module | Entités | Controllers | Services | Status |
 |--------|---------|-------------|---------|--------|
 | Auth / Users | ✅ | ✅ | ✅ | Complet |
+| Sous-rôles (UserSubRole) | ✅ | ✅ | ✅ | **Complet** (V016) |
+| Hôtels (Hotel) | ✅ | – | – | **Entité + migration** (V017) |
 | Partner (candidature) | ✅ | ✅ | ✅ | Complet |
 | Tenant (KYC locataire) | ✅ | ✅ | ✅ | Complet |
-| Property (biens) | ✅ | ❌ | ❌ | **Entités seules** |
+| Property (biens) | ✅ | ✅ | ✅ | **Complet** (V013) |
+| Payment | ✅ | ✅ | ✅ | **Complet** (V014) |
+| Expense (dépenses) | ✅ | ✅ | ✅ | **Complet** (V015) |
+| Dashboard / Analytics | ✅ | ✅ | ✅ | **Complet** (KPIs agence) |
+| Storage (MinIO) | ✅ | ✅ | ✅ | Complet |
+| Ticketing | ✅ | ❌ | ❌ | Entités + enums (V018/V019) |
 | Contract (contrats) | ✅ | ❌ | ❌ | **Entités seules** |
-| Ticketing | ✅ | ❌ | ❌ | **Entités seules** |
 | Document (PDF) | ✅ | ❌ | ❌ | **Entités seules** |
-| Payment | ❌ | ❌ | ❌ | **Vide** |
-| Analytics / Dashboard | ❌ | ❌ | ❌ | **Absent** |
 | Appointments / Agenda | ❌ | ❌ | ❌ | **Absent** |
 | Prospects | ❌ | ❌ | ❌ | **Absent** |
-| Dépenses comptables | ❌ | ❌ | ❌ | **Absent** |
-| Rôles internes agence | ❌ | – | – | **Absent** |
 | Notifications in-app | ❌ | ❌ | ❌ | **Absent** |
 
 ---
@@ -45,114 +47,38 @@ La navigation commune contient : **Tableau de bord · Biens · Réservations · 
 
 ---
 
-### 1. Sous-rôles internes de l'agence
+### 1. Sous-rôles internes de l'agence ✅ IMPLÉMENTÉ
 
-**Ce qui manque :**
-- Un enum `AgencyStaffRole` (ou extension de `UbaxAdminRole`) avec : `DIRECTOR`, `COMMERCIAL`, `ACCOUNTANT`, `SAV_AGENT`
-- Champ `agencyRole` sur l'entité `User` (ou table de jointure `AgencyMembership`)
-- Endpoints de gestion de l'équipe agence :
-  - `POST /v1/agency/team` – inviter un collaborateur
-  - `GET /v1/agency/team` – lister les membres
-  - `PUT /v1/agency/team/{userId}/role` – changer le rôle
-  - `DELETE /v1/agency/team/{userId}` – retirer un membre
-- `RoleGuard` adapté pour vérifier le rôle interne agence (en plus du rôle Keycloak `UBAX_PARTNER`)
+**Ce qui a été livré (refactoring `feature/refactor`) :**
+- Enums `AgenceRole` (DIRECTEUR_AGENCE, COMMERCIAL, COMPTABLE_AGENCE, AGENT_SAV), `HotelRole`, `UbaxAdminRole`, `RoleScope`
+- Table `user_sub_roles` (V016) avec contrainte unique `(user_id, role, scope)` et check scope
+- `UserSubRoleController` : `POST/GET/DELETE /v1/admin/users/{userId}/sub-roles`
+- `UserRoleService` : `assignSubRoles`, `getSubRoles`, `revokeSubRole`, `hasSubRole`
+- `RoleGuard` niveau 2 : `checkAgenceRole()`, `checkHotelRole()`, `checkAdminSubRole()`
+- `AgencyTeamController` : gestion équipe agence (inviter, lister, changer rôle, retirer)
 
 ---
 
-### 2. Module Biens (Property) – Controllers & Services
+### 2. Module Biens (Property) ✅ IMPLÉMENTÉ
 
-**Ce qui manque (entités existent déjà) :**
-
-#### 2a. CRUD des biens
-- `POST /v1/properties` – Création multi-step avec upload photos/docs
-- `GET /v1/properties` – Liste paginée + filtres (type, statut, ville, prix)
-- `GET /v1/properties/{id}` – Détail d'un bien
-- `PUT /v1/properties/{id}` – Mise à jour
-- `DELETE /v1/properties/{id}` – Suppression/archivage
-- `PATCH /v1/properties/{id}/status` – Changement de statut (publication, archivage…)
-
-#### 2b. Médias & géolocalisation
-- `POST /v1/properties/{id}/media` – Upload multiple photos/vidéos
-- `DELETE /v1/properties/{id}/media/{mediaId}` – Supprimer un média
-- `PATCH /v1/properties/{id}/media/{mediaId}/cover` – Définir la photo de couverture
-- Champs `latitude` / `longitude` déjà présents → endpoint de géocodage ou validation des coordonnées
-
-#### 2c. Récapitulatif avant publication (Step 3 du formulaire UI)
-- `GET /v1/properties/{id}/preview` – Retourne une vue complète pour confirmation
-
-#### 2d. Détails bailleur & locataire liés au bien
-- `GET /v1/properties/{id}/owner` – Profil du propriétaire
-- `GET /v1/properties/{id}/tenant` – Profil du locataire actuel + scoring
+CRUD complet, médias, documents, modération, boost, expiration — voir référence rapide dans CLAUDE.md.
 
 ---
 
-### 3. Module Paiements (vide)
+### 3. Module Paiements & Dépenses ✅ IMPLÉMENTÉ
 
-C'est le module le plus critique pour le **Comptable** et le **DG**.
-
-**Entités à créer :**
-```
-Payment
-  - contract (FK), tenant (FK), amount, dueDate, paidDate
-  - paymentType (RENT | DEPOSIT | CHARGES | COMMISSION | SALE)
-  - paymentMethod (CASH | BANK_TRANSFER | MOBILE_MONEY | CHECK)
-  - status (PENDING | PAID | LATE | PARTIAL | CANCELLED)
-  - reference, receiptUrl, note
-
-Expense (Dépense)
-  - agency (FK), property (FK, nullable), createdBy (FK User)
-  - category (SOLUTION | MARKETING | SALARY | UGON | OTHER)
-  - amount, paymentMethod, date
-  - provider (prestataire), invoiceReference
-  - costCenter (AGENCE_GENERAL | PROPERTY_SPECIFIC)
-  - justificationUrl
-```
-
-**Endpoints à créer :**
-- `GET /v1/payments` – Liste des paiements (filtres : statut, mois, bien)
-- `POST /v1/payments` – Enregistrer un paiement
-- `GET /v1/payments/late` – Loyers en retard
-- `GET /v1/expenses` – Liste des dépenses du mois
-- `POST /v1/expenses` – Ajouter une dépense (formulaire avec pièce jointe)
-- `DELETE /v1/expenses/{id}` – Supprimer une dépense
+`Payment` (V014) et `Expense` (V015) avec controllers et services complets.
+KPIs financiers disponibles dans `GET /v1/dashboard/agency`.
 
 ---
 
-### 4. Module Analytics / Dashboard
+### 4. Module Analytics / Dashboard ✅ IMPLÉMENTÉ
 
-Chaque rôle a un tableau de bord avec des KPIs distincts. Aucune couche analytics n'existe.
-
-**Endpoints à créer :**
-
-#### DG / Directeur Général
-- `GET /v1/dashboard/dg/summary` → 
-  ```json
-  { "totalProperties": 45, "activeListings": 10, "rentedProperties": 32, "soldProperties": 2 }
-  ```
-- `GET /v1/dashboard/dg/revenue-flux?period=monthly` – Flux de revenus (données graphique)
-- `GET /v1/dashboard/dg/transactions/recent` – Dernières transactions
-
-#### Commercial
-- `GET /v1/dashboard/commercial/summary` →
-  ```json
-  { "totalProperties": 120, "newProspects": 15, "appointments": 15, "closedDeals": 6 }
-  ```
-- `GET /v1/dashboard/commercial/properties-state` – État des biens par statut (barres de progression)
-- `GET /v1/dashboard/commercial/prospect-activity?period=week` – Activité prospects (graphique)
-
-#### Comptable
-- `GET /v1/dashboard/accountant/summary` →
-  ```json
-  { "monthlyRevenue": 13750000, "unpaidRents": 9750000, "pendingPayments": 4000000, "agencyCommission": 1750000 }
-  ```
-- `GET /v1/dashboard/accountant/revenue-evolution` – Courbe revenus sur 12 mois
-- `GET /v1/dashboard/accountant/revenue-breakdown` – Répartition (loyers durée / locations / ventes)
-- `GET /v1/dashboard/accountant/expenses-by-category` – Dépenses du mois par catégorie
-- `GET /v1/dashboard/accountant/late-payments` – Paiements en retard avec détails locataires
-
-#### Agent SAV
-- `GET /v1/dashboard/sav/summary` – Stats tickets ouverts, en cours, résolus
-- `GET /v1/dashboard/sav/team` – Vue équipe agents avec tickets assignés
+`GET /v1/dashboard/agency` retourne des KPIs adaptés au sous-rôle de l'appelant :
+- **DIRECTEUR_AGENCE** : vision globale (revenus, dépenses, biens, contrats, paiements)
+- **COMMERCIAL** : portfolio biens, publications
+- **COMPTABLE_AGENCE** : finances détaillées (totalRevenue, totalExpenses, netRevenue, overdueAmount, recoveryRate, revenueByType, expensesByCategory)
+- **AGENT_SAV** : données tickets (à enrichir quand le module ticketing aura son service)
 
 ---
 
@@ -286,46 +212,47 @@ L'écran "Détails locataire" (img6) montre un **score visuel** du locataire.
 
 ---
 
-## Migrations Flyway nécessaires
+## Migrations Flyway — état au 2026-04-21
 
-Chaque nouveau module nécessite une migration versionnée :
-
-| Migration | Tables concernées |
-|-----------|-------------------|
-| `V6__create_payments.sql` | `payments` |
-| `V7__create_expenses.sql` | `expenses` |
-| `V8__create_prospects.sql` | `prospects` |
-| `V9__create_appointments.sql` | `appointments` |
-| `V10__create_reservations.sql` | `reservations` |
-| `V11__create_notifications.sql` | `notifications` |
-| `V12__add_agency_staff_role.sql` | Colonne `agency_role` sur `users` |
-| `V13__add_tenant_score.sql` | Colonnes `score`, `score_breakdown` sur `tenants` |
-
----
-
-## Ordre de priorité recommandé
-
-| Priorité | Module | Justification |
-|----------|--------|---------------|
-| 🔴 P1 | **Property Controllers + Services** | Bloquant pour tous les dashboards (KPIs basés sur les biens) |
-| 🔴 P1 | **Payment Module** | Bloquant pour le Comptable et les KPIs revenus du DG |
-| 🔴 P1 | **Dashboard Analytics** | Raison d'être de l'espace agence |
-| 🟠 P2 | **Ticketing Controllers** | Opérationnel pour l'Agent SAV |
-| 🟠 P2 | **Sous-rôles agence** | Nécessaire pour le RBAC par tableau de bord |
-| 🟠 P2 | **Prospects + Appointments** | Cœur du dashboard Commercial |
-| 🟡 P3 | **Contrats Controllers** | Déjà modélisé, effort faible |
-| 🟡 P3 | **Notifications in-app** | UX importante, effort modéré |
-| 🟡 P3 | **Export données** | Fonctionnalité complémentaire |
-| 🟢 P4 | **Réservations** | À spécifier davantage |
-| 🟢 P4 | **Scoring locataire** | Amélioration du module Tenant existant |
+| Migration | Statut | Tables concernées |
+|-----------|--------|-------------------|
+| V014 | ✅ Livré | `payments` |
+| V015 | ✅ Livré | `expenses` |
+| V016 | ✅ Livré | `user_sub_roles` |
+| V017 | ✅ Livré | `hotels` + `hotel_id` sur `users` |
+| V018 | ✅ Livré | `tickets`, `ticket_messages`, `ticket_attachments` |
+| V019 | ✅ Livré | Seed `la_code_list` (TICKET_CATEGORY, TICKET_PRIORITY, TICKET_ATTACHMENT_TYPE) |
+| **V020** | ⏳ À créer | `prospects` |
+| **V021** | ⏳ À créer | `appointments` |
+| **V022** | ⏳ À créer | `reservations` |
+| **V023** | ⏳ À créer | `notifications` |
+| **V024** | ⏳ À créer | Colonnes `score`, `score_breakdown` sur `tenants` |
 
 ---
 
-## Résumé chiffré
+## Ordre de priorité — mise à jour
 
-| Catégorie | Modules manquants | Entités à créer | Endpoints à créer |
-|-----------|-------------------|-----------------|-------------------|
-| Critique (P1) | 3 | 2 | ~25 |
-| Important (P2) | 3 | 3 | ~20 |
-| Secondaire (P3-P4) | 4 | 2 | ~15 |
-| **Total** | **10** | **7** | **~60** |
+| Priorité | Module | Statut | Justification |
+|----------|--------|--------|---------------|
+| ✅ P1 | **Property** | **Livré** | CRUD complet + médias + documents + modération |
+| ✅ P1 | **Payment + Expense** | **Livré** | KPIs financiers opérationnels |
+| ✅ P1 | **Dashboard Analytics** | **Livré** | KPIs agence par sous-rôle |
+| ✅ P2 | **Sous-rôles agence** | **Livré** | RBAC niveau 2 complet |
+| 🟠 P2 | **Ticketing Controllers** | En attente | Entités V018 prêtes — service/controller à créer |
+| 🟠 P2 | **Prospects + Appointments** | En attente | Cœur du dashboard Commercial |
+| 🟡 P3 | **Contrats Controllers** | En attente | Entité existante, effort faible |
+| 🟡 P3 | **Notifications in-app** | En attente | UX importante |
+| 🟡 P3 | **Export données** | En attente | Fonctionnalité complémentaire |
+| 🟢 P4 | **Réservations** | En attente | À spécifier davantage |
+| 🟢 P4 | **Scoring locataire** | En attente | Amélioration module Tenant |
+
+---
+
+## Résumé chiffré — mise à jour
+
+| Catégorie | Modules | Statut |
+|-----------|---------|--------|
+| P1 critique | Property, Payment, Dashboard, Sous-rôles | ✅ **Tous livrés** |
+| P2 important | Ticketing controllers, Prospects, Appointments | ⏳ En attente |
+| P3-P4 secondaire | Contrats, Notifications, Export, Réservations, Scoring | ⏳ En attente |
+| **Total restant** | **~7 modules** | **~45 endpoints à créer** |

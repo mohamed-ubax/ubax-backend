@@ -3,7 +3,12 @@
     "allow": [
       "Bash(git -C \"/c/Users/snbam/Documents/ubax project/ubax-project/ubax-platform\" add CLAUDE.md)",
       "Bash(git -C \"/c/Users/snbam/Documents/ubax project/ubax-project/ubax-platform\" status)",
-      "Bash(./mvnw compile *)"
+      "Bash(./mvnw compile *)",
+      "Bash(xargs grep *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit *)"
     ]
   }
 }

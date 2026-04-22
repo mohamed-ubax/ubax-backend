@@ -168,9 +168,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -219,9 +219,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -277,9 +277,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -323,9 +323,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -360,9 +360,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -480,9 +480,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -534,9 +534,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -604,9 +604,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -644,9 +644,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -700,9 +700,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -820,9 +820,9 @@ public class PropertyController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.AGENCY,
+            UserRole.PARTNER,
             UserRole.OWNER,
-            UserRole.AGENT,
+            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
