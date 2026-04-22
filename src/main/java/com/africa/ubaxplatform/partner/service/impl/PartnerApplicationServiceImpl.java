@@ -2,9 +2,12 @@ package com.africa.ubaxplatform.partner.service.impl;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.mapper.AgencyMapper;
+import com.africa.ubaxplatform.auth.mapper.HotelMapper;
 import com.africa.ubaxplatform.auth.repository.AgencyRepository;
+import com.africa.ubaxplatform.auth.repository.HotelRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.common.constants.Constants;
@@ -53,11 +56,13 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
   private final ApplicationStatusLogRepository statusLogRepo;
   private final UserRepository userRepo;
   private final AgencyRepository agencyRepo;
+  private final HotelRepository hotelRepo;
   private final KeycloakAdminService keycloakAdminService;
   private final EmailService emailService;
   private final MinioService minioService;
   private final PartnerApplicationMapper mapper;
   private final AgencyMapper agencyMapper;
+  private final HotelMapper hotelMapper;
 
   private static final Set<String> ALLOWED_DOC_TYPES =
       Set.of("application/pdf", "image/jpeg", "image/png");
@@ -88,9 +93,6 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       throw new ConflictException(ResponseMessageConstants.PARTNER_APPLICATION_ALREADY_EXISTS);
     }
 
-    // 1. Créer la structure de répertoires MinIO
-    String slug = minioService.initPartnerDirectory(request.getCompanyName());
-
     if (rccm == null || rccm.isEmpty()) {
       throw new CustomException(new BadRequestException("Le fichier RCCM est obligatoire"));
     }
@@ -105,6 +107,8 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
             new BadRequestException("Le contrat de bail est obligatoire pour une agence"));
       }
     }
+    // 1. Créer la structure de répertoires MinIO
+    String slug = minioService.initPartnerDirectory(request.getCompanyName());
 
     String rccmUrl = uploadLegal(slug, rccm, "rccm");
     String dfeUrl = uploadLegal(slug, dfe, "dfe");
@@ -213,8 +217,15 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     try {
       boolean isAgency =
           Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE.equals(application.getPartnerType());
+      boolean isHotel = Constants.CodeList.PartnerType.HOTEL.equals(application.getPartnerType());
 
-      UserRole assignedRole = isAgency ? UserRole.PARTNER : UserRole.PARTNER;
+      if (!isAgency && !isHotel) {
+        throw new CustomException(
+            (new BadRequestException(
+                "Type de partenaire invalide : " + application.getPartnerType())));
+      }
+
+      UserRole assignedRole = UserRole.PARTNER;
 
       // 1. Créer le compte Keycloak (username = email, sans mot de passe)
       String keycloakId =
@@ -224,19 +235,24 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
               application.getLegalRepresentative(),
               application.getPhone());
 
-      // 2. Attribuer le rôle approprié
+      // Attribuer le rôle approprié
       keycloakAdminService.assignRole(keycloakId, assignedRole);
 
-      // 3a. Pour une agence immobilière : créer l'entité Agency
+      // Pour une agence immobilière : créer l'entité Agency
       Agency agency = null;
       if (isAgency) {
         agency = agencyRepo.save(agencyMapper.toAgency(application));
+        userRepo.save(agencyMapper.toPartnerUser(application, keycloakId, assignedRole, agency));
       }
 
-      // 3b. Persister l'utilisateur en base
-      userRepo.save(agencyMapper.toPartnerUser(application, keycloakId, assignedRole, agency));
+      // Pour un hotel : créer l'entité Hotel
+      Hotel hotel = null;
+      if (isHotel) {
+        hotel = hotelRepo.save(hotelMapper.toHotel(application));
+        userRepo.save(hotelMapper.toPartnerUser(application, keycloakId, assignedRole, hotel));
+      }
 
-      // 4. Envoyer le lien "Définir mon mot de passe" via Keycloak
+      // Envoyer le lien "Définir mon mot de passe" via Keycloak
       keycloakAdminService.sendSetPasswordLink(keycloakId);
 
       log.info(

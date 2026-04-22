@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -62,6 +63,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/v1/partner")
 @RequiredArgsConstructor
 @Tag(name = "Partner")
+@Slf4j
 public class PartnerController {
 
   private final PartnerApplicationService partnerApplicationService;
@@ -143,9 +145,14 @@ public class PartnerController {
           @RequestPart(value = "logo", required = false)
           MultipartFile logo)
       throws CustomException {
-
+    log.info(
+        "rccm: name={} size={} empty={}",
+        rccm != null ? rccm.getOriginalFilename() : "NULL",
+        rccm != null ? rccm.getSize() : -1,
+        rccm == null || rccm.isEmpty());
     PartnerApplicationResponse response =
         partnerApplicationService.apply(request, rccm, dfe, bail, logo);
+
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             new CustomResponse(
