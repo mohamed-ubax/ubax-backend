@@ -24,7 +24,6 @@ import com.africa.ubaxplatform.partner.repository.ApplicationStatusLogRepository
 import com.africa.ubaxplatform.partner.repository.PartnerApplicationRepository;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
-
 import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,8 +79,10 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       MultipartFile rccm,
       MultipartFile dfe,
       MultipartFile bail,
-      MultipartFile logo) throws CustomException {
-    if(!request.getPartnerType().equals(Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE) && !request.getPartnerType().equals(Constants.CodeList.PartnerType.HOTEL)){
+      MultipartFile logo)
+      throws CustomException {
+    if (!request.getPartnerType().equals(Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE)
+        && !request.getPartnerType().equals(Constants.CodeList.PartnerType.HOTEL)) {
       throw new CustomException(new BadRequestException("Veuillez saisir un partenaire valide"));
     }
     if (applicationRepo.existsByEmailAndStatusNot(request.getEmail(), ApplicationStatus.REJECTED)) {
@@ -101,7 +102,8 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
 
     if (request.getPartnerType().equals(Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE)) {
       if (bail == null || bail.isEmpty()) {
-        throw new CustomException(new FileNotFoundException("Le contrat de bail est obligatoire pour une agence"));
+        throw new CustomException(
+            new FileNotFoundException("Le contrat de bail est obligatoire pour une agence"));
       }
     }
 

@@ -31,7 +31,8 @@ public interface PartnerApplicationService {
       MultipartFile rccm,
       MultipartFile dfe,
       MultipartFile bail,
-      MultipartFile logo) throws CustomException;
+      MultipartFile logo)
+      throws CustomException;
 
   /**
    * Récupère les demandes filtrées par statut (endpoint admin paginé).
