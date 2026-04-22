@@ -15,6 +15,7 @@ import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -147,6 +148,121 @@ public class UserRoleServiceImpl implements UserRoleService {
                   + invalid
                   + ". Valeurs autorisées : "
                   + allowed));
+    }
+  }
+
+  // ── Opérations PARTNER (même structure) ──────────────────────────
+
+  @Override
+  @Transactional
+  public List<UserSubRoleResponse> assignPartnerSubRoles(
+      String callerKeycloakId, UUID targetUserId, List<String> roles, RoleScope scope)
+      throws CustomException {
+
+    User caller = findByKeycloakId(callerKeycloakId);
+    User target = findById(targetUserId);
+
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+    validateSameStructure(caller, target, scope);
+    validateRolesForScope(roles, scope);
+
+    List<UserSubRole> assigned = new ArrayList<>();
+    for (String role : roles) {
+      if (!subRoleRepo.existsByUserIdAndRoleAndScope(targetUserId, role, scope)) {
+        assigned.add(subRoleRepo.save(UserSubRole.builder().user(target).role(role).scope(scope).build()));
+        log.info("Sous-rôle partner assigné : callerId={}, targetId={}, role={}, scope={}",
+            caller.getId(), targetUserId, role, scope);
+      }
+    }
+    return assigned.stream().map(this::toResponse).toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<UserSubRoleResponse> getPartnerSubRoles(
+      String callerKeycloakId, UUID targetUserId, RoleScope scope) throws CustomException {
+
+    User caller = findByKeycloakId(callerKeycloakId);
+    User target = findById(targetUserId);
+
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+    validateSameStructure(caller, target, scope);
+
+    return subRoleRepo.findByUserIdAndScope(targetUserId, scope).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  @Override
+  @Transactional
+  public void revokePartnerSubRole(
+      String callerKeycloakId, UUID targetUserId, String role, RoleScope scope)
+      throws CustomException {
+
+    User caller = findByKeycloakId(callerKeycloakId);
+    User target = findById(targetUserId);
+
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+    validateSameStructure(caller, target, scope);
+
+    if (!subRoleRepo.existsByUserIdAndRoleAndScope(targetUserId, role, scope)) {
+      throw new CustomException(
+          new NotFoundException("Sous-rôle introuvable : " + role + " [" + scope + "]"));
+    }
+    subRoleRepo.deleteByUserIdAndRoleAndScope(targetUserId, role, scope);
+    log.info("Sous-rôle partner révoqué : callerId={}, targetId={}, role={}, scope={}",
+        caller.getId(), targetUserId, role, scope);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────
+
+  private User findByKeycloakId(String keycloakId) throws CustomException {
+    return userRepo.findByKeycloakId(keycloakId)
+        .orElseThrow(() -> new CustomException(new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND)));
+  }
+
+  private User findById(UUID userId) throws CustomException {
+    return userRepo.findById(userId)
+        .orElseThrow(() -> new CustomException(new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND)));
+  }
+
+  private void validateCallerIsPartner(User caller) throws CustomException {
+    if (!caller.getRoles().contains(UserRole.PARTNER)) {
+      throw new CustomException(
+          new UnAuthorizedException("Seul un PARTNER peut gérer les sous-rôles de sa structure"));
+    }
+  }
+
+  private void validatePartnerScope(RoleScope scope) throws CustomException {
+    if (scope == RoleScope.UBAX_INTERNAL) {
+      throw new CustomException(
+          new BadRequestException("Le scope UBAX_INTERNAL est réservé aux administrateurs système"));
+    }
+  }
+
+  private void validateSameStructure(User caller, User target, RoleScope scope)
+      throws CustomException {
+    switch (scope) {
+      case AGENCE -> {
+        if (caller.getAgency() == null || target.getAgency() == null
+            || !caller.getAgency().getId().equals(target.getAgency().getId())) {
+          throw new CustomException(
+              new UnAuthorizedException(
+                  "Vous ne pouvez gérer que les membres de votre propre agence"));
+        }
+      }
+      case HOTEL -> {
+        if (caller.getHotel() == null || target.getHotel() == null
+            || !caller.getHotel().getId().equals(target.getHotel().getId())) {
+          throw new CustomException(
+              new UnAuthorizedException(
+                  "Vous ne pouvez gérer que les membres de votre propre hôtel"));
+        }
+      }
+      default -> {}
     }
   }
 

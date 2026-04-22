@@ -52,4 +52,32 @@ public interface UserRoleService {
    * @return {@code true} si le sous-rôle est assigné
    */
   boolean hasSubRole(UUID userId, String role, RoleScope scope);
+
+  /**
+   * Assigne des sous-rôles AGENCE ou HOTEL par un PARTNER de la même structure.
+   *
+   * <p>Le caller doit être PARTNER et appartenir à la même agence/hôtel que la cible.
+   * L'auto-assignation est autorisée (targetUserId == caller's own ID).
+   *
+   * @param callerKeycloakId keycloak ID du PARTNER appelant
+   * @param targetUserId ID DB de l'utilisateur cible
+   * @param roles liste des sous-rôles à assigner
+   * @param scope AGENCE ou HOTEL uniquement
+   */
+  List<UserSubRoleResponse> assignPartnerSubRoles(
+      String callerKeycloakId, UUID targetUserId, List<String> roles, RoleScope scope)
+      throws CustomException;
+
+  /**
+   * Retourne les sous-rôles d'un membre de la structure du PARTNER appelant.
+   */
+  List<UserSubRoleResponse> getPartnerSubRoles(
+      String callerKeycloakId, UUID targetUserId, RoleScope scope) throws CustomException;
+
+  /**
+   * Révoque un sous-rôle d'un membre de la structure du PARTNER appelant.
+   */
+  void revokePartnerSubRole(
+      String callerKeycloakId, UUID targetUserId, String role, RoleScope scope)
+      throws CustomException;
 }
