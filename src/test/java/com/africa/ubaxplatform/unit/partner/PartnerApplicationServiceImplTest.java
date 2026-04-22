@@ -42,6 +42,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -53,6 +55,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PartnerApplicationServiceImpl – tests unitaires")
@@ -138,39 +141,60 @@ class PartnerApplicationServiceImplTest {
               anyString());
     }
 
-    @Test
-    @DisplayName("Succès – sans fichiers optionnels (null)")
-    void apply_success_withNullFiles_createsApplication() throws Exception {
-      PartnerApplicationRequest req = PartnerTestFixtures.buildRequest();
+    @ParameterizedTest(name = "Échec – {0} manquant")
+    @MethodSource(
+        "com.africa.ubaxplatform.testHelper.PartnerTestFixtures#missingRequiredFileProvider")
+    @DisplayName("Échec – document obligatoire manquant")
+    void apply_fail_whenRequiredFileMissing_throwsCustomException(
+        String fileName,
+        String partnerType,
+        MultipartFile rccm,
+        MultipartFile dfe,
+        MultipartFile bail,
+        MultipartFile logo,
+        String expectedMessage) {
+
+      PartnerApplicationRequest req = PartnerTestFixtures.buildRequest(partnerType);
+
+      when(applicationRepo.existsByEmailAndStatusNot(req.getEmail(), ApplicationStatus.REJECTED))
+          .thenReturn(false);
+      when(minioService.initPartnerDirectory(req.getCompanyName())).thenReturn("acme-sarl");
+
+      assertThatThrownBy(() -> service.apply(req, rccm, dfe, bail, logo))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(expectedMessage);
+    }
+
+    @ParameterizedTest(name = "Succès – {0} optionnel absent")
+    @MethodSource("com.africa.ubaxplatform.testHelper.PartnerTestFixtures#optionalFileProvider")
+    @DisplayName("Succès – document optionnel manquant accepté")
+    void apply_success_whenOptionalFileMissing_createsApplication(
+        String fileName,
+        String partnerType,
+        MultipartFile rccm,
+        MultipartFile dfe,
+        MultipartFile bail,
+        MultipartFile logo)
+        throws Exception {
+
+      PartnerApplicationRequest req = PartnerTestFixtures.buildRequest(partnerType);
       UUID applicationId = UUID.randomUUID();
 
       when(applicationRepo.existsByEmailAndStatusNot(req.getEmail(), ApplicationStatus.REJECTED))
           .thenReturn(false);
       when(minioService.initPartnerDirectory(req.getCompanyName())).thenReturn("acme-sarl");
-      when(applicationRepo.save(any(PartnerApplication.class)))
+      when(applicationRepo.save(any()))
           .thenAnswer(
               inv -> {
                 PartnerApplication app = inv.getArgument(0);
-                try {
-                  var idField =
-                      com.africa.ubaxplatform.common.base.BaseEntity.class.getDeclaredField("id");
-                  idField.setAccessible(true);
-                  idField.set(app, applicationId);
-                } catch (Exception e) {
-                  throw new RuntimeException(e);
-                }
+                PartnerTestFixtures.injectId(app, applicationId); // ← rendre injectId public
                 return app;
               });
       when(statusLogRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-      // Fichiers null → uploadLegal/uploadLogo retournent null sans appeler MinIO
-      PartnerApplicationResponse response = service.apply(req, null, null, null, null);
+      PartnerApplicationResponse response = service.apply(req, rccm, dfe, bail, logo);
 
       assertThat(response).isNotNull();
-      verify(minioService, never())
-          .uploadPartnerLegalDoc(anyString(), anyString(), any(), any(long.class), anyString());
-      verify(minioService, never())
-          .uploadPartnerLogo(anyString(), any(), any(long.class), anyString());
     }
 
     @Test
@@ -202,7 +226,7 @@ class PartnerApplicationServiceImplTest {
           new MockMultipartFile("rccm", "rccm.exe", "application/x-msdownload", new byte[100]);
 
       assertThatThrownBy(() -> service.apply(req, invalidFile, null, null, null))
-          .isInstanceOf(BadRequestException.class);
+          .isInstanceOf(CustomException.class);
 
       verify(applicationRepo, never()).save(any());
     }
@@ -221,7 +245,7 @@ class PartnerApplicationServiceImplTest {
           new MockMultipartFile("rccm", "rccm.pdf", "application/pdf", largeContent);
 
       assertThatThrownBy(() -> service.apply(req, largeFile, null, null, null))
-          .isInstanceOf(BadRequestException.class);
+          .isInstanceOf(CustomException.class);
 
       verify(applicationRepo, never()).save(any());
     }

@@ -1,12 +1,16 @@
 package com.africa.ubaxplatform.testHelper;
 
+import static com.africa.ubaxplatform.common.constants.Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE;
+import static com.africa.ubaxplatform.common.constants.Constants.CodeList.PartnerType.HOTEL;
+
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
-import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationRequest;
 import com.africa.ubaxplatform.partner.entity.PartnerApplication;
 import java.util.UUID;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
 import org.springframework.mock.web.MockMultipartFile;
 
 /**
@@ -28,7 +32,7 @@ public final class PartnerTestFixtures {
 
   /** Requête avec type HOTEL (non-agence) pour les tests génériques. */
   public static PartnerApplicationRequest buildRequest() {
-    return buildRequest(Constants.CodeList.PartnerType.HOTEL);
+    return buildRequest(HOTEL);
   }
 
   public static PartnerApplicationRequest buildRequest(String partnerType) {
@@ -53,7 +57,7 @@ public final class PartnerTestFixtures {
    * #buildApplicationWithIdAndType} pour un type explicite.
    */
   public static PartnerApplication buildApplicationWithId(UUID id, ApplicationStatus status) {
-    return buildApplicationWithIdAndType(id, status, Constants.CodeList.PartnerType.HOTEL);
+    return buildApplicationWithIdAndType(id, status, HOTEL);
   }
 
   /**
@@ -104,7 +108,7 @@ public final class PartnerTestFixtures {
         .build();
   }
 
-  private static void injectId(Object entity, UUID id) {
+  public static void injectId(Object entity, UUID id) {
     try {
       var idField = BaseEntity.class.getDeclaredField("id");
       idField.setAccessible(true);
@@ -112,5 +116,30 @@ public final class PartnerTestFixtures {
     } catch (Exception e) {
       throw new RuntimeException("Impossible d'injecter l'ID dans l'entité : " + e.getMessage(), e);
     }
+  }
+
+  public static Stream<Arguments> missingRequiredFileProvider() {
+    MockMultipartFile validRccm = PartnerTestFixtures.pdfFile("rccm");
+    MockMultipartFile validDfe = PartnerTestFixtures.pdfFile("dfe");
+    MockMultipartFile validBail = PartnerTestFixtures.pdfFile("bail");
+    MockMultipartFile validLogo = PartnerTestFixtures.pngFile("logo");
+
+    return Stream.of(
+        Arguments.of("rccm", AGENCE_IMMOBILIERE, null, validDfe, validBail, validLogo, "RCCM"),
+        Arguments.of("dfe", AGENCE_IMMOBILIERE, validRccm, null, validBail, validLogo, "DFE"),
+        Arguments.of("bail", AGENCE_IMMOBILIERE, validRccm, validDfe, null, validLogo, "bail"),
+        Arguments.of("rccm", HOTEL, null, validDfe, null, validLogo, "RCCM"),
+        Arguments.of("dfe", HOTEL, validRccm, null, null, validLogo, "DFE"));
+  }
+
+  public static Stream<Arguments> optionalFileProvider() {
+    MockMultipartFile validRccm = PartnerTestFixtures.pdfFile("rccm");
+    MockMultipartFile validDfe = PartnerTestFixtures.pdfFile("dfe");
+    MockMultipartFile validBail = PartnerTestFixtures.pdfFile("bail");
+
+    return Stream.of(
+        Arguments.of("logo", AGENCE_IMMOBILIERE, validRccm, validDfe, validBail, null),
+        Arguments.of("logo", HOTEL, validRccm, validDfe, null, null),
+        Arguments.of("bail", HOTEL, validRccm, validDfe, null, null));
   }
 }

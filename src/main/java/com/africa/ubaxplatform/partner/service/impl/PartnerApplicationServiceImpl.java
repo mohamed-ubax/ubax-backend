@@ -24,7 +24,6 @@ import com.africa.ubaxplatform.partner.repository.ApplicationStatusLogRepository
 import com.africa.ubaxplatform.partner.repository.PartnerApplicationRepository;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
-import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -93,23 +92,20 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
     String slug = minioService.initPartnerDirectory(request.getCompanyName());
 
     if (rccm == null || rccm.isEmpty()) {
-      throw new CustomException(new FileNotFoundException("Le fichier RCCM est obligatoire"));
+      throw new CustomException(new BadRequestException("Le fichier RCCM est obligatoire"));
     }
 
     if (dfe == null || dfe.isEmpty()) {
-      throw new CustomException(new FileNotFoundException("Le fichier DFE est obligatoire"));
+      throw new CustomException(new BadRequestException("Le fichier DFE est obligatoire"));
     }
 
     if (request.getPartnerType().equals(Constants.CodeList.PartnerType.AGENCE_IMMOBILIERE)) {
       if (bail == null || bail.isEmpty()) {
         throw new CustomException(
-            new FileNotFoundException("Le contrat de bail est obligatoire pour une agence"));
+            new BadRequestException("Le contrat de bail est obligatoire pour une agence"));
       }
     }
 
-    if (logo == null || logo.isEmpty()) {
-      throw new CustomException(new FileNotFoundException("Le logo est obligatoire"));
-    }
     String rccmUrl = uploadLegal(slug, rccm, "rccm");
     String dfeUrl = uploadLegal(slug, dfe, "dfe");
     String bailUrl = uploadLegal(slug, bail, "bail");
