@@ -24,6 +24,8 @@ import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -77,12 +79,23 @@ public class AuthController {
       tags = {"Authentication"},
       summary = "Connexion utilisateur",
       description =
-          "Authentifie l'utilisateur via Keycloak (flux ROPC) et retourne l'access token et le"
-              + " refresh token.")
+          "🌐 **Public** – Authentifie l'utilisateur via Keycloak (flux ROPC) et retourne l'access token et le refresh token.")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Connexion réussie"),
-    @ApiResponse(responseCode = "401", description = "Identifiants invalides")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Connexion réussie – `data` contient `accessToken`, `refreshToken`",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = LoginResponse.class))),
+    @ApiResponse(responseCode = "401", description = "Identifiants invalides", content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = LoginRequest.class)))
   @PostMapping("/login")
   public ResponseEntity<CustomResponse> login(@Valid @RequestBody LoginRequest request)
       throws CustomException {
@@ -101,11 +114,23 @@ public class AuthController {
       tags = {"Mobile"},
       summary = "Connexion via numéro de téléphone (Mobile)",
       description =
-          "Authentifie l'utilisateur via son numéro de téléphone et son mot de passe (flux ROPC).")
+          "🌐 **Public** – Authentifie l'utilisateur via son numéro de téléphone et son mot de passe (flux ROPC).")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Connexion réussie"),
-    @ApiResponse(responseCode = "401", description = "Identifiants invalides")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Connexion réussie – `data` contient `accessToken`, `refreshToken`",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = LoginResponse.class))),
+    @ApiResponse(responseCode = "401", description = "Identifiants invalides", content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = PhoneLoginRequest.class)))
   @PostMapping("/login/phone")
   public ResponseEntity<CustomResponse> loginByPhone(@Valid @RequestBody PhoneLoginRequest request)
       throws CustomException {
@@ -124,11 +149,20 @@ public class AuthController {
       tags = {"Mobile"},
       summary = "Inscription mobile – Étape 1 : Envoi OTP",
       description =
-          "Génère et envoie un code OTP à 6 chiffres par SMS au numéro de téléphone fourni.")
+          "🌐 **Public** – Génère et envoie un code OTP à 6 chiffres par SMS au numéro de téléphone fourni.")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "OTP envoyé"),
-    @ApiResponse(responseCode = "409", description = "Numéro de téléphone déjà utilisé")
+    @ApiResponse(responseCode = "200", description = "OTP envoyé", content = @Content),
+    @ApiResponse(
+        responseCode = "409",
+        description = "Numéro de téléphone déjà utilisé",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = SendOtpRequest.class)))
   @PostMapping("/register/send-otp")
   public ResponseEntity<CustomResponse> sendOtp(@Valid @RequestBody SendOtpRequest request)
       throws CustomException {
@@ -146,11 +180,21 @@ public class AuthController {
   @Operation(
       tags = {"Mobile"},
       summary = "Inscription mobile – Étape 2 : Vérification OTP",
-      description = "Vérifie le code OTP reçu par SMS. Le code est valide une seule fois.")
+      description =
+          "🌐 **Public** – Vérifie le code OTP reçu par SMS. Le code est valide une seule fois.")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "OTP vérifié avec succès"),
-    @ApiResponse(responseCode = "400", description = "Code OTP invalide ou expiré")
+    @ApiResponse(responseCode = "200", description = "OTP vérifié avec succès", content = @Content),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Code OTP invalide ou expiré",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = VerifyOtpRequest.class)))
   @PostMapping("/register/verify-otp")
   public ResponseEntity<CustomResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request)
       throws CustomException {
@@ -169,12 +213,26 @@ public class AuthController {
       tags = {"Mobile"},
       summary = "Inscription mobile – Étape 3 : Finalisation",
       description =
-          "Finalise l'inscription. Crée le compte dans Keycloak puis en base PostgreSQL."
-              + " Retourne les informations du compte créé.")
+          "🌐 **Public** – Finalise l'inscription. Crée le compte dans Keycloak puis en base PostgreSQL. Retourne les informations du compte créé.")
   @ApiResponses({
-    @ApiResponse(responseCode = "201", description = "Compte créé avec succès"),
-    @ApiResponse(responseCode = "409", description = "Email ou téléphone déjà utilisé")
+    @ApiResponse(
+        responseCode = "201",
+        description = "Compte créé avec succès",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = RegisterResponse.class))),
+    @ApiResponse(
+        responseCode = "409",
+        description = "Email ou téléphone déjà utilisé",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = RegisterCompleteRequest.class)))
   @PostMapping("/register/complete")
   public ResponseEntity<CustomResponse> registerComplete(
       @Valid @RequestBody RegisterCompleteRequest request) throws CustomException {
@@ -193,11 +251,20 @@ public class AuthController {
   @Operation(
       tags = {"Authentication"},
       summary = "Déconnexion utilisateur",
-      description = "Révoque le refresh token et invalide la session Keycloak.")
+      description = "🌐 **Public** – Révoque le refresh token et invalide la session Keycloak.")
   @ApiResponses({
-    @ApiResponse(responseCode = "204", description = "Déconnexion réussie"),
-    @ApiResponse(responseCode = "400", description = "Refresh token invalide ou expiré")
+    @ApiResponse(responseCode = "200", description = "Déconnexion réussie", content = @Content),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Refresh token invalide ou expiré",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = LogoutRequest.class)))
   @PostMapping("/logout")
   public ResponseEntity<CustomResponse> logout(@Valid @RequestBody LogoutRequest request)
       throws CustomException {
@@ -216,11 +283,20 @@ public class AuthController {
       tags = {"Authentication"},
       summary = "Demande de réinitialisation de mot de passe",
       description =
-          "Envoie un email avec un lien de réinitialisation Keycloak à l'adresse fournie."
-              + " Silencieux si l'email n'existe pas (sécurité anti-enumeration).")
+          "🌐 **Public** – Envoie un email avec un lien de réinitialisation Keycloak à l'adresse fournie. "
+              + "Silencieux si l'email n'existe pas (sécurité anti-énumération).")
   @ApiResponses({
-    @ApiResponse(responseCode = "204", description = "Email envoyé (si l'adresse existe)"),
+    @ApiResponse(
+        responseCode = "200",
+        description = "Email envoyé (si l'adresse existe)",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = ForgotPasswordRequest.class)))
   @PostMapping("/forgot-password")
   public ResponseEntity<CustomResponse> forgotPassword(
       @Valid @RequestBody ForgotPasswordRequest request) {
@@ -243,11 +319,17 @@ public class AuthController {
       tags = {"Mobile"},
       summary = "Récupération MDP – Étape 1 : Envoi OTP SMS",
       description =
-          "Génère et envoie un OTP par SMS au numéro fourni. Le numéro doit être enregistré.")
+          "🌐 **Public** – Génère et envoie un OTP par SMS au numéro fourni. Le numéro doit être enregistré.")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "OTP envoyé"),
-    @ApiResponse(responseCode = "404", description = "Numéro non enregistré")
+    @ApiResponse(responseCode = "200", description = "OTP envoyé", content = @Content),
+    @ApiResponse(responseCode = "404", description = "Numéro non enregistré", content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = SendOtpRequest.class)))
   @PostMapping("/forgot-password/send-otp")
   public ResponseEntity<CustomResponse> forgotPasswordSendOtp(
       @Valid @RequestBody SendOtpRequest request) throws CustomException {
@@ -264,11 +346,17 @@ public class AuthController {
       tags = {"Mobile"},
       summary = "Récupération MDP – Étape 2 : Vérification OTP",
       description =
-          "Vérifie le code OTP reçu par SMS. Le code n'est pas consommé (étape 3 requise).")
+          "🌐 **Public** – Vérifie le code OTP reçu par SMS. Le code n'est pas consommé (étape 3 requise).")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "OTP valide"),
-    @ApiResponse(responseCode = "400", description = "OTP invalide ou expiré")
+    @ApiResponse(responseCode = "200", description = "OTP valide", content = @Content),
+    @ApiResponse(responseCode = "400", description = "OTP invalide ou expiré", content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = VerifyOtpRequest.class)))
   @PostMapping("/forgot-password/verify-otp")
   public ResponseEntity<CustomResponse> forgotPasswordVerifyOtp(
       @Valid @RequestBody VerifyOtpRequest request) throws CustomException {
@@ -284,11 +372,20 @@ public class AuthController {
   @Operation(
       tags = {"Mobile"},
       summary = "Récupération MDP – Étape 3 : Nouveau mot de passe",
-      description = "Vérifie l'OTP (le consomme) et réinitialise le mot de passe.")
+      description = "🌐 **Public** – Vérifie l'OTP (le consomme) et réinitialise le mot de passe.")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Mot de passe réinitialisé"),
-    @ApiResponse(responseCode = "400", description = "OTP invalide ou expiré")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Mot de passe réinitialisé",
+        content = @Content),
+    @ApiResponse(responseCode = "400", description = "OTP invalide ou expiré", content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = ResetPasswordByPhoneRequest.class)))
   @PostMapping("/forgot-password/reset")
   public ResponseEntity<CustomResponse> forgotPasswordReset(
       @Valid @RequestBody ResetPasswordByPhoneRequest request) throws CustomException {
@@ -305,18 +402,33 @@ public class AuthController {
   // ── Reset Password (ADMIN) ─────────────────────────────────────
 
   @Operation(
-      tags = {"Admin"},
+      tags = {"Administration Plateforme"},
       summary = "Réinitialiser le mot de passe d'un utilisateur (Admin)",
       description =
-          "Permet à un administrateur de forcer un nouveau mot de passe sans passer par le flux"
-              + " email.")
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Permet à un administrateur de forcer un nouveau mot de passe sans passer par le flux email.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "204", description = "Mot de passe réinitialisé"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis"),
-    @ApiResponse(responseCode = "404", description = "Utilisateur introuvable")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Mot de passe réinitialisé",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle ADMIN requis",
+        content = @Content),
+    @ApiResponse(responseCode = "404", description = "Utilisateur introuvable", content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = ResetPasswordRequest.class)))
   @PostMapping("/reset-password")
   public ResponseEntity<CustomResponse> resetPassword(
       @Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest)
@@ -337,14 +449,22 @@ public class AuthController {
   // ── Get Roles (ADMIN) ──────────────────────────────────────────
 
   @Operation(
-      tags = {"Admin"},
+      tags = {"Administration Plateforme"},
       summary = "Lister tous les rôles Keycloak (Admin)",
-      description = "Retourne l'ensemble des rôles realm définis dans le realm Keycloak.")
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne l'ensemble des rôles realm définis dans le realm Keycloak.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Liste des rôles"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis")
+    @ApiResponse(responseCode = "200", description = "Liste des rôles", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle ADMIN requis",
+        content = @Content)
   })
   @GetMapping("/roles")
   public ResponseEntity<CustomResponse> getRoles(HttpServletRequest httpRequest)
@@ -362,16 +482,33 @@ public class AuthController {
   // ── Assign Role (ADMIN) ────────────────────────────────────────
 
   @Operation(
-      tags = {"Admin"},
+      tags = {"Administration Plateforme"},
       summary = "Attribuer un rôle à un utilisateur (Admin)",
-      description = "Assigne un rôle realm Keycloak à l'utilisateur identifié par son keycloakId.")
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Assigne un rôle realm Keycloak à l'utilisateur identifié par son keycloakId.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Rôle attribué"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis"),
-    @ApiResponse(responseCode = "404", description = "Utilisateur ou rôle introuvable")
+    @ApiResponse(responseCode = "200", description = "Rôle attribué", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle ADMIN requis",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Utilisateur ou rôle introuvable",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = AssignRoleRequest.class)))
   @PostMapping("/users/{keycloakId}/roles")
   public ResponseEntity<CustomResponse> assignRole(
       @PathVariable String keycloakId,
@@ -393,17 +530,33 @@ public class AuthController {
   // ── Remove Role (ADMIN) ────────────────────────────────────────
 
   @Operation(
-      tags = {"Admin"},
+      tags = {"Administration Plateforme"},
       summary = "Retirer un rôle à un utilisateur (Admin)",
       description =
-          "Supprime un rôle realm Keycloak de l'utilisateur identifié par son keycloakId.")
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Supprime un rôle realm Keycloak de l'utilisateur identifié par son keycloakId.")
   @SecurityRequirement(name = "bearerAuth")
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Rôle retiré"),
-    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Accès refusé – rôle ADMIN requis"),
-    @ApiResponse(responseCode = "404", description = "Utilisateur ou rôle introuvable")
+    @ApiResponse(responseCode = "200", description = "Rôle retiré", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Accès refusé – rôle ADMIN requis",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Utilisateur ou rôle introuvable",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = AssignRoleRequest.class)))
   @DeleteMapping("/users/{keycloakId}/roles")
   public ResponseEntity<CustomResponse> removeRole(
       @PathVariable String keycloakId,

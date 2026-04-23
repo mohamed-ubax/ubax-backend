@@ -7,7 +7,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -38,13 +37,7 @@ import lombok.experimental.SuperBuilder;
  * </ul>
  */
 @Entity
-@Table(
-    name = "ticket_attachments",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_ticket_attach_ticket", columnList = "ticket_id"),
-      @Index(name = "idx_ticket_attach_uploader", columnList = "uploaded_by")
-    })
+@Table(name = "ticket_attachments", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor

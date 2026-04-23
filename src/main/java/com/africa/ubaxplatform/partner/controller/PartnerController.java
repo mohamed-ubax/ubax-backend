@@ -12,13 +12,17 @@ import com.africa.ubaxplatform.partner.dto.PartnerApplicationResponse;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -59,6 +63,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/v1/partner")
 @RequiredArgsConstructor
 @Tag(name = "Partner")
+@Slf4j
 public class PartnerController {
 
   private final PartnerApplicationService partnerApplicationService;
@@ -76,17 +81,78 @@ public class PartnerController {
   @Operation(
       summary = "Soumettre une demande d'adhésion partenaire",
       description =
-          "Formulaire multipart : champ \"data\" (JSON) + fichiers optionnels \"rccm\", \"dfe\", \"bail\" (PDF/JPEG/PNG – max 10 Mo) et \"logo\" (JPEG/PNG/WEBP – max 5 Mo).",
+          "🌐 **Public** – Formulaire multipart d'adhésion partenaire (agence immobilière ou hôtel).\n\n"
+              + "**Champs :**\n"
+              + "- `data` (JSON, obligatoire) : informations de la société\n"
+              + "- `rccm` (PDF/JPEG/PNG – max 10 Mo) : registre de commerce\n"
+              + "- `dfe` (PDF/JPEG/PNG – max 10 Mo) : déclaration fiscale\n"
+              + "- `bail` (PDF/JPEG/PNG – max 10 Mo) : contrat de bail\n"
+              + "- `logo` (JPEG/PNG/WEBP – max 5 Mo) : logo de l'entreprise\n\n"
+              + "Déclenche une confirmation par email et une notification admin.",
       tags = {"Partner"})
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "Demande soumise avec succès",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PartnerApplicationResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Données invalides ou fichier non autorisé",
+        content = @Content),
+    @ApiResponse(responseCode = "409", description = "Demande déjà existante", content = @Content)
+  })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "multipart/form-data",
+              schema =
+                  @Schema(
+                      type = "object",
+                      requiredProperties = {"data"})))
   public ResponseEntity<CustomResponse> apply(
-      @RequestPart("data") @Valid PartnerApplicationRequest request,
-      @RequestPart(value = "rccm", required = false) MultipartFile rccm,
-      @RequestPart(value = "dfe", required = false) MultipartFile dfe,
-      @RequestPart(value = "bail", required = false) MultipartFile bail,
-      @RequestPart(value = "logo", required = false) MultipartFile logo) {
-
+      @Parameter(
+              description = "Données JSON de la demande",
+              required = true,
+              content =
+                  @Content(
+                      mediaType = "application/json",
+                      schema = @Schema(implementation = PartnerApplicationRequest.class)))
+          @RequestPart("data")
+          @Valid
+          PartnerApplicationRequest request,
+      @Parameter(
+              description = "RCCM – Registre de commerce (PDF/JPEG/PNG – max 10 Mo)",
+              content = @Content(schema = @Schema(type = "string", format = "binary")))
+          @RequestPart(value = "rccm", required = false)
+          MultipartFile rccm,
+      @Parameter(
+              description = "DFE – Déclaration fiscale (PDF/JPEG/PNG – max 10 Mo)",
+              content = @Content(schema = @Schema(type = "string", format = "binary")))
+          @RequestPart(value = "dfe", required = false)
+          MultipartFile dfe,
+      @Parameter(
+              description = "Bail – Contrat de bail (PDF/JPEG/PNG – max 10 Mo)",
+              content = @Content(schema = @Schema(type = "string", format = "binary")))
+          @RequestPart(value = "bail", required = false)
+          MultipartFile bail,
+      @Parameter(
+              description = "Logo de l'entreprise (JPEG/PNG/WEBP – max 5 Mo)",
+              content = @Content(schema = @Schema(type = "string", format = "binary")))
+          @RequestPart(value = "logo", required = false)
+          MultipartFile logo)
+      throws CustomException {
+    log.info(
+        "rccm: name={} size={} empty={}",
+        rccm != null ? rccm.getOriginalFilename() : "NULL",
+        rccm != null ? rccm.getSize() : -1,
+        rccm == null || rccm.isEmpty());
     PartnerApplicationResponse response =
         partnerApplicationService.apply(request, rccm, dfe, bail, logo);
+
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             new CustomResponse(
@@ -106,8 +172,28 @@ public class PartnerController {
   @GetMapping("/admin/applications")
   @Operation(
       summary = "Lister les demandes d'adhésion (admin)",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Liste paginée des demandes avec filtre optionnel par statut.",
       tags = {"Partner"},
       security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Liste paginée des demandes",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PartnerApplicationResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – ADMIN requis",
+        content = @Content)
+  })
   public ResponseEntity<CustomResponse> listApplications(
       @RequestParam(required = false) ApplicationStatus status,
       @PageableDefault(size = 20, sort = "submittedAt", direction = Sort.Direction.DESC)
@@ -129,8 +215,29 @@ public class PartnerController {
   @GetMapping("/admin/applications/{id}")
   @Operation(
       summary = "Détail d'une demande d'adhésion (admin)",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne la demande avec l'intégralité de son journal de statuts.",
       tags = {"Partner"},
       security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Détail de la demande",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PartnerApplicationResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – ADMIN requis",
+        content = @Content),
+    @ApiResponse(responseCode = "404", description = "Demande introuvable", content = @Content)
+  })
   public ResponseEntity<CustomResponse> getApplication(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
@@ -147,8 +254,33 @@ public class PartnerController {
   @PatchMapping("/admin/applications/{id}/decision")
   @Operation(
       summary = "Statuer sur une demande d'adhésion (admin)",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Applique une décision administrative. Si `newStatus = APPROVED`, crée automatiquement le compte partenaire Keycloak.",
       tags = {"Partner"},
       security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Décision appliquée",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PartnerApplicationResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Statut invalide ou motif manquant pour REJECTED/INCOMPLETE",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – ADMIN requis",
+        content = @Content),
+    @ApiResponse(responseCode = "404", description = "Demande introuvable", content = @Content)
+  })
   public ResponseEntity<CustomResponse> decide(
       @PathVariable UUID id,
       @RequestParam

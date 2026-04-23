@@ -1,0 +1,100 @@
+server:
+  port: 0
+  servlet:
+    context-path: /api
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+  datasource:
+    url: jdbc:postgresql://localhost:5434/db-ubax-test
+    username: test
+    password: test
+
+  flyway:
+    enabled: true
+    default-schema: administrative
+    schemas: administrative
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: administrative
+    show-sql: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8181/realms/ubax-plateform
+          jwk-set-uri: http://localhost:8181/realms/ubax-plateform/protocol/openid-connect/certs
+
+  mail:
+    host: localhost
+    port: 3025
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+
+keycloak:
+  auth-server-url: http://localhost:8181
+  realm: ubax-plateform
+  client-id: ubax-client
+  client-secret: test-client-secret
+  issuer-uri: http://localhost:8181/realms/ubax-plateform
+
+minio:
+  endpoint: http://localhost:9010
+  access-key: minioadmin
+  secret-key: minioadmin123
+  buckets:
+    users-avatars,
+    agencies-logos,
+    properties-media,
+    property-documents,
+    tenant-documents,
+    documents-generated,
+    ticket-attachments,
+    partner-documents
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+ubax:
+  security:
+    enabled: true
+  endpoints:
+    frontend: http://localhost:3000
+  mail:
+    from: test@ubax.io
+    admin-email: admin-test@ubax.io
+    from-name: UBAX Test
+
+lam:
+  sms:
+    api-url: http://localhost:9999/sms
+    account-id: test
+    password: test
+    sender: TEST

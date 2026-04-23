@@ -11,7 +11,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -58,15 +57,7 @@ import lombok.experimental.SuperBuilder;
  * </ol>
  */
 @Entity
-@Table(
-    name = "documents",
-    schema = "administrative",
-    indexes = {
-      @Index(name = "idx_documents_ref", columnList = "ref_type, ref_id"),
-      @Index(name = "idx_documents_doc_type", columnList = "doc_type"),
-      @Index(name = "idx_documents_generated_by", columnList = "generated_by"),
-      @Index(name = "idx_documents_status", columnList = "status")
-    })
+@Table(name = "documents", schema = "administrative")
 @Getter
 @Setter
 @NoArgsConstructor

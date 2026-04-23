@@ -11,6 +11,7 @@ import com.africa.ubaxplatform.common.exception.TokenRetrievalException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -29,10 +30,12 @@ import org.springframework.web.client.RestClient;
  * {@code realm-management → manage-users} et {@code realm-management → manage-roles}.
  */
 @Service
+@Slf4j
 public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   private final KeycloakProperties props;
   private final RestClient restClient;
+  private static final String UBAX_PREFIX = "UBAX_";
 
   public KeycloakAdminServiceImpl(KeycloakProperties props) {
     this.props = props;
@@ -103,7 +106,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   @Override
   public void assignRole(String keycloakId, UserRole role) throws CustomException {
     String adminToken = getAdminToken();
-    String roleName = "UBAX_" + role.name();
+    String roleName = UBAX_PREFIX + role.name();
 
     try {
       Map<String, Object> roleRepresentation =
@@ -138,7 +141,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   @Override
   public void removeRole(String keycloakId, UserRole role) throws CustomException {
     String adminToken = getAdminToken();
-    String roleName = "UBAX_" + role.name();
+    String roleName = UBAX_PREFIX + role.name();
 
     try {
       Map<String, Object> roleRepresentation =
@@ -237,6 +240,24 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     }
   }
 
+  @Override
+  public void disableUser(String keycloakId) {
+    try {
+      String adminToken = getAdminToken();
+      restClient
+          .put()
+          .uri(adminBaseUrl() + "/users/" + keycloakId)
+          .header("Authorization", "Bearer " + adminToken)
+          .header("Content-Type", "application/json")
+          .body(Map.of("enabled", false))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (Exception e) {
+      org.slf4j.LoggerFactory.getLogger(KeycloakAdminServiceImpl.class)
+          .error("Échec désactivation Keycloak pour userId={}: {}", keycloakId, e.getMessage());
+    }
+  }
+
   // ── Get Roles ──────────────────────────────────────────────────
 
   @Override
@@ -311,6 +332,56 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     return (String) users.getFirst().get("username");
   }
 
+  // ── Admin Account ──────────────────────────────────────────────
+
+  @Override
+  public String createAdminAccount(String email, String firstName, String lastName, String phone)
+      throws CustomException {
+    String adminToken = getAdminToken();
+
+    Map<String, Object> userRepresentation = new HashMap<>();
+    userRepresentation.put("username", email);
+    userRepresentation.put("email", email);
+    userRepresentation.put("firstName", firstName);
+    userRepresentation.put("lastName", lastName);
+    userRepresentation.put("enabled", true);
+    userRepresentation.put("emailVerified", true);
+    userRepresentation.put("requiredActions", List.of("UPDATE_PASSWORD"));
+    if (phone != null && !phone.isBlank()) {
+      userRepresentation.put("attributes", Map.of("phone", List.of(phone)));
+    }
+
+    try {
+      ResponseEntity<Void> response =
+          restClient
+              .post()
+              .uri(adminBaseUrl() + "/users")
+              .header("Authorization", "Bearer " + adminToken)
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(userRepresentation)
+              .retrieve()
+              .toBodilessEntity();
+
+      if (response.getStatusCode() == HttpStatusCode.valueOf(201)
+          && response.getHeaders().getLocation() != null) {
+        String location = response.getHeaders().getLocation().toString();
+        return location.substring(location.lastIndexOf('/') + 1);
+      }
+      throw new CustomException(
+          new IllegalStateException("Keycloak : pas de Location header"),
+          "Erreur lors de la création du compte administrateur");
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 409) {
+        throw new CustomException(
+            new IllegalArgumentException("Email déjà utilisé dans Keycloak : " + email),
+            ResponseMessageConstants.USER_CREATE_FAILURE_ALREADY_EXISTS);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()),
+          "Erreur Keycloak lors de la création du compte administrateur");
+    }
+  }
+
   // ── Partner Account ────────────────────────────────────────────
 
   @Override
@@ -381,7 +452,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   // ── Helpers ────────────────────────────────────────────────────
 
-  private String getAdminToken() {
+  protected String getAdminToken() {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "client_credentials");
     form.add("client_id", props.getClientId());

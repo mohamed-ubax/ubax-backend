@@ -15,6 +15,7 @@ import com.africa.ubaxplatform.tenant.dto.TenantUpdateRequest;
 import com.africa.ubaxplatform.tenant.service.interfaces.TenantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -86,13 +87,32 @@ public class TenantController {
               + "**Rôles autorisés :** `CLIENT`",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
-    @ApiResponse(responseCode = "201", description = "Dossier créé avec succès"),
-    @ApiResponse(responseCode = "401", description = "Token JWT absent ou invalide"),
-    @ApiResponse(responseCode = "403", description = "Rôle insuffisant — CLIENT requis"),
+    @ApiResponse(
+        responseCode = "201",
+        description = "Dossier créé avec succès",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TenantResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token JWT absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant — CLIENT requis",
+        content = @Content),
     @ApiResponse(
         responseCode = "409",
-        description = "Un dossier locataire existe déjà pour cet utilisateur")
+        description = "Un dossier locataire existe déjà pour cet utilisateur",
+        content = @Content)
   })
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = TenantCreateRequest.class)))
   public ResponseEntity<CustomResponse> create(
       @RequestBody @Valid TenantCreateRequest request, HttpServletRequest httpRequest)
       throws CustomException {
@@ -199,7 +219,7 @@ public class TenantController {
       HttpServletRequest httpRequest)
       throws CustomException {
     RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AGENCY);
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
     Page<TenantResponse> page = tenantService.list(status, pageable);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -227,7 +247,7 @@ public class TenantController {
   public ResponseEntity<CustomResponse> getById(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AGENCY);
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
     TenantResponse response = tenantService.getById(id);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -265,7 +285,7 @@ public class TenantController {
             httpRequest,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN,
-            UserRole.AGENCY);
+            UserRole.PARTNER);
     TenantResponse response = tenantService.qualify(id, caller.getSub());
     return ResponseEntity.ok(
         new CustomResponse(
@@ -303,7 +323,7 @@ public class TenantController {
       HttpServletRequest httpRequest)
       throws CustomException {
     RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AGENCY);
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
     TenantResponse response = tenantService.reject(id, reason);
     return ResponseEntity.ok(
         new CustomResponse(

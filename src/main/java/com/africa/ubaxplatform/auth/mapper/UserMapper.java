@@ -35,6 +35,7 @@ public class UserMapper {
    */
   public static UserResponse toResponse(User user) {
     Agency agency = user.getAgency();
+    var hotel = user.getHotel();
     return new UserResponse(
         user.getId(),
         user.getKeycloakId(),
@@ -51,6 +52,8 @@ public class UserMapper {
         user.getRoles(),
         agency != null ? agency.getId() : null,
         agency != null ? agency.getName() : null,
+        hotel != null ? hotel.getId() : null,
+        hotel != null ? hotel.getName() : null,
         user.isEmailVerified(),
         user.isPhoneVerified(),
         user.isIdentityVerified(),

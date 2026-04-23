@@ -9,6 +9,9 @@ spring:
   application:
     name: ubax-platform
 
+  jackson:
+    default-property-inclusion: non_null
+
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
@@ -46,6 +49,7 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
     out-of-order: false
+    validate-on-migrate: false
 
   # ─── Keycloak OAuth2 Resource Server ─────────────────────────────
   security:
@@ -131,6 +135,15 @@ ubax:
     from: ${MAIL_FROM:no-reply@ubax.io}
     admin-email: ${ADMIN_EMAIL:mba@ubax.io}
     from-name: ${MAIL_FROM_NAME:UBAX Platform}
+
+  # ─── Bootstrap Super Admin (premier démarrage uniquement) ─────────
+  # Activer uniquement si la DB est vierge. Désactiver après le premier login.
+  bootstrap:
+    enabled: ${BOOTSTRAP_ENABLED:true}
+    email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:mba@ubax.io}
+    first-name: ${BOOTSTRAP_SUPER_ADMIN_FIRST_NAME:Super}
+    last-name: ${BOOTSTRAP_SUPER_ADMIN_LAST_NAME:Admin}
+    phone: ${BOOTSTRAP_SUPER_ADMIN_PHONE:+221783703310}
 
 # ─── SMS – LAfricaMobile (LAMPUSH) ────────────────────────────────
 lam:

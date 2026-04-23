@@ -26,6 +26,11 @@ public class ResponseMessageConstants {
   public static final String OTP_INVALID = "OTP_INVALID";
   public static final String OTP_NOT_FOUND = "OTP_NOT_FOUND";
 
+  // ── ADMIN ───────────────────────────────────────────────────────
+  public static final String ADMIN_CREATE_SUCCESS = "ADMIN_CREATE_SUCCESS";
+  public static final String ADMIN_ROLE_ASSIGN_SUCCESS = "ADMIN_ROLE_ASSIGN_SUCCESS";
+  public static final String ADMIN_DELETE_SUCCESS = "ADMIN_DELETE_SUCCESS";
+
   // ── USER ────────────────────────────────────────────────────────
   public static final String USER_GET_SUCCESS = "USER_GET_SUCCESS";
   public static final String USER_GET_LIST_SUCCESS = "USER_GET_LIST_SUCCESS";
@@ -37,6 +42,7 @@ public class ResponseMessageConstants {
   public static final String USER_CREATE_FAILURE = "USER_CREATE_FAILURE";
   public static final String USER_CREATE_FAILURE_ALREADY_EXISTS =
       "USER_CREATE_FAILURE_ALREADY_EXISTS";
+  public static final String TEAM_MEMBER_CREATE_SUCCESS = "TEAM_MEMBER_CREATE_SUCCESS";
   public static final String USER_UPDATE_FAILURE = "USER_UPDATE_FAILURE";
   public static final String USER_DELETE_FAILURE = "USER_DELETE_FAILURE";
 
@@ -46,6 +52,7 @@ public class ResponseMessageConstants {
   public static final String PROPERTY_CREATE_SUCCESS = "PROPERTY_CREATE_SUCCESS";
   public static final String PROPERTY_UPDATE_SUCCESS = "PROPERTY_UPDATE_SUCCESS";
   public static final String PROPERTY_DELETE_SUCCESS = "PROPERTY_DELETE_SUCCESS";
+  public static final String PROPERTY_STATUS_UPDATE_SUCCESS = "PROPERTY_STATUS_UPDATE_SUCCESS";
   public static final String PROPERTY_GET_FAILURE = "PROPERTY_GET_FAILURE";
   public static final String PROPERTY_GET_FAILURE_NOT_FOUND = "PROPERTY_GET_FAILURE_NOT_FOUND";
   public static final String PROPERTY_CREATE_FAILURE = "PROPERTY_CREATE_FAILURE";
@@ -57,6 +64,18 @@ public class ResponseMessageConstants {
   public static final String PROPERTY_DELETE_FAILURE = "PROPERTY_DELETE_FAILURE";
   public static final String PROPERTY_DELETE_FAILURE_NOT_FOUND =
       "PROPERTY_DELETE_FAILURE_NOT_FOUND";
+
+  // ── PROPERTY MEDIA ───────────────────────────────────────────────
+  public static final String PROPERTY_MEDIA_ADD_SUCCESS = "PROPERTY_MEDIA_ADD_SUCCESS";
+  public static final String PROPERTY_MEDIA_DELETE_SUCCESS = "PROPERTY_MEDIA_DELETE_SUCCESS";
+  public static final String PROPERTY_MEDIA_COVER_SUCCESS = "PROPERTY_MEDIA_COVER_SUCCESS";
+  public static final String PROPERTY_MEDIA_NOT_FOUND = "PROPERTY_MEDIA_NOT_FOUND";
+
+  // ── PROPERTY DOCUMENT ────────────────────────────────────────────
+  public static final String PROPERTY_DOCUMENT_ADD_SUCCESS = "PROPERTY_DOCUMENT_ADD_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_DELETE_SUCCESS = "PROPERTY_DOCUMENT_DELETE_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_VERIFY_SUCCESS = "PROPERTY_DOCUMENT_VERIFY_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_NOT_FOUND = "PROPERTY_DOCUMENT_NOT_FOUND";
 
   // ── PARTNER APPLICATION ─────────────────────────────────────────
   public static final String PARTNER_APPLICATION_SUBMIT_SUCCESS =
@@ -129,6 +148,14 @@ public class ResponseMessageConstants {
   public static final String TICKET_GET_FAILURE_NOT_FOUND = "TICKET_GET_FAILURE_NOT_FOUND";
   public static final String TICKET_CREATE_FAILURE = "TICKET_CREATE_FAILURE";
   public static final String TICKET_UPDATE_FAILURE_NOT_FOUND = "TICKET_UPDATE_FAILURE_NOT_FOUND";
+  public static final String TICKET_MESSAGE_CREATE_SUCCESS = "TICKET_MESSAGE_CREATE_SUCCESS";
+  public static final String TICKET_MESSAGE_GET_LIST_SUCCESS = "TICKET_MESSAGE_GET_LIST_SUCCESS";
+  public static final String TICKET_ATTACHMENT_GET_LIST_SUCCESS =
+      "TICKET_ATTACHMENT_GET_LIST_SUCCESS";
+
+  // ── DASHBOARD ───────────────────────────────────────────────────
+  public static final String DASHBOARD_GET_SUCCESS = "DASHBOARD_GET_SUCCESS";
+  public static final String DASHBOARD_GET_FAILURE = "DASHBOARD_GET_FAILURE";
 
   // ── CODE LIST ───────────────────────────────────────────────────
   public static final String CODELIST_GET_SUCCESS = "CODELIST_GET_SUCCESS";

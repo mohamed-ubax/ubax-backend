@@ -11,6 +11,7 @@ import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -25,6 +26,7 @@ import org.springframework.web.client.RestClient;
  * logout pour révoquer le refresh token.
  */
 @Service
+@Slf4j
 public class KeycloakAuthServiceImpl implements KeycloakAuthService {
 
   private final KeycloakProperties props;

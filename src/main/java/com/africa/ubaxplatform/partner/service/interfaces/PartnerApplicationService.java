@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.partner.service.interfaces;
 
+import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationRequest;
 import com.africa.ubaxplatform.partner.dto.PartnerApplicationResponse;
@@ -30,7 +31,8 @@ public interface PartnerApplicationService {
       MultipartFile rccm,
       MultipartFile dfe,
       MultipartFile bail,
-      MultipartFile logo);
+      MultipartFile logo)
+      throws CustomException;
 
   /**
    * Récupère les demandes filtrées par statut (endpoint admin paginé).
