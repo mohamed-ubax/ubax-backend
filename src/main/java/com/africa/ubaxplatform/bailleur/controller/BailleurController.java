@@ -29,6 +29,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -152,7 +153,8 @@ public class BailleurController {
         content = @Content)
   })
   public ResponseEntity<CustomResponse> listByAgency(
-      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+      @ParameterObject
+          @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
           Pageable pageable,
       HttpServletRequest httpRequest)
       throws CustomException {
@@ -319,7 +321,8 @@ public class BailleurController {
         content = @Content)
   })
   public ResponseEntity<CustomResponse> listAll(
-      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+      @ParameterObject
+          @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
           Pageable pageable,
       HttpServletRequest httpRequest)
       throws CustomException {
