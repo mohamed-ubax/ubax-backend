@@ -153,6 +153,21 @@ public class ResponseMessageConstants {
   public static final String TICKET_ATTACHMENT_GET_LIST_SUCCESS =
       "TICKET_ATTACHMENT_GET_LIST_SUCCESS";
 
+  // ── BAILLEUR ────────────────────────────────────────────────────
+  public static final String BAILLEUR_APPLICATION_SUBMIT_SUCCESS =
+      "BAILLEUR_APPLICATION_SUBMIT_SUCCESS";
+  public static final String BAILLEUR_APPLICATION_GET_SUCCESS = "BAILLEUR_APPLICATION_GET_SUCCESS";
+  public static final String BAILLEUR_APPLICATION_GET_LIST_SUCCESS =
+      "BAILLEUR_APPLICATION_GET_LIST_SUCCESS";
+  public static final String BAILLEUR_APPLICATION_DECISION_SUCCESS =
+      "BAILLEUR_APPLICATION_DECISION_SUCCESS";
+  public static final String BAILLEUR_APPLICATION_NOT_FOUND = "BAILLEUR_APPLICATION_NOT_FOUND";
+  public static final String BAILLEUR_APPLICATION_CONFLICT = "BAILLEUR_APPLICATION_CONFLICT";
+  public static final String BAILLEUR_APPLICATION_INVALID_STATUS =
+      "BAILLEUR_APPLICATION_INVALID_STATUS";
+  public static final String BAILLEUR_AGENCY_NOT_FOUND = "BAILLEUR_AGENCY_NOT_FOUND";
+  public static final String BAILLEUR_GET_LIST_SUCCESS = "BAILLEUR_GET_LIST_SUCCESS";
+
   // ── DASHBOARD ───────────────────────────────────────────────────
   public static final String DASHBOARD_GET_SUCCESS = "DASHBOARD_GET_SUCCESS";
   public static final String DASHBOARD_GET_FAILURE = "DASHBOARD_GET_FAILURE";

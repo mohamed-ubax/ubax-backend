@@ -78,6 +78,14 @@ public class PartnerApplication extends BaseEntity {
   @Column(name = "zone", length = 150)
   private String zone;
 
+  /** Latitude GPS du siège (optionnelle). */
+  @Column(name = "latitude", precision = 10, scale = 8)
+  private java.math.BigDecimal latitude;
+
+  /** Longitude GPS du siège (optionnelle). */
+  @Column(name = "longitude", precision = 11, scale = 8)
+  private java.math.BigDecimal longitude;
+
   // ── Informations complémentaires ───────────────────────────────
 
   /** Description de l'activité et des services offerts. */

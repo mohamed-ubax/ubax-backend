@@ -1,9 +1,12 @@
 package com.africa.ubaxplatform.partner.dto;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -52,6 +55,14 @@ public class PartnerApplicationRequest {
   private String zone;
 
   private String description;
+
+  @DecimalMin(value = "-90.0", message = "Latitude invalide (min -90)")
+  @DecimalMax(value = "90.0", message = "Latitude invalide (max 90)")
+  private BigDecimal latitude;
+
+  @DecimalMin(value = "-180.0", message = "Longitude invalide (min -180)")
+  @DecimalMax(value = "180.0", message = "Longitude invalide (max 180)")
+  private BigDecimal longitude;
 
   @Size(max = 100, message = "Le statut juridique ne peut dépasser 100 caractères")
   private String legalStatus;

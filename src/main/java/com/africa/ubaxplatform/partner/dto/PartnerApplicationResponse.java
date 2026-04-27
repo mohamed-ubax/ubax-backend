@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.partner.dto;
 
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,8 @@ public class PartnerApplicationResponse {
   private String city;
   private String postalAddress;
   private String zone;
+  private BigDecimal latitude;
+  private BigDecimal longitude;
   private String description;
   private String legalStatus;
   private String registrationNumber;

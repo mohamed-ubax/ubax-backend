@@ -181,4 +181,23 @@ public interface KeycloakAdminService {
    * @throws CustomException si l'appel Keycloak échoue
    */
   void sendSetPasswordLink(String keycloakId) throws CustomException;
+
+  /**
+   * Crée un compte Keycloak pour un bailleur approuvé.
+   *
+   * <p>Le username est le numéro de téléphone (compatible avec la connexion mobile via ROPC).
+   * L'email est stocké en attribut optionnel. Le mot de passe temporaire est fourni en clair et
+   * persisté immédiatement — l'application est responsable de l'envoyer par SMS au bailleur.
+   *
+   * @param firstName prénom du bailleur
+   * @param lastName nom de famille du bailleur
+   * @param phone numéro de téléphone (sert de username Keycloak)
+   * @param email adresse email (optionnelle, stockée en attribut)
+   * @param tempPassword mot de passe temporaire en clair
+   * @return identifiant Keycloak (UUID) du compte créé
+   * @throws CustomException si le téléphone est déjà utilisé (409) ou si l'appel échoue
+   */
+  String createBailleurAccount(
+      String firstName, String lastName, String phone, String email, String tempPassword)
+      throws CustomException;
 }
