@@ -55,6 +55,15 @@ src/main/java/com/africa/ubaxplatform/
 ├── storage/        ✅ MinIO – upload direct et URLs présignées
 │   ├── controller/     StorageController
 │   └── service/
+├── bailleur/       ✅ Demandes d'adhésion bailleur, liens bailleur↔agence, création compte OWNER
+│   ├── codeList/       BailleurApplicationStatus (PENDING, APPROVED, REJECTED, CANCELLED)
+│   ├── controller/     BailleurController
+│   ├── dto/            BailleurApplyRequest, BailleurPropertyRequest, BailleurDecisionRequest,
+│   │                   BailleurApplicationResponse, BailleurPropertyResponse
+│   ├── entity/         BailleurApplication, BailleurApplicationProperty, BailleurAgencyLink
+│   ├── repository/     BailleurApplicationRepository, BailleurApplicationPropertyRepository,
+│   │                   BailleurAgencyLinkRepository
+│   └── service/
 ├── ticketing/      ✅ Entités + enums — controller/service à créer
 │   ├── codeList/       TicketStatus (enum), MessageType (enum)
 │   ├── entity/         Ticket, TicketAttachment, TicketMessage
@@ -230,8 +239,15 @@ public class ModuleController {
 | V017 | `create_hotels.sql` | `hotels` + `hotel_id` sur `users` |
 | V018 | `create_tickets.sql` | `tickets`, `ticket_messages`, `ticket_attachments` |
 | V019 | `seed_ticket_code_lists.sql` | Seed `la_code_list` (TICKET_CATEGORY, TICKET_PRIORITY, TICKET_ATTACHMENT_TYPE) |
+| V020 | `seed_sub_roles_code_lists.sql` | Seed `la_code_list` (ROLE_AGENCE, ROLE_HOTEL, ROLE_UBAX_INTERNAL) |
+| V021 | `fix_user_sub_roles_scope_constraint.sql` | Correction contrainte `chk_user_sub_roles_scope` (valeurs majuscules) |
+| V022 | `create_bailleur_agency_links.sql` | `bailleur_agency_links` (contrainte unique bailleur↔agence) |
+| V023 | `seed_bailleur_system_config.sql` | Seed `la_code_list` (GEO_CONFLICT_RADIUS_METERS = 50 m) |
+| V024 | `add_coordinates_to_partner_applications.sql` | `latitude`, `longitude` sur `partner_applications` |
+| V025 | `create_bailleur_applications.sql` | `bailleur_applications`, `bailleur_application_properties` |
+| V026 | `seed_id_type_code_list.sql` | Seed `la_code_list` (ID_TYPE : CNI, PASSEPORT, PERMIS_CONDUIRE, TITRE_SEJOUR, CARTE_CONSULAIRE) |
 
-Prochaine version disponible : **V020**
+Prochaine version disponible : **V027**
 
 ---
 
@@ -340,6 +356,16 @@ Prochaine version disponible : **V020**
 | `GET` | `/v1/expenses/{id}` | `PARTNER/ADMIN` | Détail |
 | `POST` | `/v1/expenses` | `PARTNER/ADMIN` | Enregistrer dépense |
 | `DELETE` | `/v1/expenses/{id}` | `PARTNER/ADMIN` | Supprimer |
+
+### Bailleur
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/bailleur/apply` | Public | Soumettre une demande d'adhésion bailleur |
+| `GET` | `/v1/bailleur/agency/applications` | `PARTNER` + `DIRECTEUR_AGENCE` | Liste paginée des demandes reçues |
+| `GET` | `/v1/bailleur/agency/applications/{id}` | `PARTNER` + `DIRECTEUR_AGENCE` | Détail d'une demande |
+| `PATCH` | `/v1/bailleur/agency/applications/{id}/decision` | `PARTNER` + `DIRECTEUR_AGENCE` | Approuver / rejeter |
+| `GET` | `/v1/bailleur/admin/applications` | `ADMIN` · `SUPER_ADMIN` | Vue globale toutes agences |
 
 ### Dashboard & Storage
 

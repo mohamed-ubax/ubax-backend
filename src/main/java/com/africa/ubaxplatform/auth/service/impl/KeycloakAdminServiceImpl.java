@@ -431,6 +431,62 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     }
   }
 
+  // ── Bailleur Account ───────────────────────────────────────────
+
+  @Override
+  public String createBailleurAccount(
+      String firstName, String lastName, String phone, String email, String tempPassword)
+      throws CustomException {
+    String adminToken = getAdminToken();
+
+    Map<String, Object> userRepresentation = new HashMap<>();
+    userRepresentation.put("username", phone);
+    userRepresentation.put("firstName", firstName);
+    userRepresentation.put("lastName", lastName);
+    userRepresentation.put("enabled", true);
+    userRepresentation.put("emailVerified", false);
+    Map<String, Object> attributes = new java.util.HashMap<>();
+    attributes.put("phone", List.of(phone));
+    if (email != null && !email.isBlank()) {
+      userRepresentation.put("email", email);
+      attributes.put("email", List.of(email));
+    }
+    userRepresentation.put("attributes", attributes);
+    userRepresentation.put(
+        "credentials",
+        List.of(Map.of("type", "password", "value", tempPassword, "temporary", false)));
+
+    try {
+      ResponseEntity<Void> response =
+          restClient
+              .post()
+              .uri(adminBaseUrl() + "/users")
+              .header("Authorization", "Bearer " + adminToken)
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(userRepresentation)
+              .retrieve()
+              .toBodilessEntity();
+
+      if (response.getStatusCode() == HttpStatusCode.valueOf(201)
+          && response.getHeaders().getLocation() != null) {
+        String location = response.getHeaders().getLocation().toString();
+        return location.substring(location.lastIndexOf('/') + 1);
+      }
+      throw new CustomException(
+          new IllegalStateException("Keycloak : pas de Location header"),
+          "Erreur lors de la création du compte bailleur");
+    } catch (HttpClientErrorException e) {
+      if (e.getStatusCode().value() == 409) {
+        throw new CustomException(
+            new IllegalArgumentException("Téléphone déjà utilisé dans Keycloak : " + phone),
+            ResponseMessageConstants.USER_CREATE_FAILURE_ALREADY_EXISTS);
+      }
+      throw new CustomException(
+          new IllegalArgumentException(e.getMessage()),
+          "Erreur Keycloak lors de la création du compte bailleur");
+    }
+  }
+
   @Override
   public void sendSetPasswordLink(String keycloakId) throws CustomException {
     String adminToken = getAdminToken();

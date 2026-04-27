@@ -43,6 +43,39 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
 
   long countByAgencyId(UUID agencyId);
 
+  /** Vérifie si un bien appartenant à ce bailleur est déjà géré par une autre agence. */
+  boolean existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(UUID ownerId, UUID agencyId);
+
+  /**
+   * Détecte tout bien déjà rattaché à une agence différente dans un rayon donné (Haversine).
+   * Utilisé pour signaler un conflit géographique sur les demandes de bailleur inconnu.
+   */
+  @Query(
+      value =
+          """
+          SELECT COUNT(*) > 0
+          FROM administrative.properties p
+          WHERE p.agency_id IS NOT NULL
+            AND p.agency_id != CAST(:agencyId AS uuid)
+            AND p.latitude  IS NOT NULL
+            AND p.longitude IS NOT NULL
+            AND (6371000 * acos(
+                  LEAST(1.0,
+                    cos(radians(CAST(:lat AS double precision)))
+                    * cos(radians(CAST(p.latitude  AS double precision)))
+                    * cos(radians(CAST(p.longitude AS double precision)) - radians(CAST(:lng AS double precision)))
+                    + sin(radians(CAST(:lat AS double precision)))
+                    * sin(radians(CAST(p.latitude  AS double precision)))
+                  )
+                )) < CAST(:radiusMeters AS double precision)
+          """,
+      nativeQuery = true)
+  boolean existsNearLocationForOtherAgency(
+      @Param("lat") double lat,
+      @Param("lng") double lng,
+      @Param("agencyId") String agencyId,
+      @Param("radiusMeters") double radiusMeters);
+
   /** Biens PUBLISHED dont la date d'expiration est dépassée → à archiver. */
   @Query(
       "SELECT p FROM Property p WHERE p.status = 'PUBLISHED' AND p.expiresAt IS NOT NULL AND p.expiresAt < :now")
