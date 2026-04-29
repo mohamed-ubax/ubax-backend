@@ -130,7 +130,7 @@ ubax:
   security:
     enabled: ${SECURITY_ENABLED:true}
   endpoints:
-    frontend: ${FRONTEND_URL:http://localhost:3000}
+    frontend: ${FRONTEND_URL:http://localhost:3000,http://localhost:4200,http://localhost:4201,http://localhost:4202,http://localhost:4203,http://localhost:4204,http://localhost:4205}
   mail:
     from: ${MAIL_FROM:no-reply@ubax.io}
     admin-email: ${ADMIN_EMAIL:mba@ubax.io}
