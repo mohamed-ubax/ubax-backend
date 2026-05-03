@@ -28,6 +28,7 @@ import com.africa.ubaxplatform.partner.repository.PartnerApplicationRepository;
 import com.africa.ubaxplatform.partner.service.interfaces.PartnerApplicationService;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -225,8 +226,6 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
                 "Type de partenaire invalide : " + application.getPartnerType())));
       }
 
-      UserRole assignedRole = UserRole.PARTNER;
-
       // 1. Créer le compte Keycloak (username = email, sans mot de passe)
       String keycloakId =
           keycloakAdminService.createPartnerAccount(
@@ -235,29 +234,30 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
               application.getLegalRepresentative(),
               application.getPhone());
 
-      // Attribuer le rôle approprié
-      keycloakAdminService.assignRole(keycloakId, assignedRole);
+      // Le fondateur reçoit PARTNER + PARTNER_ADMIN (les membres invités n'auront que PARTNER)
+      keycloakAdminService.assignRole(keycloakId, UserRole.PARTNER);
+      keycloakAdminService.assignRole(keycloakId, UserRole.PARTNER_ADMIN);
+      Set<UserRole> founderRoles = new HashSet<>(Set.of(UserRole.PARTNER, UserRole.PARTNER_ADMIN));
 
       // Pour une agence immobilière : créer l'entité Agency
       Agency agency = null;
       if (isAgency) {
         agency = agencyRepo.save(agencyMapper.toAgency(application));
-        userRepo.save(agencyMapper.toPartnerUser(application, keycloakId, assignedRole, agency));
+        userRepo.save(agencyMapper.toPartnerUser(application, keycloakId, founderRoles, agency));
       }
 
       // Pour un hotel : créer l'entité Hotel
       Hotel hotel = null;
       if (isHotel) {
         hotel = hotelRepo.save(hotelMapper.toHotel(application));
-        userRepo.save(hotelMapper.toPartnerUser(application, keycloakId, assignedRole, hotel));
+        userRepo.save(hotelMapper.toPartnerUser(application, keycloakId, founderRoles, hotel));
       }
 
       // Envoyer le lien "Définir mon mot de passe" via Keycloak
       keycloakAdminService.sendSetPasswordLink(keycloakId);
 
       log.info(
-          "Compte {} provisionné avec succès : keycloakId={}, email={}",
-          assignedRole,
+          "Compte fondateur provisionné avec succès : keycloakId={}, email={}",
           keycloakId,
           application.getEmail());
 
