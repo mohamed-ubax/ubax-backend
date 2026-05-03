@@ -32,5 +32,8 @@ public enum AgenceRole {
   COMPTABLE_AGENCE,
 
   /** Agent SAV — tickets de maintenance et support. Pas d'accès aux finances. */
-  AGENT_SAV
+  AGENT_SAV,
+
+  /** Agent immobilier — gestion des biens, visites et dossiers locataires/acheteurs. */
+  AGENT_IMMOBILIER
 }

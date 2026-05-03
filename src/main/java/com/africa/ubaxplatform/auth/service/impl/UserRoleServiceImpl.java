@@ -1,5 +1,7 @@
 package com.africa.ubaxplatform.auth.service.impl;
 
+import com.africa.ubaxplatform.auth.codeList.AgenceRole;
+import com.africa.ubaxplatform.auth.codeList.HotelRole;
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.AddTeamMemberRequest;
@@ -166,6 +168,7 @@ public class UserRoleServiceImpl implements UserRoleService {
 
     validatePartnerScope(scope);
     validateCallerIsPartner(caller);
+    validateCallerCanManageTeam(caller, scope);
     validateSameStructure(caller, target, scope);
     validateRolesForScope(roles, scope);
 
@@ -213,6 +216,7 @@ public class UserRoleServiceImpl implements UserRoleService {
 
     validatePartnerScope(scope);
     validateCallerIsPartner(caller);
+    validateCallerCanManageTeam(caller, scope);
     validateSameStructure(caller, target, scope);
 
     if (!subRoleRepo.existsByUserIdAndRoleAndScope(targetUserId, role, scope)) {
@@ -288,6 +292,7 @@ public class UserRoleServiceImpl implements UserRoleService {
     User caller = findByKeycloakId(callerKeycloakId);
     validatePartnerScope(scope);
     validateCallerIsPartner(caller);
+    validateCallerCanManageTeam(caller, scope);
 
     if (userRepo.existsByEmail(request.getEmail())) {
       throw new CustomException(
@@ -363,6 +368,28 @@ public class UserRoleServiceImpl implements UserRoleService {
       throw new CustomException(
           new UnAuthorizedException("Seul un PARTNER peut gérer les sous-rôles de sa structure"));
     }
+  }
+
+  /**
+   * Vérifie que le caller peut gérer l'équipe (inviter, assigner, révoquer des sous-rôles).
+   *
+   * <p>Autorisé si : rôle Keycloak {@code PARTNER_ADMIN} (fondateur) OU sous-rôle DG/GERANT actif
+   * pour le scope concerné.
+   */
+  private void validateCallerCanManageTeam(User caller, RoleScope scope) throws CustomException {
+    if (caller.getRoles().contains(UserRole.PARTNER_ADMIN)) {
+      return;
+    }
+    String dgRole =
+        scope == RoleScope.AGENCE
+            ? AgenceRole.DIRECTEUR_AGENCE.name()
+            : HotelRole.GERANT_HOTEL.name();
+    if (subRoleRepo.existsByUserIdAndRoleAndScope(caller.getId(), dgRole, scope)) {
+      return;
+    }
+    throw new CustomException(
+        new UnAuthorizedException(
+            "Seul le fondateur (PARTNER_ADMIN) ou le directeur (DG/GERANT) peut gérer l'équipe"));
   }
 
   private void validatePartnerScope(RoleScope scope) throws CustomException {

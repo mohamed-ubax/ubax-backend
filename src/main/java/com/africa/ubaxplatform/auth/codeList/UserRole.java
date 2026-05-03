@@ -38,5 +38,17 @@ public enum UserRole {
    * <p>Le type de structure (agence vs hôtel) et le rôle interne sont portés par les sous-rôles
    * dans {@code user_sub_roles} — scope {@code agence} ou {@code hotel}.
    */
-  PARTNER
+  PARTNER,
+
+  /**
+   * Fondateur d'une agence ou d'un hôtel partenaire.
+   *
+   * <p>Assigné automatiquement lors de l'approbation de la demande d'adhésion, en complément de
+   * {@code PARTNER}. Ce rôle identifie l'utilisateur qui a soumis la demande et lui permet de
+   * s'auto-assigner le sous-rôle DG/GERANT et d'inviter les premiers membres de son équipe, avant
+   * même d'avoir un sous-rôle attribué.
+   *
+   * <p>Les membres invités par la suite reçoivent uniquement {@code PARTNER}.
+   */
+  PARTNER_ADMIN
 }

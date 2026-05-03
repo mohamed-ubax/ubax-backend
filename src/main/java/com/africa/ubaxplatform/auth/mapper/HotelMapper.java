@@ -26,7 +26,7 @@ public class HotelMapper {
   }
 
   public User toPartnerUser(
-      PartnerApplication app, String keycloakId, UserRole assignedRole, Hotel hotel) {
+      PartnerApplication app, String keycloakId, Set<UserRole> roles, Hotel hotel) {
     User.UserBuilder<?, ?> builder =
         User.builder()
             .keycloakId(keycloakId)
@@ -34,7 +34,7 @@ public class HotelMapper {
             .lastName(app.getLegalRepresentative())
             .email(app.getEmail())
             .phone(app.getPhone())
-            .roles(new HashSet<>(Set.of(assignedRole)))
+            .roles(new HashSet<>(roles))
             .emailVerified(true)
             .country(app.getCountry())
             .city(app.getCity());

@@ -12,6 +12,7 @@ import com.africa.ubaxplatform.auth.dto.ResetPasswordByPhoneRequest;
 import com.africa.ubaxplatform.auth.dto.ResetPasswordRequest;
 import com.africa.ubaxplatform.auth.dto.SendOtpRequest;
 import com.africa.ubaxplatform.auth.dto.VerifyOtpRequest;
+import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAuthService;
 import com.africa.ubaxplatform.auth.service.interfaces.PasswordResetService;
@@ -72,6 +73,7 @@ public class AuthController {
   private final RegistrationService registrationService;
   private final PasswordResetService passwordResetService;
   private final RequestHeaderParser requestHeaderParser;
+  private final UserRepository userRepository;
 
   // ── Login (email) ──────────────────────────────────────────────
 
@@ -519,6 +521,16 @@ public class AuthController {
     RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
 
     adminService.assignRole(keycloakId, request.getRole());
+
+    // Synchronisation DB : ajouter le rôle dans user_roles
+    userRepository
+        .findByKeycloakId(keycloakId)
+        .ifPresent(
+            user -> {
+              user.getRoles().add(request.getRole());
+              userRepository.save(user);
+            });
+
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
@@ -567,6 +579,16 @@ public class AuthController {
     RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
 
     adminService.removeRole(keycloakId, request.getRole());
+
+    // Synchronisation DB : retirer le rôle de user_roles
+    userRepository
+        .findByKeycloakId(keycloakId)
+        .ifPresent(
+            user -> {
+              user.getRoles().remove(request.getRole());
+              userRepository.save(user);
+            });
+
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
