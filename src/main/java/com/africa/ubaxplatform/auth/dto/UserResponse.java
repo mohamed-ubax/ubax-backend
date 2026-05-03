@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /** Représentation publique d'un utilisateur retournée par l'API. */
 public record UserResponse(
-    UUID id,
+    UUID userId,
     String keycloakId,
 
     // ── Identité ─────────────────────────────────────────────────
