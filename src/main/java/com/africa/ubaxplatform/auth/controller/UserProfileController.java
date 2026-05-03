@@ -1,9 +1,13 @@
 package com.africa.ubaxplatform.auth.controller;
 
+import com.africa.ubaxplatform.auth.dto.UserResponse;
 import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.auth.mapper.UserMapper;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.constants.Constants;
+import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,10 +20,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -31,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "Mobile")
+@Slf4j
 public class UserProfileController {
 
   private final MinioService minioService;
@@ -39,6 +48,106 @@ public class UserProfileController {
   private static final String BUCKET_AVATARS = "users-avatars";
   private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024; // 5 Mo
   private static final Set<String> ALLOWED_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+
+  // ── Get by keycloakId ──────────────────────────────────────────
+
+  @GetMapping("/keycloak/{keycloakId}")
+  @Operation(
+      summary = "Récupérer son profil via le keycloakId",
+      description =
+          "🔑 **Authentifié** – Retourne le profil de l'utilisateur connecté. Le `keycloakId` fourni doit correspondre au token JWT du caller.",
+      tags = {"Mobile"})
+  @SecurityRequirement(name = "bearerAuth")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Profil retourné",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "keycloakId ne correspond pas au token",
+        content = @Content),
+    @ApiResponse(responseCode = "404", description = "Utilisateur introuvable", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> getByKeycloakId(
+      @PathVariable String keycloakId, JwtAuthenticationToken authentication) {
+
+    String callerKeycloakId = authentication.getName();
+    log.info("callerKeycloakId : {}", callerKeycloakId);
+    if (!callerKeycloakId.equals(keycloakId)) {
+      throw new UnAuthorizedException("Accès refusé");
+    }
+
+    User user =
+        userRepository
+            .findByKeycloakId(keycloakId)
+            .orElseThrow(() -> new NotFoundException("Utilisateur introuvable"));
+
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_SUCCESS,
+            UserMapper.toResponse(user)));
+  }
+
+  // ── Get by userId ───────────────────────────────────────────────
+
+  @GetMapping("/{userId}")
+  @Operation(
+      summary = "Récupérer son profil via l'userId interne",
+      description =
+          "🔑 **Authentifié** – Retourne le profil de l'utilisateur connecté. L'`userId` fourni doit correspondre au token JWT du caller.",
+      tags = {"Mobile"})
+  @SecurityRequirement(name = "bearerAuth")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Profil retourné",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = UserResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "userId ne correspond pas au token",
+        content = @Content),
+    @ApiResponse(responseCode = "404", description = "Utilisateur introuvable", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> getByUserId(
+      @PathVariable UUID userId, JwtAuthenticationToken authentication) {
+
+    String callerKeycloakId = authentication.getName();
+
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new NotFoundException("Utilisateur introuvable"));
+
+    if (!callerKeycloakId.equals(user.getKeycloakId())) {
+      throw new UnAuthorizedException("Accès refusé");
+    }
+
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_SUCCESS,
+            UserMapper.toResponse(user)));
+  }
+
+  // ── Upload Avatar ───────────────────────────────────────────────
 
   /**
    * Upload ou remplace la photo de profil de l'utilisateur connecté.
