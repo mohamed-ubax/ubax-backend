@@ -198,11 +198,11 @@ jobs:
             echo "${{ secrets.DOCKER_HUB_TOKEN }}" | \
               docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-            # Pull nouvelle image backend (retry x3 en cas d'erreur réseau)
+            # Pull toutes les images (backend + prometheus + grafana) avec retry x3
             pulled=false
             for attempt in 1 2 3; do
               echo "==> Pull tentative $attempt/3"
-              if docker compose -f docker-compose.vps.yml pull backend; then
+              if docker compose -f docker-compose.vps.yml pull; then
                 pulled=true
                 break
               fi
