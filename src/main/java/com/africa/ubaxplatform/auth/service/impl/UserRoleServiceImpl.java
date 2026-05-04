@@ -464,8 +464,8 @@ public class UserRoleServiceImpl implements UserRoleService {
     }
   }
 
-  private List<UserSubRoleResponse> fetchSubRoles(UUID userId) {
-    return subRoleRepo.findByUserId(userId).stream().map(this::toResponse).toList();
+  private List<String> fetchSubRoles(UUID userId) {
+    return subRoleRepo.findByUserId(userId).stream().map(UserSubRole::getRole).toList();
   }
 
   private UserSubRoleResponse toResponse(UserSubRole sub) {
