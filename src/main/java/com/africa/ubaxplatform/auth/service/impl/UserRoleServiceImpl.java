@@ -268,6 +268,37 @@ public class UserRoleServiceImpl implements UserRoleService {
 
   @Override
   @Transactional(readOnly = true)
+  public List<UserResponse> getInactiveTeamMembers(String callerKeycloakId, RoleScope scope)
+      throws CustomException {
+    User caller = findByKeycloakId(callerKeycloakId);
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+
+    return switch (scope) {
+      case AGENCE -> {
+        if (caller.getAgency() == null) {
+          throw new CustomException(
+              new BadRequestException("Vous n'êtes rattaché à aucune agence"));
+        }
+        yield userRepo.findByAgencyIdAndDeletedAtIsNotNull(caller.getAgency().getId()).stream()
+            .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
+            .toList();
+      }
+      case HOTEL -> {
+        if (caller.getHotel() == null) {
+          throw new CustomException(new BadRequestException("Vous n'êtes rattaché à aucun hôtel"));
+        }
+        yield userRepo.findByHotelIdAndDeletedAtIsNotNull(caller.getHotel().getId()).stream()
+            .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
+            .toList();
+      }
+      default ->
+          throw new CustomException(new BadRequestException("Scope non supporté : " + scope));
+    };
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public List<UserResponse> getAgencyMembersForAdmin(UUID agencyId) {
     return userRepo.findByAgencyIdAndDeletedAtIsNull(agencyId).stream()
         .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
@@ -276,8 +307,24 @@ public class UserRoleServiceImpl implements UserRoleService {
 
   @Override
   @Transactional(readOnly = true)
+  public List<UserResponse> getInactiveAgencyMembersForAdmin(UUID agencyId) {
+    return userRepo.findByAgencyIdAndDeletedAtIsNotNull(agencyId).stream()
+        .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
+        .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public List<UserResponse> getHotelMembersForAdmin(UUID hotelId) {
     return userRepo.findByHotelIdAndDeletedAtIsNull(hotelId).stream()
+        .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
+        .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<UserResponse> getInactiveHotelMembersForAdmin(UUID hotelId) {
+    return userRepo.findByHotelIdAndDeletedAtIsNotNull(hotelId).stream()
         .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
         .toList();
   }
@@ -318,6 +365,35 @@ public class UserRoleServiceImpl implements UserRoleService {
 
     log.info(
         "Membre retiré : caller={}, targetId={}, scope={}", callerKeycloakId, targetUserId, scope);
+  }
+
+  @Override
+  @Transactional
+  public void reactivateTeamMember(String callerKeycloakId, UUID targetUserId, RoleScope scope)
+      throws CustomException {
+
+    User caller = findByKeycloakId(callerKeycloakId);
+    User target = findById(targetUserId);
+
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+    validateCallerCanManageTeam(caller, scope);
+    validateSameStructure(caller, target, scope);
+
+    if (!target.isDeleted()) {
+      throw new CustomException(new BadRequestException("Ce membre est déjà actif"));
+    }
+
+    keycloakAdminService.enableUser(target.getKeycloakId());
+    target.setDeletedAt(null);
+    target.setActive(true);
+    userRepo.save(target);
+
+    log.info(
+        "Membre réactivé : caller={}, targetId={}, scope={}",
+        callerKeycloakId,
+        targetUserId,
+        scope);
   }
 
   // ── Ajout d'un membre d'équipe ────────────────────────────────────

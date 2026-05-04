@@ -258,6 +258,24 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     }
   }
 
+  @Override
+  public void enableUser(String keycloakId) {
+    try {
+      String adminToken = getAdminToken();
+      restClient
+          .put()
+          .uri(adminBaseUrl() + "/users/" + keycloakId)
+          .header("Authorization", "Bearer " + adminToken)
+          .header("Content-Type", "application/json")
+          .body(Map.of("enabled", true))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (Exception e) {
+      org.slf4j.LoggerFactory.getLogger(KeycloakAdminServiceImpl.class)
+          .error("Échec réactivation Keycloak pour userId={}: {}", keycloakId, e.getMessage());
+    }
+  }
+
   // ── Get Roles ──────────────────────────────────────────────────
 
   @Override

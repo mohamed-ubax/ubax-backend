@@ -80,7 +80,7 @@ public interface UserRoleService {
       throws CustomException;
 
   /**
-   * Retourne la liste des membres de la structure du PARTNER appelant (agence ou hôtel).
+   * Retourne la liste des membres actifs de la structure du PARTNER appelant (agence ou hôtel).
    *
    * @param callerKeycloakId keycloak ID du PARTNER appelant
    * @param scope AGENCE ou HOTEL
@@ -89,18 +89,41 @@ public interface UserRoleService {
       throws CustomException;
 
   /**
-   * Retourne la liste des membres d'une agence — accès admin back-office.
+   * Retourne la liste des membres inactifs (supprimés) de la structure du PARTNER appelant.
+   *
+   * @param callerKeycloakId keycloak ID du PARTNER appelant
+   * @param scope AGENCE ou HOTEL
+   */
+  List<UserResponse> getInactiveTeamMembers(String callerKeycloakId, RoleScope scope)
+      throws CustomException;
+
+  /**
+   * Retourne la liste des membres actifs d'une agence — accès admin back-office.
    *
    * @param agencyId identifiant de l'agence
    */
   List<UserResponse> getAgencyMembersForAdmin(UUID agencyId);
 
   /**
-   * Retourne la liste des membres d'un hôtel — accès admin back-office.
+   * Retourne la liste des membres inactifs d'une agence — accès admin back-office.
+   *
+   * @param agencyId identifiant de l'agence
+   */
+  List<UserResponse> getInactiveAgencyMembersForAdmin(UUID agencyId);
+
+  /**
+   * Retourne la liste des membres actifs d'un hôtel — accès admin back-office.
    *
    * @param hotelId identifiant de l'hôtel
    */
   List<UserResponse> getHotelMembersForAdmin(UUID hotelId);
+
+  /**
+   * Retourne la liste des membres inactifs d'un hôtel — accès admin back-office.
+   *
+   * @param hotelId identifiant de l'hôtel
+   */
+  List<UserResponse> getInactiveHotelMembersForAdmin(UUID hotelId);
 
   /**
    * Retire un membre de l'équipe (soft delete + désactivation Keycloak).
@@ -113,6 +136,18 @@ public interface UserRoleService {
    * @param scope AGENCE ou HOTEL
    */
   void removeTeamMember(String callerKeycloakId, UUID targetUserId, RoleScope scope)
+      throws CustomException;
+
+  /**
+   * Réactive un membre précédemment retiré (annule le soft delete + réactivation Keycloak).
+   *
+   * <p>Réservé au fondateur (PARTNER_ADMIN) ou au directeur (DG/GERANT) de la même structure.
+   *
+   * @param callerKeycloakId keycloak ID du PARTNER appelant
+   * @param targetUserId ID DB du membre à réactiver
+   * @param scope AGENCE ou HOTEL
+   */
+  void reactivateTeamMember(String callerKeycloakId, UUID targetUserId, RoleScope scope)
       throws CustomException;
 
   /**

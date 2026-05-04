@@ -60,6 +60,29 @@ public class AdminPartnerController {
             result));
   }
 
+  @GetMapping("/agencies/{agencyId}/members/inactive")
+  @Operation(
+      summary = "Membres inactifs d'une agence (back-office)",
+      description =
+          "🛡 **Rôle requis :** `ADMIN` ou `SUPER_ADMIN`.\n\n"
+              + "Retourne les membres retirés (soft-deleted) d'une agence partenaire.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste retournée"),
+    @ApiResponse(responseCode = "403", description = "ADMIN requis")
+  })
+  public ResponseEntity<CustomResponse> getInactiveAgencyMembers(
+      @PathVariable UUID agencyId, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+    var result = userRoleService.getInactiveAgencyMembersForAdmin(agencyId);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_LIST_SUCCESS,
+            result));
+  }
+
   @GetMapping("/hotels/{hotelId}/members")
   @Operation(
       summary = "Membres d'un hôtel (back-office)",
@@ -81,6 +104,29 @@ public class AdminPartnerController {
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             ResponseMessageConstants.USER_GET_SUCCESS,
+            result));
+  }
+
+  @GetMapping("/hotels/{hotelId}/members/inactive")
+  @Operation(
+      summary = "Membres inactifs d'un hôtel (back-office)",
+      description =
+          "🛡 **Rôle requis :** `ADMIN` ou `SUPER_ADMIN`.\n\n"
+              + "Retourne les membres retirés (soft-deleted) d'un hôtel partenaire.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste retournée"),
+    @ApiResponse(responseCode = "403", description = "ADMIN requis")
+  })
+  public ResponseEntity<CustomResponse> getInactiveHotelMembers(
+      @PathVariable UUID hotelId, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+    var result = userRoleService.getInactiveHotelMembersForAdmin(hotelId);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_LIST_SUCCESS,
             result));
   }
 }

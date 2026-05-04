@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -172,6 +173,60 @@ public class AgencyTeamController {
             Constants.Status.OK,
             ResponseMessageConstants.USER_GET_SUCCESS,
             result));
+  }
+
+  @GetMapping("/inactive")
+  @Operation(
+      summary = "Lister les membres inactifs de l'équipe agence",
+      description =
+          "🏢 **Rôle requis :** `PARTNER` de la même agence.\n\n"
+              + "Retourne les membres ayant été retirés (soft-deleted) de votre agence.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste retournée"),
+    @ApiResponse(responseCode = "403", description = "Pas PARTNER de cette agence")
+  })
+  public ResponseEntity<CustomResponse> getInactiveTeamMembers(
+      JwtAuthenticationToken authentication, HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    var result = userRoleService.getInactiveTeamMembers(callerKeycloakId, RoleScope.AGENCE);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_LIST_SUCCESS,
+            result));
+  }
+
+  @PatchMapping("/{userId}/activate")
+  @Operation(
+      summary = "Réactiver un membre retiré de l'équipe agence",
+      description =
+          "🏢 **Rôle requis :** `PARTNER` · directeur (`DIRECTEUR_AGENCE`) ou fondateur de la même agence.\n\n"
+              + "Annule le soft delete et réactive le compte dans Keycloak.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Membre réactivé"),
+    @ApiResponse(responseCode = "400", description = "Membre déjà actif"),
+    @ApiResponse(responseCode = "403", description = "Pas les droits nécessaires"),
+    @ApiResponse(responseCode = "404", description = "Membre introuvable")
+  })
+  public ResponseEntity<CustomResponse> activateMember(
+      @PathVariable UUID userId,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    userRoleService.reactivateTeamMember(callerKeycloakId, userId, RoleScope.AGENCE);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_UPDATE_SUCCESS,
+            null));
   }
 
   @DeleteMapping("/{userId}")
