@@ -22,6 +22,7 @@ import com.africa.ubaxplatform.common.exception.ConflictException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -249,7 +250,7 @@ public class UserRoleServiceImpl implements UserRoleService {
               new BadRequestException("Vous n'êtes rattaché à aucune agence"));
         }
         yield userRepo.findByAgencyIdAndDeletedAtIsNull(caller.getAgency().getId()).stream()
-            .map(UserMapper::toResponse)
+            .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
             .toList();
       }
       case HOTEL -> {
@@ -257,7 +258,7 @@ public class UserRoleServiceImpl implements UserRoleService {
           throw new CustomException(new BadRequestException("Vous n'êtes rattaché à aucun hôtel"));
         }
         yield userRepo.findByHotelIdAndDeletedAtIsNull(caller.getHotel().getId()).stream()
-            .map(UserMapper::toResponse)
+            .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
             .toList();
       }
       default ->
@@ -269,7 +270,7 @@ public class UserRoleServiceImpl implements UserRoleService {
   @Transactional(readOnly = true)
   public List<UserResponse> getAgencyMembersForAdmin(UUID agencyId) {
     return userRepo.findByAgencyIdAndDeletedAtIsNull(agencyId).stream()
-        .map(UserMapper::toResponse)
+        .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
         .toList();
   }
 
@@ -277,8 +278,46 @@ public class UserRoleServiceImpl implements UserRoleService {
   @Transactional(readOnly = true)
   public List<UserResponse> getHotelMembersForAdmin(UUID hotelId) {
     return userRepo.findByHotelIdAndDeletedAtIsNull(hotelId).stream()
-        .map(UserMapper::toResponse)
+        .map(u -> UserMapper.toResponse(u, fetchSubRoles(u.getId())))
         .toList();
+  }
+
+  // ── Suppression d'un membre d'équipe ─────────────────────────────
+
+  @Override
+  @Transactional
+  public void removeTeamMember(String callerKeycloakId, UUID targetUserId, RoleScope scope)
+      throws CustomException {
+
+    User caller = findByKeycloakId(callerKeycloakId);
+    User target = findById(targetUserId);
+
+    validatePartnerScope(scope);
+    validateCallerIsPartner(caller);
+    validateCallerCanManageTeam(caller, scope);
+    validateSameStructure(caller, target, scope);
+
+    if (caller.getId().equals(targetUserId)) {
+      throw new CustomException(
+          new BadRequestException("Vous ne pouvez pas vous supprimer vous-même"));
+    }
+
+    if (target.getRoles().contains(UserRole.PARTNER_ADMIN)) {
+      throw new CustomException(
+          new BadRequestException("Le fondateur de la structure ne peut pas être retiré"));
+    }
+
+    if (target.isDeleted()) {
+      throw new CustomException(new BadRequestException("Ce membre est déjà supprimé"));
+    }
+
+    keycloakAdminService.disableUser(target.getKeycloakId());
+    target.setDeletedAt(LocalDateTime.now());
+    target.setActive(false);
+    userRepo.save(target);
+
+    log.info(
+        "Membre retiré : caller={}, targetId={}, scope={}", callerKeycloakId, targetUserId, scope);
   }
 
   // ── Ajout d'un membre d'équipe ────────────────────────────────────
@@ -333,7 +372,7 @@ public class UserRoleServiceImpl implements UserRoleService {
       }
 
       log.info("Membre ajouté : caller={}, new={}, scope={}", callerKeycloakId, keycloakId, scope);
-      return UserMapper.toResponse(member);
+      return UserMapper.toResponse(member, fetchSubRoles(member.getId()));
 
     } catch (CustomException e) {
       if (keycloakId != null) {
@@ -423,6 +462,10 @@ public class UserRoleServiceImpl implements UserRoleService {
       }
       default -> {}
     }
+  }
+
+  private List<UserSubRoleResponse> fetchSubRoles(UUID userId) {
+    return subRoleRepo.findByUserId(userId).stream().map(this::toResponse).toList();
   }
 
   private UserSubRoleResponse toResponse(UserSubRole sub) {

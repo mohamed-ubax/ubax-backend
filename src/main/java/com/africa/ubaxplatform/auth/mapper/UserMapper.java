@@ -2,8 +2,10 @@ package com.africa.ubaxplatform.auth.mapper;
 
 import com.africa.ubaxplatform.auth.dto.RegisterResponse;
 import com.africa.ubaxplatform.auth.dto.UserResponse;
+import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
@@ -34,6 +36,10 @@ public class UserMapper {
    * @return DTO de réponse
    */
   public static UserResponse toResponse(User user) {
+    return toResponse(user, List.of());
+  }
+
+  public static UserResponse toResponse(User user, List<UserSubRoleResponse> subRoles) {
     Agency agency = user.getAgency();
     var hotel = user.getHotel();
     return new UserResponse(
@@ -54,6 +60,8 @@ public class UserMapper {
         agency != null ? agency.getName() : null,
         hotel != null ? hotel.getId() : null,
         hotel != null ? hotel.getName() : null,
+        agency != null ? "AGENCE" : (hotel != null ? "HOTEL" : null),
+        subRoles,
         user.isEmailVerified(),
         user.isPhoneVerified(),
         user.isIdentityVerified(),

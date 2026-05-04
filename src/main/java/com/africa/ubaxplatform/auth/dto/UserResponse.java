@@ -3,6 +3,7 @@ package com.africa.ubaxplatform.auth.dto;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,6 +34,8 @@ public record UserResponse(
     String agencyName,
     UUID hotelId,
     String hotelName,
+    String partnerType,
+    List<UserSubRoleResponse> subRoles,
 
     // ── Vérifications ────────────────────────────────────────────
     boolean emailVerified,

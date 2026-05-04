@@ -170,6 +170,36 @@ public class HotelTeamController {
             result));
   }
 
+  @DeleteMapping("/{userId}")
+  @Operation(
+      summary = "Retirer un membre de l'équipe hôtel",
+      description =
+          "🏨 **Rôle requis :** `PARTNER` · gérant (`GERANT_HOTEL`) ou fondateur du même hôtel.\n\n"
+              + "Désactive le compte dans Keycloak et marque l'utilisateur comme supprimé en base (soft delete). "
+              + "Le fondateur de la structure et votre propre compte ne peuvent pas être retirés.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Membre retiré"),
+    @ApiResponse(responseCode = "400", description = "Auto-suppression ou membre déjà supprimé"),
+    @ApiResponse(responseCode = "403", description = "Pas les droits nécessaires"),
+    @ApiResponse(responseCode = "404", description = "Membre introuvable")
+  })
+  public ResponseEntity<CustomResponse> removeMember(
+      @PathVariable UUID userId,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    userRoleService.removeTeamMember(callerKeycloakId, userId, RoleScope.HOTEL);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_DELETE_SUCCESS,
+            null));
+  }
+
   @DeleteMapping("/{userId}/sub-roles/{role}")
   @Operation(
       summary = "Révoquer un sous-rôle hôtel d'un membre",
