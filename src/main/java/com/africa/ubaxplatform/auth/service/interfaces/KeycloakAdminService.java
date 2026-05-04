@@ -93,6 +93,13 @@ public interface KeycloakAdminService {
   void disableUser(String keycloakId);
 
   /**
+   * Réactive un utilisateur Keycloak ({@code enabled = true}).
+   *
+   * @param keycloakId identifiant Keycloak de l'utilisateur à réactiver
+   */
+  void enableUser(String keycloakId);
+
+  /**
    * Récupère tous les rôles realm définis dans Keycloak.
    *
    * @return liste des représentations de rôles (champs : {@code id}, {@code name}, {@code

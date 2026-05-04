@@ -27,5 +27,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   List<User> findByAgencyIdAndDeletedAtIsNull(UUID agencyId);
 
+  List<User> findByAgencyIdAndDeletedAtIsNotNull(UUID agencyId);
+
   List<User> findByHotelIdAndDeletedAtIsNull(UUID hotelId);
+
+  List<User> findByHotelIdAndDeletedAtIsNotNull(UUID hotelId);
 }
