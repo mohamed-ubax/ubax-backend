@@ -1,9 +1,11 @@
 package com.africa.ubaxplatform.auth.controller;
 
 import com.africa.ubaxplatform.auth.dto.UserResponse;
+import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.mapper.UserMapper;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
+import com.africa.ubaxplatform.auth.service.interfaces.UserRoleService;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
@@ -18,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -44,6 +47,7 @@ public class UserProfileController {
 
   private final MinioService minioService;
   private final UserRepository userRepository;
+  private final UserRoleService userRoleService;
 
   private static final String BUCKET_AVATARS = "users-avatars";
   private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024; // 5 Mo
@@ -90,12 +94,13 @@ public class UserProfileController {
             .findByKeycloakId(keycloakId)
             .orElseThrow(() -> new NotFoundException("Utilisateur introuvable"));
 
+    List<UserSubRoleResponse> subRoles = userRoleService.getSubRoles(user.getId(), null);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             ResponseMessageConstants.USER_GET_SUCCESS,
-            UserMapper.toResponse(user)));
+            UserMapper.toResponse(user, subRoles)));
   }
 
   // ── Get by userId ───────────────────────────────────────────────
@@ -139,12 +144,13 @@ public class UserProfileController {
       throw new UnAuthorizedException("Accès refusé");
     }
 
+    List<UserSubRoleResponse> subRoles = userRoleService.getSubRoles(user.getId(), null);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             ResponseMessageConstants.USER_GET_SUCCESS,
-            UserMapper.toResponse(user)));
+            UserMapper.toResponse(user, subRoles)));
   }
 
   // ── Upload Avatar ───────────────────────────────────────────────

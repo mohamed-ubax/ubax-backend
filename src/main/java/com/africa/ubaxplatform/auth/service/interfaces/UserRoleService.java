@@ -103,6 +103,19 @@ public interface UserRoleService {
   List<UserResponse> getHotelMembersForAdmin(UUID hotelId);
 
   /**
+   * Retire un membre de l'équipe (soft delete + désactivation Keycloak).
+   *
+   * <p>Réservé au fondateur (PARTNER_ADMIN) ou au directeur (DG/GERANT) de la même structure.
+   * Impossible de se supprimer soi-même.
+   *
+   * @param callerKeycloakId keycloak ID du PARTNER appelant
+   * @param targetUserId ID DB du membre à retirer
+   * @param scope AGENCE ou HOTEL
+   */
+  void removeTeamMember(String callerKeycloakId, UUID targetUserId, RoleScope scope)
+      throws CustomException;
+
+  /**
    * Crée un nouveau membre d'équipe dans la structure du PARTNER appelant.
    *
    * <p>Crée le compte Keycloak (rôle PARTNER, action UPDATE_PASSWORD), envoie l'email de définition
