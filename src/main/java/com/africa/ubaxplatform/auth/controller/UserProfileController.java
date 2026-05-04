@@ -1,7 +1,6 @@
 package com.africa.ubaxplatform.auth.controller;
 
 import com.africa.ubaxplatform.auth.dto.UserResponse;
-import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.mapper.UserMapper;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
@@ -94,7 +93,8 @@ public class UserProfileController {
             .findByKeycloakId(keycloakId)
             .orElseThrow(() -> new NotFoundException("Utilisateur introuvable"));
 
-    List<UserSubRoleResponse> subRoles = userRoleService.getSubRoles(user.getId(), null);
+    List<String> subRoles =
+        userRoleService.getSubRoles(user.getId(), null).stream().map(r -> r.role()).toList();
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
@@ -144,7 +144,8 @@ public class UserProfileController {
       throw new UnAuthorizedException("Accès refusé");
     }
 
-    List<UserSubRoleResponse> subRoles = userRoleService.getSubRoles(user.getId(), null);
+    List<String> subRoles =
+        userRoleService.getSubRoles(user.getId(), null).stream().map(r -> r.role()).toList();
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,

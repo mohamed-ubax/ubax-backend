@@ -35,7 +35,7 @@ public record UserResponse(
     UUID hotelId,
     String hotelName,
     String partnerType,
-    List<UserSubRoleResponse> subRoles,
+    List<String> subRoles,
 
     // ── Vérifications ────────────────────────────────────────────
     boolean emailVerified,

@@ -2,7 +2,6 @@ package com.africa.ubaxplatform.auth.mapper;
 
 import com.africa.ubaxplatform.auth.dto.RegisterResponse;
 import com.africa.ubaxplatform.auth.dto.UserResponse;
-import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
 import java.util.List;
@@ -39,7 +38,7 @@ public class UserMapper {
     return toResponse(user, List.of());
   }
 
-  public static UserResponse toResponse(User user, List<UserSubRoleResponse> subRoles) {
+  public static UserResponse toResponse(User user, List<String> subRoles) {
     Agency agency = user.getAgency();
     var hotel = user.getHotel();
     return new UserResponse(
