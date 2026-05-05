@@ -1,5 +1,5 @@
 -- ============================================================
--- V028 – Seed : liste des villes (CITY)
+-- V030 – Seed : liste des villes (CITY)
 -- description = code ISO du pays (pour filtrage par pays)
 -- Accessible via GET /v1/code-list/type/CITY
 -- ============================================================
