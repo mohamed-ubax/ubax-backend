@@ -403,16 +403,15 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   // ── Partner Account ────────────────────────────────────────────
 
   @Override
-  public String createPartnerAccount(
-      String email, String companyName, String legalRepresentative, String phone)
+  public String createPartnerAccount(String email, String firstName, String lastName, String phone)
       throws CustomException {
     String adminToken = getAdminToken();
 
     Map<String, Object> userRepresentation = new HashMap<>();
     userRepresentation.put("username", email);
     userRepresentation.put("email", email);
-    userRepresentation.put("firstName", companyName);
-    userRepresentation.put("lastName", legalRepresentative);
+    userRepresentation.put("firstName", firstName);
+    userRepresentation.put("lastName", lastName);
     userRepresentation.put("enabled", true);
     userRepresentation.put("emailVerified", true);
     userRepresentation.put("requiredActions", List.of("UPDATE_PASSWORD"));

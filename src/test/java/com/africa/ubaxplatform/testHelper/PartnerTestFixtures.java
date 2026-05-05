@@ -38,7 +38,8 @@ public final class PartnerTestFixtures {
   public static PartnerApplicationRequest buildRequest(String partnerType) {
     PartnerApplicationRequest req = new PartnerApplicationRequest();
     req.setCompanyName("Acme SARL");
-    req.setLegalRepresentative("Jean Dupont");
+    req.setLegalRepFirstName("Jean");
+    req.setLegalRepLastName("Dupont");
     req.setEmail("contact@acme.ci");
     req.setPhone("+2250711111111");
     req.setCountry("CI");
@@ -92,7 +93,8 @@ public final class PartnerTestFixtures {
   private static PartnerApplication buildApplication(ApplicationStatus status, String partnerType) {
     return PartnerApplication.builder()
         .companyName("Acme SARL")
-        .legalRepresentative("Jean Dupont")
+        .legalRepFirstName("Jean")
+        .legalRepLastName("Dupont")
         .email("contact@acme.ci")
         .phone("+2250711111111")
         .country("CI")

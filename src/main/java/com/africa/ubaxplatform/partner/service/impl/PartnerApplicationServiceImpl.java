@@ -230,8 +230,8 @@ public class PartnerApplicationServiceImpl implements PartnerApplicationService 
       String keycloakId =
           keycloakAdminService.createPartnerAccount(
               application.getEmail(),
-              application.getCompanyName(),
-              application.getLegalRepresentative(),
+              application.getLegalRepFirstName(),
+              application.getLegalRepLastName(),
               application.getPhone());
 
       // Le fondateur reçoit PARTNER + PARTNER_ADMIN (les membres invités n'auront que PARTNER)

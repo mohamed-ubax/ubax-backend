@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.partner.dto;
 
 import com.africa.ubaxplatform.partner.codeList.ApplicationStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,8 +20,16 @@ public class PartnerApplicationResponse {
 
   private UUID id;
   private String partnerType;
+
+  @Schema(description = "Raison sociale ou dénomination commerciale")
   private String companyName;
-  private String legalRepresentative;
+
+  @Schema(description = "Prénom du représentant légal")
+  private String legalRepFirstName;
+
+  @Schema(description = "Nom de famille du représentant légal")
+  private String legalRepLastName;
+
   private String phone;
   private String email;
   private String country;

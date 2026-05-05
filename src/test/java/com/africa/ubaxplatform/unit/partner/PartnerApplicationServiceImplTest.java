@@ -365,8 +365,8 @@ class PartnerApplicationServiceImplTest {
       assertThat(response.getStatus()).isEqualTo(ApplicationStatus.APPROVED);
       verify(keycloakAdminService)
           .createPartnerAccount(
-              eq(app.getEmail()), eq(app.getCompanyName()),
-              eq(app.getLegalRepresentative()), eq(app.getPhone()));
+              eq(app.getEmail()), eq(app.getLegalRepFirstName()),
+              eq(app.getLegalRepLastName()), eq(app.getPhone()));
       verify(keycloakAdminService).assignRole("kc-partner-id", UserRole.PARTNER);
       verify(keycloakAdminService).sendSetPasswordLink("kc-partner-id");
       verify(userRepo).save(any(User.class));
@@ -382,7 +382,8 @@ class PartnerApplicationServiceImplTest {
       PartnerApplication app =
           PartnerApplication.builder()
               .companyName("Agence Immo CI")
-              .legalRepresentative("Marie Martin")
+              .legalRepFirstName("Marie")
+              .legalRepLastName("Martin")
               .email("immo@agence.ci")
               .phone("+2250722222222")
               .country("CI")
