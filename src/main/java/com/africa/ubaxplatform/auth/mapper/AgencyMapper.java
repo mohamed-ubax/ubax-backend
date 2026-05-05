@@ -29,8 +29,8 @@ public class AgencyMapper {
     User.UserBuilder<?, ?> builder =
         User.builder()
             .keycloakId(keycloakId)
-            .firstName(app.getCompanyName())
-            .lastName(app.getLegalRepresentative())
+            .firstName(app.getLegalRepFirstName())
+            .lastName(app.getLegalRepLastName())
             .email(app.getEmail())
             .phone(app.getPhone())
             .roles(new HashSet<>(roles))

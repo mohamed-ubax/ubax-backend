@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.partner.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
@@ -22,13 +23,22 @@ public class PartnerApplicationRequest {
   @NotBlank(message = "Le type de partenaire est obligatoire")
   private String partnerType;
 
+  @Schema(
+      description = "Raison sociale ou dénomination commerciale",
+      example = "Agence Immobilière Teranga")
   @NotBlank(message = "La raison sociale est obligatoire")
   @Size(max = 200, message = "La raison sociale ne peut dépasser 200 caractères")
   private String companyName;
 
-  @NotBlank(message = "Le représentant légal est obligatoire")
-  @Size(max = 200, message = "Le nom du représentant ne peut dépasser 200 caractères")
-  private String legalRepresentative;
+  @Schema(description = "Prénom du représentant légal", example = "Mohamed")
+  @NotBlank(message = "Le prénom du représentant légal est obligatoire")
+  @Size(max = 100, message = "Le prénom du représentant ne peut dépasser 100 caractères")
+  private String legalRepFirstName;
+
+  @Schema(description = "Nom de famille du représentant légal", example = "Ba")
+  @NotBlank(message = "Le nom du représentant légal est obligatoire")
+  @Size(max = 100, message = "Le nom du représentant ne peut dépasser 100 caractères")
+  private String legalRepLastName;
 
   @NotBlank(message = "Le numéro de téléphone est obligatoire")
   @Pattern(

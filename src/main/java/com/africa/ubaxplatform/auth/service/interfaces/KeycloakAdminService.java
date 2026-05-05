@@ -150,15 +150,14 @@ public interface KeycloakAdminService {
    * envoyé par {@link #sendSetPasswordLink(String)}.
    *
    * @param email adresse email (sert de username et d'email Keycloak)
-   * @param companyName raison sociale – utilisée comme prénom dans Keycloak
-   * @param legalRepresentative nom du représentant légal – utilisé comme nom dans Keycloak
+   * @param firstName prénom du représentant légal
+   * @param lastName nom de famille du représentant légal
    * @param phone numéro de téléphone au format international – stocké dans l'attribut custom {@code
    *     phone}
    * @return identifiant Keycloak (UUID) du compte créé
    * @throws CustomException si l'email est déjà utilisé (409) ou si l'appel échoue
    */
-  String createPartnerAccount(
-      String email, String companyName, String legalRepresentative, String phone)
+  String createPartnerAccount(String email, String firstName, String lastName, String phone)
       throws CustomException;
 
   /**

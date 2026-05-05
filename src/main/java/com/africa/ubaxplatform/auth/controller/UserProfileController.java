@@ -264,7 +264,7 @@ public class UserProfileController {
                   null));
     }
 
-    user.setAvatarUrl(avatarPath);
+    user.setAvatarUrl("/" + avatarPath);
     userRepository.save(user);
 
     return ResponseEntity.ok(
@@ -272,6 +272,6 @@ public class UserProfileController {
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             "Photo de profil mise à jour",
-            Map.of("avatarUrl", avatarUrl)));
+            Map.of("avatarUrl", "/" + avatarPath)));
   }
 }

@@ -48,9 +48,13 @@ public class PartnerApplication extends BaseEntity {
   @Column(name = "company_name", nullable = false, length = 200)
   private String companyName;
 
-  /** Nom complet du représentant légal. */
-  @Column(name = "legal_representative", nullable = false, length = 200)
-  private String legalRepresentative;
+  /** Prénom du représentant légal. */
+  @Column(name = "legal_rep_first_name", nullable = false, length = 100)
+  private String legalRepFirstName;
+
+  /** Nom de famille du représentant légal. */
+  @Column(name = "legal_rep_last_name", nullable = false, length = 100)
+  private String legalRepLastName;
 
   /** Numéro de téléphone du représentant (format international). */
   @Column(name = "phone", nullable = false, length = 25)
