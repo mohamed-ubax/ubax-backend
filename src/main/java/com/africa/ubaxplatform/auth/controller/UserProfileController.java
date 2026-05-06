@@ -248,7 +248,6 @@ public class UserProfileController {
         };
 
     String objectName = keycloakId + extension;
-    String avatarPath = BUCKET_AVATARS + "/" + objectName;
     String avatarUrl;
     try {
       avatarUrl =
@@ -264,7 +263,7 @@ public class UserProfileController {
                   null));
     }
 
-    user.setAvatarUrl("/" + avatarPath);
+    user.setAvatarUrl(avatarUrl);
     userRepository.save(user);
 
     return ResponseEntity.ok(
@@ -272,6 +271,6 @@ public class UserProfileController {
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             "Photo de profil mise à jour",
-            Map.of("avatarUrl", "/" + avatarPath)));
+            Map.of("avatarUrl", avatarUrl)));
   }
 }

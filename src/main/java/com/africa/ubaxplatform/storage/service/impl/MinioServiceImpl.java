@@ -123,6 +123,22 @@ public class MinioServiceImpl implements MinioService {
     }
   }
 
+  @Override
+  public String generatePresignedReadUrl(String bucket, String objectName, int expiresInSeconds) {
+    try {
+      return minioClient.getPresignedObjectUrl(
+          GetPresignedObjectUrlArgs.builder()
+              .method(Method.GET)
+              .bucket(bucket)
+              .object(objectName)
+              .expiry(expiresInSeconds, TimeUnit.SECONDS)
+              .build());
+    } catch (Exception e) {
+      throw new StorageException(
+          "Erreur lors de la génération de l'URL de lecture : " + e.getMessage(), e);
+    }
+  }
+
   // ── Partner documents ───────────────────────────────────────────
 
   @Override

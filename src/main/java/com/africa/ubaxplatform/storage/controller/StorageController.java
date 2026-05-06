@@ -6,6 +6,7 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
+import com.africa.ubaxplatform.storage.dto.PresignedReadUrlResponse;
 import com.africa.ubaxplatform.storage.dto.PresignedUrlResponse;
 import com.africa.ubaxplatform.storage.dto.StorageUploadResponse;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -88,6 +90,9 @@ public class StorageController {
   private final MinioService minioService;
   private final RequestHeaderParser requestHeaderParser;
 
+  @Value("${minio.endpoint}")
+  private String minioEndpoint;
+
   private static final int MAX_EXPIRY_SECONDS = 3600;
 
   private static final Set<String> ALLOWED_BUCKETS =
@@ -99,6 +104,14 @@ public class StorageController {
           "users-avatars",
           "ticket-attachments",
           "partner-documents");
+
+  private static final Set<String> PRIVATE_BUCKETS =
+      Set.of(
+          "property-documents",
+          "tenant-documents",
+          "partner-documents",
+          "ticket-attachments",
+          "documents-generated");
 
   // Taille max par type de bucket
   private static final long MAX_IMAGE_BYTES = 10L * 1024 * 1024; // 10 Mo
@@ -617,7 +630,118 @@ public class StorageController {
             response));
   }
 
+  // ── 5. Presigned URL de lecture (buckets privés) ────────────────
+
+  /**
+   * Génère une URL présignée GET pour lire un fichier dans un bucket privé.
+   *
+   * <p>Le frontend passe le {@code fileUrl} stocké en base de données. Le backend en extrait le
+   * bucket et l'objectName, applique le TTL défini par sensibilité du bucket, et retourne une URL
+   * GET temporaire directement utilisable.
+   *
+   * <p>TTL appliqués automatiquement :
+   *
+   * <ul>
+   *   <li>{@code tenant-documents} → 180 s (KYC – très sensible)
+   *   <li>{@code property-documents}, {@code documents-generated}, {@code partner-documents} → 300
+   *       s
+   *   <li>{@code ticket-attachments} → 600 s
+   * </ul>
+   */
+  @GetMapping("/presign/read")
+  @Operation(
+      summary = "Générer une URL présignée GET (lecture document privé)",
+      description =
+          "🔑 **Authentifié** – Génère une URL GET temporaire pour accéder à un fichier dans un bucket privé.\n\n"
+              + "Passer le `fileUrl` tel qu'il est stocké en base de données. "
+              + "La durée de validité est définie automatiquement par le backend selon la sensibilité du bucket :\n\n"
+              + "| Bucket | TTL |\n"
+              + "|---|---|\n"
+              + "| `tenant-documents` | 180 s |\n"
+              + "| `property-documents` | 300 s |\n"
+              + "| `documents-generated` | 300 s |\n"
+              + "| `partner-documents` | 300 s |\n"
+              + "| `ticket-attachments` | 600 s |\n\n"
+              + "**Buckets publics** (`users-avatars`, `agencies-logos`, `properties-media`) : "
+              + "retourne une erreur — l'URL d'origine est déjà accessible directement.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "URL de lecture générée – `data` contient `readUrl`, `expiresInSeconds`",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PresignedReadUrlResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "fileUrl invalide ou bucket public",
+        content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> generateReadUrl(
+      @Parameter(
+              description = "URL complète du fichier (telle que retournée lors de l'upload)",
+              example = "http://localhost:9000/property-documents/propertyId/doc-uuid.pdf",
+              required = true)
+          @RequestParam
+          String fileUrl,
+      HttpServletRequest request)
+      throws CustomException {
+
+    RoleGuard.requireAuthenticated(requestHeaderParser, request);
+
+    String base = minioEndpoint.endsWith("/") ? minioEndpoint : minioEndpoint + "/";
+    if (!fileUrl.startsWith(base)) {
+      throw new BadRequestException(
+          "fileUrl invalide : ne correspond pas à l'endpoint MinIO configuré");
+    }
+
+    String path = fileUrl.substring(base.length());
+    int slash = path.indexOf('/');
+    if (slash < 0) {
+      throw new BadRequestException(
+          "fileUrl invalide : impossible d'extraire le bucket et l'objectName");
+    }
+
+    String bucket = path.substring(0, slash);
+    String objectName = path.substring(slash + 1);
+
+    if (!PRIVATE_BUCKETS.contains(bucket)) {
+      throw new BadRequestException(
+          "Le bucket '"
+              + bucket
+              + "' est public — l'URL d'origine est déjà accessible directement");
+    }
+
+    int ttl = ttlFor(bucket);
+    String readUrl = minioService.generatePresignedReadUrl(bucket, objectName, ttl);
+
+    PresignedReadUrlResponse response =
+        PresignedReadUrlResponse.builder()
+            .readUrl(readUrl)
+            .objectName(objectName)
+            .bucket(bucket)
+            .expiresInSeconds(ttl)
+            .build();
+
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            "URL de lecture générée – valide " + ttl + " secondes",
+            response));
+  }
+
   // ── Helpers de validation ───────────────────────────────────────
+
+  private int ttlFor(String bucket) {
+    return switch (bucket) {
+      case "tenant-documents" -> 180;
+      case "ticket-attachments" -> 600;
+      default -> 300; // property-documents, documents-generated, partner-documents
+    };
+  }
 
   private void validateBucket(String bucket) throws BadRequestException {
     if (!ALLOWED_BUCKETS.contains(bucket)) {
