@@ -5,6 +5,7 @@ import com.africa.ubaxplatform.auth.dto.UserResponse;
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,7 +24,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserMapper {
 
+  private static String minioPublicEndpoint = "";
+
+  @Value("${minio.public-endpoint}")
+  public void setMinioPublicEndpoint(String value) {
+    UserMapper.minioPublicEndpoint = value;
+  }
+
   private UserMapper() {}
+
+  /**
+   * Normalise l'avatarUrl stockée en base : gère l'ancien format relatif (/bucket/file ou
+   * bucket/file) et le nouveau format URL complète (http://...).
+   */
+  private static String resolveAvatarUrl(String avatarUrl) {
+    if (avatarUrl == null) return null;
+    if (avatarUrl.startsWith("http")) return avatarUrl;
+    String path = avatarUrl.startsWith("/") ? avatarUrl.substring(1) : avatarUrl;
+    return minioPublicEndpoint + "/" + path;
+  }
 
   /**
    * Convertit un {@link User} en {@link UserResponse} complet.
@@ -53,7 +72,7 @@ public class UserMapper {
         user.getCity(),
         user.getCountry(),
         user.getLanguage(),
-        user.getAvatarUrl(),
+        resolveAvatarUrl(user.getAvatarUrl()),
         user.getRoles(),
         agency != null ? agency.getId() : null,
         agency != null ? agency.getName() : null,

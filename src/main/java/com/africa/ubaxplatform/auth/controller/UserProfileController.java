@@ -248,6 +248,16 @@ public class UserProfileController {
         };
 
     String objectName = keycloakId + extension;
+
+    // Supprimer l'ancien fichier MinIO si l'extension a changé (évite les fichiers orphelins)
+    String existingAvatarUrl = user.getAvatarUrl();
+    if (existingAvatarUrl != null) {
+      String existingObjectName = extractObjectName(existingAvatarUrl);
+      if (existingObjectName != null && !existingObjectName.equals(objectName)) {
+        minioService.deleteFile(BUCKET_AVATARS, existingObjectName);
+      }
+    }
+
     String avatarUrl;
     try {
       avatarUrl =
@@ -272,5 +282,20 @@ public class UserProfileController {
             Constants.Status.OK,
             "Photo de profil mise à jour",
             Map.of("avatarUrl", avatarUrl)));
+  }
+
+  /**
+   * Extrait l'objectName MinIO depuis une URL stockée (formats anciens et nouveaux).
+   *
+   * <p>Exemples : - {@code http://localhost:9000/users-avatars/abc.jpg} → {@code abc.jpg} - {@code
+   * /users-avatars/abc.jpg} → {@code abc.jpg} - {@code users-avatars/abc.jpg} → {@code abc.jpg}
+   */
+  private String extractObjectName(String avatarUrl) {
+    if (avatarUrl == null) return null;
+    String path =
+        avatarUrl.contains("://") ? avatarUrl.replaceFirst("https?://[^/]+/", "") : avatarUrl;
+    if (path.startsWith("/")) path = path.substring(1);
+    int slash = path.indexOf('/');
+    return slash >= 0 ? path.substring(slash + 1) : null;
   }
 }
