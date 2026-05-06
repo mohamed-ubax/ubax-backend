@@ -215,6 +215,7 @@ services:
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}
       # MinIO
       MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       # Spring

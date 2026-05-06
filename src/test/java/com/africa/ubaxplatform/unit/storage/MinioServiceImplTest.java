@@ -49,6 +49,7 @@ class MinioServiceImplTest {
   void setUp() {
     service = new MinioServiceImpl(minioClient);
     ReflectionTestUtils.setField(service, "endpoint", ENDPOINT);
+    ReflectionTestUtils.setField(service, "publicEndpoint", ENDPOINT);
     ReflectionTestUtils.setField(service, "buckets", java.util.List.of(BUCKET));
   }
 
