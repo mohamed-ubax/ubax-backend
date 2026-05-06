@@ -37,7 +37,7 @@ public class UserMapper {
    * Normalise l'avatarUrl stockée en base : gère l'ancien format relatif (/bucket/file ou
    * bucket/file) et le nouveau format URL complète (http://...).
    */
-  private static String resolveAvatarUrl(String avatarUrl) {
+  public static String resolveAvatarUrl(String avatarUrl) {
     if (avatarUrl == null) return null;
     if (avatarUrl.startsWith("http")) return avatarUrl;
     String path = avatarUrl.startsWith("/") ? avatarUrl.substring(1) : avatarUrl;
