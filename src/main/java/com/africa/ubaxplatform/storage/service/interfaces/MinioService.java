@@ -96,6 +96,17 @@ public interface MinioService {
    */
   PresignedUrlResponse generatePresignedUrl(String bucket, String objectName, int expiresInSeconds);
 
+  /**
+   * Génère une URL présignée GET permettant de lire temporairement un objet dans un bucket privé.
+   *
+   * @param bucket nom du bucket source
+   * @param objectName chemin de l'objet dans le bucket
+   * @param expiresInSeconds durée de validité en secondes (max 3600)
+   * @return URL GET à usage unique valide pendant {@code expiresInSeconds} secondes
+   * @throws StorageException si la génération échoue
+   */
+  String generatePresignedReadUrl(String bucket, String objectName, int expiresInSeconds);
+
   // ── Partner documents ──────────────────────────────────────────────
 
   /**
