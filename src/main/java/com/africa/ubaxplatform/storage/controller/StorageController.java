@@ -90,7 +90,7 @@ public class StorageController {
   private final MinioService minioService;
   private final RequestHeaderParser requestHeaderParser;
 
-  @Value("${minio.endpoint}")
+  @Value("${minio.public-endpoint}")
   private String minioEndpoint;
 
   private static final int MAX_EXPIRY_SECONDS = 3600;

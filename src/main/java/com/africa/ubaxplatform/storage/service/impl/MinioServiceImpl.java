@@ -36,6 +36,9 @@ public class MinioServiceImpl implements MinioService {
   @Value("${minio.endpoint}")
   private String endpoint;
 
+  @Value("${minio.public-endpoint}")
+  private String publicEndpoint;
+
   @Value("${minio.buckets}")
   private List<String> buckets;
 
@@ -70,7 +73,7 @@ public class MinioServiceImpl implements MinioService {
           PutObjectArgs.builder().bucket(bucket).object(objectName).stream(inputStream, size, -1)
               .contentType(contentType)
               .build());
-      return endpoint + "/" + bucket + "/" + objectName;
+      return publicEndpoint + "/" + bucket + "/" + objectName;
     } catch (Exception e) {
       throw new StorageException("Erreur lors de l'upload vers MinIO : " + e.getMessage(), e);
     }
@@ -88,12 +91,12 @@ public class MinioServiceImpl implements MinioService {
 
   @Override
   public String getPublicUrl(String bucket, String objectName) {
-    return endpoint + "/" + bucket + "/" + objectName;
+    return publicEndpoint + "/" + bucket + "/" + objectName;
   }
 
   @Override
   public String buildPublicUrl(String relativePath) {
-    return endpoint + "/" + relativePath;
+    return publicEndpoint + "/" + relativePath;
   }
 
   @Override
