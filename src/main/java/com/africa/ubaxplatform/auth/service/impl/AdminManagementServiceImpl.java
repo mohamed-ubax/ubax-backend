@@ -4,6 +4,7 @@ import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.AdminUserResponse;
 import com.africa.ubaxplatform.auth.dto.CreateAdminRequest;
 import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.auth.mapper.UserMapper;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.AdminManagementService;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
@@ -197,6 +198,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         .phone(user.getPhone())
         .firstName(user.getFirstName())
         .lastName(user.getLastName())
+        .avatarUrl(UserMapper.resolveAvatarUrl(user.getAvatarUrl()))
         .roles(user.getRoles())
         .build();
   }

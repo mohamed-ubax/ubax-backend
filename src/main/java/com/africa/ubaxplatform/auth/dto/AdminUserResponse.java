@@ -17,5 +17,6 @@ public class AdminUserResponse {
   private String phone;
   private String firstName;
   private String lastName;
+  private String avatarUrl;
   private Set<UserRole> roles;
 }
