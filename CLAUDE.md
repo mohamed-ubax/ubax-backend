@@ -249,8 +249,10 @@ public class ModuleController {
 | V027–V034 | *(migrations hôtel, villes, représentant légal…)* | Voir fichiers SQL |
 | V035 | `create_property_amenities.sql` | Table `property_amenities`, migration booléens → table, suppression colonnes booléennes |
 | V036 | `seed_property_amenity_code_lists.sql` | Seed `la_code_list` (PROPERTY_AMENITY : POOL, GENERATOR, WATER_TANK, AC, SECURITY, PARKING, ELEVATOR, GARDEN, FURNISHED, PETS) |
+| V037 | `add_updated_at_to_property_amenities.sql` | Colonne `updated_at` manquante sur `property_amenities` (BaseEntity) |
+| V038 | `add_verified_by_id_to_property_documents.sql` | Colonne `verified_by_id` manquante sur `property_documents` (serveurs déployés avant correction V013) |
 
-Prochaine version disponible : **V037**
+Prochaine version disponible : **V039**
 
 ---
 

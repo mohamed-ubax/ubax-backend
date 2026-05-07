@@ -13,9 +13,10 @@ public record PropertyDocumentResponse(
     @Schema(description = "Nom du modérateur", nullable = true) String verifiedByName,
     @Schema(
             description =
-                "Type de document : TITRE_FONCIER | PERMIS_CONSTRUIRE | DIAGNOSTIC |"
-                    + " CONTRAT_BAIL | AUTRE",
-            example = "TITRE_FONCIER")
+                "Type de document — valeurs depuis GET /v1/code-list/type/PROPERTY_DOCUMENT_TYPE :"
+                    + " TITLE_DEED | BUILDING_PERMIT | DIAGNOSTIC | CADASTRAL_PLAN |"
+                    + " INSURANCE | CONFORMITY_CERTIFICATE | OTHER",
+            example = "TITLE_DEED")
         String docType,
     @Schema(description = "Titre descriptif du document", nullable = true) String title,
     @Schema(
