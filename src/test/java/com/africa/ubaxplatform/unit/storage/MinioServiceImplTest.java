@@ -198,8 +198,8 @@ class MinioServiceImplTest {
       String slug = service.initPartnerDirectory("Acme SARL");
 
       assertThat(slug).isEqualTo("acme-sarl");
-      // 3 sous-répertoires (legal, logo, contracts) → 3 appels putObject
-      verify(minioClient, times(3)).putObject(any(PutObjectArgs.class));
+      // 2 sous-répertoires (legal, contracts) → 2 appels putObject
+      verify(minioClient, times(2)).putObject(any(PutObjectArgs.class));
     }
 
     @Test
@@ -300,7 +300,8 @@ class MinioServiceImplTest {
 
       String url = service.uploadPartnerLogo(SLUG, stream, 100, "image/png");
 
-      assertThat(url).contains(SLUG + "/logo/logo-");
+      assertThat(url).contains(SLUG + "/logo-");
+      assertThat(url).contains("agencies-logos");
       assertThat(url).endsWith(".png");
       verify(minioClient).putObject(any(PutObjectArgs.class));
     }

@@ -31,7 +31,8 @@ public class MinioServiceImpl implements MinioService {
 
   private final MinioClient minioClient;
   private static final String BUCKET_PARTNER_DOCS = "partner-documents";
-  private static final String[] PARTNER_SUB_DIRS = {"legal", "logo", "contracts"};
+  private static final String BUCKET_AGENCIES_LOGOS = "agencies-logos";
+  private static final String[] PARTNER_SUB_DIRS = {"legal", "contracts"};
 
   @Value("${minio.endpoint}")
   private String endpoint;
@@ -104,13 +105,15 @@ public class MinioServiceImpl implements MinioService {
       String bucket, String objectName, int expiresInSeconds) {
     try {
       String uploadUrl =
-          minioClient.getPresignedObjectUrl(
-              GetPresignedObjectUrlArgs.builder()
-                  .method(Method.PUT)
-                  .bucket(bucket)
-                  .object(objectName)
-                  .expiry(expiresInSeconds, TimeUnit.SECONDS)
-                  .build());
+          minioClient
+              .getPresignedObjectUrl(
+                  GetPresignedObjectUrlArgs.builder()
+                      .method(Method.PUT)
+                      .bucket(bucket)
+                      .object(objectName)
+                      .expiry(expiresInSeconds, TimeUnit.SECONDS)
+                      .build())
+              .replaceFirst("https?://[^/]+", publicEndpoint);
 
       return PresignedUrlResponse.builder()
           .uploadUrl(uploadUrl)
@@ -129,13 +132,15 @@ public class MinioServiceImpl implements MinioService {
   @Override
   public String generatePresignedReadUrl(String bucket, String objectName, int expiresInSeconds) {
     try {
-      return minioClient.getPresignedObjectUrl(
-          GetPresignedObjectUrlArgs.builder()
-              .method(Method.GET)
-              .bucket(bucket)
-              .object(objectName)
-              .expiry(expiresInSeconds, TimeUnit.SECONDS)
-              .build());
+      return minioClient
+          .getPresignedObjectUrl(
+              GetPresignedObjectUrlArgs.builder()
+                  .method(Method.GET)
+                  .bucket(bucket)
+                  .object(objectName)
+                  .expiry(expiresInSeconds, TimeUnit.SECONDS)
+                  .build())
+          .replaceFirst("https?://[^/]+", publicEndpoint);
     } catch (Exception e) {
       throw new StorageException(
           "Erreur lors de la génération de l'URL de lecture : " + e.getMessage(), e);
@@ -176,8 +181,8 @@ public class MinioServiceImpl implements MinioService {
   @Override
   public String uploadPartnerLogo(
       String slug, InputStream inputStream, long size, String contentType) {
-    String objectName = slug + "/logo/logo-" + UUID.randomUUID() + extFor(contentType);
-    return uploadFile(BUCKET_PARTNER_DOCS, objectName, inputStream, size, contentType);
+    String objectName = slug + "/logo-" + UUID.randomUUID() + extFor(contentType);
+    return uploadFile(BUCKET_AGENCIES_LOGOS, objectName, inputStream, size, contentType);
   }
 
   // ── Helpers ────────────────────────────────────────────────────

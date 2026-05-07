@@ -9,10 +9,30 @@ import com.africa.ubaxplatform.partner.entity.ApplicationStatusLog;
 import com.africa.ubaxplatform.partner.entity.PartnerApplication;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PartnerApplicationMapper {
+
+  private static String minioPublicEndpoint = "";
+
+  @Value("${minio.public-endpoint}")
+  public void setMinioPublicEndpoint(String value) {
+    PartnerApplicationMapper.minioPublicEndpoint = value;
+  }
+
+  private static String resolveUrl(String url) {
+    if (url == null) return null;
+    if (url.startsWith("http")) {
+      // Remplace tout hostname MinIO interne par le public endpoint
+      return url.replaceFirst(
+          "https?://[^/]+(?=/partner-documents|/agencies-logos|/users-avatars|/properties-media|/property-documents|/tenant-documents|/ticket-attachments|/documents-generated)",
+          minioPublicEndpoint);
+    }
+    String path = url.startsWith("/") ? url.substring(1) : url;
+    return minioPublicEndpoint + "/" + path;
+  }
 
   public PartnerApplication toEntity(
       PartnerApplicationRequest request,
@@ -70,10 +90,10 @@ public class PartnerApplicationMapper {
             .description(app.getDescription())
             .legalStatus(app.getLegalStatus())
             .registrationNumber(app.getRegistrationNumber())
-            .rccmUrl(app.getRccmUrl())
-            .dfeUrl(app.getDfeUrl())
-            .bailUrl(app.getBailUrl())
-            .logoUrl(app.getLogoUrl())
+            .rccmUrl(resolveUrl(app.getRccmUrl()))
+            .dfeUrl(resolveUrl(app.getDfeUrl()))
+            .bailUrl(resolveUrl(app.getBailUrl()))
+            .logoUrl(resolveUrl(app.getLogoUrl()))
             .status(app.getStatus())
             .submittedAt(app.getSubmittedAt())
             .reviewedAt(app.getReviewedAt())
