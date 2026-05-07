@@ -13,6 +13,8 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utilitaire centralisé de vérification des rôles utilisateur.
@@ -38,6 +40,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * }</pre>
  */
 public final class RoleGuard {
+
+  private static final Logger log = LoggerFactory.getLogger(RoleGuard.class);
 
   private RoleGuard() {}
 
@@ -76,8 +80,16 @@ public final class RoleGuard {
 
   public static void checkAnyRole(RequestUser user, UserRole... roles) throws CustomException {
     for (UserRole role : roles) {
-      if (user.hasRole(role)) return;
+      if (user.hasRole(role)) {
+        log.debug("[ROLE] ✔ sub={} | rôle={} autorisé", user.getSub(), role);
+        return;
+      }
     }
+    log.warn(
+        "[ROLE] ✗ Accès refusé | sub={} | rôles actuels={} | rôles attendus={}",
+        user.getSub(),
+        user.getRealmRoles(),
+        roles);
     throw new CustomException(
         new UnAuthorizedException("Accès refusé – rôle Keycloak insuffisant"),
         ResponseMessageConstants.USER_FORBIDDEN);
@@ -95,9 +107,14 @@ public final class RoleGuard {
     for (AgenceRole role : roles) {
       if (subRoleRepo.existsByUserIdAndRoleAndScope(
           dbUser.getId(), role.name(), RoleScope.AGENCE)) {
+        log.debug("[SUB_ROLE] ✔ userId={} | sous-rôle agence={} autorisé", dbUser.getId(), role);
         return;
       }
     }
+    log.warn(
+        "[SUB_ROLE] ✗ Accès refusé | userId={} | sous-rôles agence attendus={}",
+        dbUser.getId(),
+        roles);
     throw new CustomException(
         new UnAuthorizedException("Accès refusé – sous-rôle agence insuffisant"),
         ResponseMessageConstants.USER_FORBIDDEN);
@@ -161,9 +178,14 @@ public final class RoleGuard {
       throws CustomException {
     RequestUser user = parser.parseUserFromRequest(request);
     if (user == null) {
+      log.warn(
+          "[AUTH] Token absent ou invalide | uri={} method={}",
+          request.getRequestURI(),
+          request.getMethod());
       throw new CustomException(
           new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
     }
+    log.debug("[AUTH] Token valide | sub={} | uri={}", user.getSub(), request.getRequestURI());
     return user;
   }
 }
