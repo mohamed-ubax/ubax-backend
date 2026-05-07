@@ -1,45 +1,36 @@
 package com.africa.ubaxplatform.property.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * DTO de réponse représentant un document légal associé à un bien immobilier.
- *
- * @param id identifiant unique du document
- * @param propertyId identifiant du bien immobilier associé
- * @param verifiedById identifiant du modérateur ayant vérifié le document, {@code null} si non
- *     vérifié
- * @param verifiedByName nom complet du modérateur, {@code null} si non vérifié
- * @param docType type du document (TITLE_DEED, CADASTRAL_PLAN, INSURANCE, CONFORMITY_CERTIFICATE,
- *     OTHER)
- * @param title intitulé descriptif du document
- * @param fileUrl URL d'accès au document dans MinIO (bucket property-documents), via URL présignée
- * @param fileName nom original du fichier au moment de l'upload
- * @param fileSize taille du fichier en octets
- * @param mimeType type MIME du document (application/pdf, image/jpeg...)
- * @param visibleToPublic {@code true} si le document est accessible à tous les utilisateurs
- *     connectés
- * @param verified {@code true} si le document a été contrôlé et validé par un modérateur
- * @param verifiedAt date et heure de la vérification
- * @param verificationNote note ou commentaire du modérateur suite à la vérification
- * @param createdAt date de création
- * @param updatedAt date de dernière modification
- */
+@Schema(description = "Document légal associé à un bien immobilier")
 public record PropertyDocumentResponse(
-    UUID id,
-    UUID propertyId,
-    UUID verifiedById,
-    String verifiedByName,
-    String docType,
-    String title,
-    String fileUrl,
-    String fileName,
-    Long fileSize,
-    String mimeType,
-    boolean visibleToPublic,
-    boolean verified,
-    LocalDateTime verifiedAt,
-    String verificationNote,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt) {}
+    @Schema(description = "Identifiant unique du document") UUID id,
+    @Schema(description = "Identifiant du bien associé") UUID propertyId,
+    @Schema(description = "Identifiant du modérateur ayant vérifié le document", nullable = true)
+        UUID verifiedById,
+    @Schema(description = "Nom du modérateur", nullable = true) String verifiedByName,
+    @Schema(
+            description =
+                "Type de document : TITRE_FONCIER | PERMIS_CONSTRUIRE | DIAGNOSTIC |"
+                    + " CONTRAT_BAIL | AUTRE",
+            example = "TITRE_FONCIER")
+        String docType,
+    @Schema(description = "Titre descriptif du document", nullable = true) String title,
+    @Schema(
+            description = "URL publique du fichier dans MinIO",
+            example = "http://localhost:9000/property-documents/uuid/doc-uuid.pdf")
+        String fileUrl,
+    @Schema(description = "Nom original du fichier", example = "titre-foncier.pdf", nullable = true)
+        String fileName,
+    @Schema(description = "Taille du fichier en octets", nullable = true) Long fileSize,
+    @Schema(description = "Type MIME", example = "application/pdf", nullable = true)
+        String mimeType,
+    @Schema(description = "Document visible aux acheteurs/locataires potentiels")
+        boolean visibleToPublic,
+    @Schema(description = "Document vérifié par un modérateur") boolean verified,
+    @Schema(description = "Date de vérification", nullable = true) LocalDateTime verifiedAt,
+    @Schema(description = "Note du modérateur", nullable = true) String verificationNote,
+    @Schema(description = "Date de création") LocalDateTime createdAt,
+    @Schema(description = "Date de dernière modification") LocalDateTime updatedAt) {}
