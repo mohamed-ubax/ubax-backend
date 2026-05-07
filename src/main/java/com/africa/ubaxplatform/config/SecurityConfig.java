@@ -1,7 +1,6 @@
 package com.africa.ubaxplatform.config;
 
 import com.africa.ubaxplatform.common.util.KeycloakJwtRolesConverter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +20,6 @@ import org.springframework.security.oauth2.server.resource.authentication.Delega
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.OrRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,7 +30,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Slf4j
 public class SecurityConfig {
 
-  // Routes publiques sans contrainte de méthode HTTP
   private static final String[] WHITELIST = {
     "/api-docs/**",
     "/swagger-ui/**",
@@ -55,11 +50,8 @@ public class SecurityConfig {
     "/v1/partner/apply",
     "/v1/bailleur/apply",
     "/v1/code-list/type/**",
-  };
-
-  // Routes publiques uniquement en GET (POST/PUT/DELETE/PATCH nécessitent un JWT)
-  private static final String[] PUBLIC_GET_PATHS = {
-    "/v1/properties", "/v1/properties/**",
+    "/v1/properties",
+    "/v1/properties/**",
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
@@ -84,13 +76,7 @@ public class SecurityConfig {
   @Bean
   @Order(1)
   public SecurityFilterChain publicFilterChain(HttpSecurity http) throws Exception {
-    List<RequestMatcher> matchers = new ArrayList<>();
-    Arrays.stream(WHITELIST).map(AntPathRequestMatcher::new).forEach(matchers::add);
-    Arrays.stream(PUBLIC_GET_PATHS)
-        .map(path -> new AntPathRequestMatcher(path, "GET"))
-        .forEach(matchers::add);
-
-    http.securityMatcher(new OrRequestMatcher(matchers))
+    http.securityMatcher(WHITELIST)
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))

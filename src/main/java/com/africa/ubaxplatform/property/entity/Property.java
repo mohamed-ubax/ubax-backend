@@ -162,6 +162,7 @@ public class Property extends BaseEntity {
   private BigDecimal longitude;
 
   /** Commodités du bien : standard (référence PROPERTY_AMENITY) ou personnalisées. */
+  @Builder.Default
   @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<PropertyAmenity> amenities = new ArrayList<>();
 

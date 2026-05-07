@@ -64,7 +64,7 @@ public class PropertyDocument extends BaseEntity {
    * encore été contrôlé.
    */
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "verified_by", foreignKey = @ForeignKey(name = "fk_prop_doc_verified_by"))
+  @JoinColumn(name = "verified_by_id", foreignKey = @ForeignKey(name = "fk_prop_doc_verified_by"))
   private User verifiedBy;
 
   /**

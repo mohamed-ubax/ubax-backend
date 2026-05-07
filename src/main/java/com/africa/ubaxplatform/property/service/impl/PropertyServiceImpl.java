@@ -205,7 +205,7 @@ public class PropertyServiceImpl implements PropertyService {
     return propertyRepo
         .findWithFilters(
             status,
-            city,
+            city != null ? city.toLowerCase() : null,
             propertyType,
             transactionType,
             minPrice,
