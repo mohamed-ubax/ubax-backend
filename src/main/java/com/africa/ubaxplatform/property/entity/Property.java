@@ -4,6 +4,7 @@ import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,9 +13,12 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -157,60 +161,9 @@ public class Property extends BaseEntity {
   @Column(name = "longitude", precision = 11, scale = 8)
   private BigDecimal longitude;
 
-  /** Bien équipé d'une piscine privée ou commune. */
-  @Column(name = "has_pool", nullable = false)
-  @Builder.Default
-  private boolean hasPool = false;
-
-  /** Groupe électrogène disponible. */
-  @Column(name = "has_generator", nullable = false)
-  @Builder.Default
-  private boolean hasGenerator = false;
-
-  /** Réservoir d'eau autonome (château d'eau, citerne). */
-  @Column(name = "has_water_tank", nullable = false)
-  @Builder.Default
-  private boolean hasWaterTank = false;
-
-  /** Climatisation installée dans le bien. */
-  @Column(name = "has_ac", nullable = false)
-  @Builder.Default
-  private boolean hasAc = false;
-
-  /** Service de gardiennage et sécurité présents sur le site. */
-  @Column(name = "has_security", nullable = false)
-  @Builder.Default
-  private boolean hasSecurity = false;
-
-  /** Place de parking privée ou en commun disponible. */
-  @Column(name = "has_parking", nullable = false)
-  @Builder.Default
-  private boolean hasParking = false;
-
-  /** Ascenseur présent dans l'immeuble. */
-  @Column(name = "has_elevator", nullable = false)
-  @Builder.Default
-  private boolean hasElevator = false;
-
-  /** Jardin ou espace vert privé attenant au bien. */
-  @Column(name = "has_garden", nullable = false)
-  @Builder.Default
-  private boolean hasGarden = false;
-
-  /** Bien livré meublé (applicable aux locations meublées). */
-  @Column(name = "is_furnished", nullable = false)
-  @Builder.Default
-  private boolean furnished = false;
-
-  /** Animaux de compagnie acceptés par le propriétaire. */
-  @Column(name = "accepts_pets", nullable = false)
-  @Builder.Default
-  private boolean acceptsPets = false;
-
-  /** Bien accessible aux personnes à mobilité réduite (PMR). */
-  @Column(name = "is_pmr_accessible", nullable = false)
-  @Builder.Default
-  private boolean pmrAccessible = false;
+  /** Commodités du bien : standard (référence PROPERTY_AMENITY) ou personnalisées. */
+  @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<PropertyAmenity> amenities = new ArrayList<>();
 
   /**
    * {@code true} si l'annonce bénéficie d'une mise en avant payante (boost). Les annonces boostées

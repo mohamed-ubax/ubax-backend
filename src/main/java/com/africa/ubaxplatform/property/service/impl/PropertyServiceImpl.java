@@ -8,6 +8,7 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import com.africa.ubaxplatform.property.dto.PropertyAmenityRequest;
 import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
@@ -20,9 +21,11 @@ import com.africa.ubaxplatform.property.dto.PropertyResponse;
 import com.africa.ubaxplatform.property.dto.PropertyStatusUpdateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyUpdateRequest;
 import com.africa.ubaxplatform.property.entity.Property;
+import com.africa.ubaxplatform.property.entity.PropertyAmenity;
 import com.africa.ubaxplatform.property.entity.PropertyDocument;
 import com.africa.ubaxplatform.property.entity.PropertyMedia;
 import com.africa.ubaxplatform.property.mapper.PropertyMapper;
+import com.africa.ubaxplatform.property.repository.PropertyAmenityRepository;
 import com.africa.ubaxplatform.property.repository.PropertyDocumentRepository;
 import com.africa.ubaxplatform.property.repository.PropertyMediaRepository;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
@@ -31,6 +34,7 @@ import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -48,6 +52,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class PropertyServiceImpl implements PropertyService {
 
   private final PropertyRepository propertyRepo;
+  private final PropertyAmenityRepository amenityRepo;
   private final PropertyMediaRepository mediaRepo;
   private final PropertyDocumentRepository docRepo;
   private final UserRepository userRepo;
@@ -77,6 +82,21 @@ public class PropertyServiceImpl implements PropertyService {
                 new CustomException(
                     new NotFoundException("Bien immobilier introuvable"),
                     ResponseMessageConstants.PROPERTY_GET_FAILURE_NOT_FOUND));
+  }
+
+  private List<PropertyAmenity> buildAmenities(
+      List<PropertyAmenityRequest> requests, Property property) {
+    List<PropertyAmenity> result = new ArrayList<>();
+    for (PropertyAmenityRequest req : requests) {
+      result.add(
+          PropertyAmenity.builder()
+              .property(property)
+              .code(req.code())
+              .customValue(req.customValue())
+              .customDescription(req.customDescription())
+              .build());
+    }
+    return result;
   }
 
   private void requireOwnership(Property property, User caller) throws CustomException {
@@ -137,17 +157,6 @@ public class PropertyServiceImpl implements PropertyService {
             .street(req.street())
             .latitude(req.latitude())
             .longitude(req.longitude())
-            .hasPool(Boolean.TRUE.equals(req.hasPool()))
-            .hasGenerator(Boolean.TRUE.equals(req.hasGenerator()))
-            .hasWaterTank(Boolean.TRUE.equals(req.hasWaterTank()))
-            .hasAc(Boolean.TRUE.equals(req.hasAc()))
-            .hasSecurity(Boolean.TRUE.equals(req.hasSecurity()))
-            .hasParking(Boolean.TRUE.equals(req.hasParking()))
-            .hasElevator(Boolean.TRUE.equals(req.hasElevator()))
-            .hasGarden(Boolean.TRUE.equals(req.hasGarden()))
-            .furnished(Boolean.TRUE.equals(req.furnished()))
-            .acceptsPets(Boolean.TRUE.equals(req.acceptsPets()))
-            .pmrAccessible(Boolean.TRUE.equals(req.pmrAccessible()))
             .bedType(req.bedType())
             .maxOccupancy(req.maxOccupancy())
             .mealPlan(req.mealPlan())
@@ -155,7 +164,15 @@ public class PropertyServiceImpl implements PropertyService {
             .status(PropertyStatus.DRAFT)
             .build();
 
-    return PropertyMapper.toResponse(propertyRepo.save(property));
+    Property saved = propertyRepo.save(property);
+
+    if (req.amenities() != null && !req.amenities().isEmpty()) {
+      List<PropertyAmenity> amenities = buildAmenities(req.amenities(), saved);
+      amenityRepo.saveAll(amenities);
+      saved.getAmenities().addAll(amenities);
+    }
+
+    return PropertyMapper.toResponse(saved);
   }
 
   @Override
@@ -249,17 +266,15 @@ public class PropertyServiceImpl implements PropertyService {
     if (req.street() != null) property.setStreet(req.street());
     if (req.latitude() != null) property.setLatitude(req.latitude());
     if (req.longitude() != null) property.setLongitude(req.longitude());
-    if (req.hasPool() != null) property.setHasPool(req.hasPool());
-    if (req.hasGenerator() != null) property.setHasGenerator(req.hasGenerator());
-    if (req.hasWaterTank() != null) property.setHasWaterTank(req.hasWaterTank());
-    if (req.hasAc() != null) property.setHasAc(req.hasAc());
-    if (req.hasSecurity() != null) property.setHasSecurity(req.hasSecurity());
-    if (req.hasParking() != null) property.setHasParking(req.hasParking());
-    if (req.hasElevator() != null) property.setHasElevator(req.hasElevator());
-    if (req.hasGarden() != null) property.setHasGarden(req.hasGarden());
-    if (req.furnished() != null) property.setFurnished(req.furnished());
-    if (req.acceptsPets() != null) property.setAcceptsPets(req.acceptsPets());
-    if (req.pmrAccessible() != null) property.setPmrAccessible(req.pmrAccessible());
+    if (req.amenities() != null) {
+      amenityRepo.deleteAllByPropertyId(id);
+      property.getAmenities().clear();
+      if (!req.amenities().isEmpty()) {
+        List<PropertyAmenity> newAmenities = buildAmenities(req.amenities(), property);
+        amenityRepo.saveAll(newAmenities);
+        property.getAmenities().addAll(newAmenities);
+      }
+    }
     if (req.bedType() != null) property.setBedType(req.bedType());
     if (req.maxOccupancy() != null) property.setMaxOccupancy(req.maxOccupancy());
     if (req.mealPlan() != null) property.setMealPlan(req.mealPlan());

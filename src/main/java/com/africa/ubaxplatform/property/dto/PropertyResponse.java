@@ -1,109 +1,81 @@
 package com.africa.ubaxplatform.property.dto;
 
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * DTO de réponse représentant un bien immobilier publié sur la plateforme UBAX.
- *
- * @param id identifiant unique du bien
- * @param ownerId identifiant du propriétaire ou agent
- * @param ownerName nom complet du propriétaire ou agent
- * @param agencyId identifiant de l'agence gestionnaire, {@code null} si particulier
- * @param agencyName nom de l'agence gestionnaire, {@code null} si particulier
- * @param title titre accrocheur de l'annonce
- * @param description description complète du bien
- * @param propertyType catégorie du bien (APARTMENT, VILLA, HOUSE, LAND, OFFICE, WAREHOUSE, STORE)
- * @param transactionType nature de la transaction (SALE, RENT, RENT_FURNISHED)
- * @param price prix de vente ou loyer mensuel en XOF
- * @param condition état général du bien (NEW, GOOD, RENOVATE)
- * @param yearBuilt année de construction
- * @param surfaceTotal surface totale du terrain en m²
- * @param surfaceLiving surface habitable nette en m²
- * @param rooms nombre total de pièces principales
- * @param bedrooms nombre de chambres à coucher
- * @param bathrooms nombre de salles de bain
- * @param balconies nombre de balcons ou terrasses
- * @param floor étage du bien, {@code null} pour villas/terrains
- * @param totalFloors nombre total d'étages de l'immeuble
- * @param address adresse complète du bien
- * @param city ville où se situe le bien
- * @param district quartier ou commune
- * @param street rue ou avenue
- * @param latitude latitude GPS
- * @param longitude longitude GPS
- * @param hasPool piscine disponible
- * @param hasGenerator groupe électrogène disponible
- * @param hasWaterTank réservoir d'eau autonome
- * @param hasAc climatisation installée
- * @param hasSecurity gardiennage et sécurité présents
- * @param hasParking place de parking disponible
- * @param hasElevator ascenseur présent
- * @param hasGarden jardin ou espace vert privatif
- * @param furnished bien livré meublé
- * @param acceptsPets animaux de compagnie acceptés
- * @param pmrAccessible accessible aux personnes à mobilité réduite
- * @param boosted annonce boostée (mise en avant payante)
- * @param boostExpiresAt date d'expiration du boost payant
- * @param status statut de l'annonce dans son cycle de publication
- * @param rejectionReason motif de refus par le modérateur
- * @param publishedAt date de publication de l'annonce
- * @param bedType type de lit principal (hôtel) : SINGLE, DOUBLE, TWIN, KING, QUEEN, BUNK
- * @param maxOccupancy capacité maximale d'accueil (hôtel)
- * @param mealPlan formule repas incluse (hôtel) : ROOM_ONLY, BREAKFAST, HALF_BOARD, FULL_BOARD,
- *     ALL_INCLUSIVE
- * @param paymentFrequency fréquence de facturation : NIGHTLY, WEEKLY, MONTHLY
- * @param createdAt date de création
- * @param updatedAt date de dernière modification
- */
+@Schema(description = "Bien immobilier publié sur la plateforme UBAX")
 public record PropertyResponse(
-    UUID id,
-    UUID ownerId,
-    String ownerName,
-    UUID agencyId,
-    String agencyName,
-    String title,
-    String description,
-    String propertyType,
-    String transactionType,
-    BigDecimal price,
-    String condition,
-    Integer yearBuilt,
-    BigDecimal surfaceTotal,
-    BigDecimal surfaceLiving,
-    Integer rooms,
-    Integer bedrooms,
-    Integer bathrooms,
-    Integer balconies,
-    Integer floor,
-    Integer totalFloors,
-    String address,
-    String city,
-    String district,
-    String street,
-    BigDecimal latitude,
-    BigDecimal longitude,
-    boolean hasPool,
-    boolean hasGenerator,
-    boolean hasWaterTank,
-    boolean hasAc,
-    boolean hasSecurity,
-    boolean hasParking,
-    boolean hasElevator,
-    boolean hasGarden,
-    boolean furnished,
-    boolean acceptsPets,
-    boolean pmrAccessible,
-    boolean boosted,
-    LocalDateTime boostExpiresAt,
-    PropertyStatus status,
-    String rejectionReason,
-    LocalDateTime publishedAt,
-    String bedType,
-    Integer maxOccupancy,
-    String mealPlan,
-    String paymentFrequency,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt) {}
+    @Schema(description = "Identifiant unique du bien") UUID id,
+    @Schema(description = "Identifiant du propriétaire ou agent") UUID ownerId,
+    @Schema(description = "Nom complet du propriétaire ou agent") String ownerName,
+    @Schema(
+            description = "Identifiant de l'agence gestionnaire (null si particulier)",
+            nullable = true)
+        UUID agencyId,
+    @Schema(description = "Nom de l'agence gestionnaire (null si particulier)", nullable = true)
+        String agencyName,
+    @Schema(description = "Titre accrocheur de l'annonce") String title,
+    @Schema(description = "Description complète du bien") String description,
+    @Schema(
+            description = "Type de bien (APARTMENT, VILLA, HOUSE, LAND, OFFICE…)",
+            example = "VILLA")
+        String propertyType,
+    @Schema(
+            description = "Type de transaction (SALE, RENT, RENT_FURNISHED, SHORT_STAY)",
+            example = "SALE")
+        String transactionType,
+    @Schema(description = "Prix de vente ou loyer mensuel en XOF", example = "150000000")
+        BigDecimal price,
+    @Schema(description = "État général du bien (NEW, GOOD, RENOVATE)", example = "GOOD")
+        String condition,
+    @Schema(description = "Année de construction", example = "2018") Integer yearBuilt,
+    @Schema(description = "Surface totale du terrain (m²)", example = "400.0")
+        BigDecimal surfaceTotal,
+    @Schema(description = "Surface habitable nette (m²)", example = "280.0")
+        BigDecimal surfaceLiving,
+    @Schema(description = "Nombre total de pièces principales", example = "6") Integer rooms,
+    @Schema(description = "Nombre de chambres", example = "4") Integer bedrooms,
+    @Schema(description = "Nombre de salles de bain", example = "3") Integer bathrooms,
+    @Schema(description = "Nombre de balcons/terrasses", example = "2") Integer balconies,
+    @Schema(description = "Étage du bien (0 = RDC, null = villa/terrain)", nullable = true)
+        Integer floor,
+    @Schema(description = "Nombre total d'étages de l'immeuble", nullable = true)
+        Integer totalFloors,
+    @Schema(description = "Adresse complète du bien") String address,
+    @Schema(description = "Ville du bien", example = "Dakar") String city,
+    @Schema(description = "Quartier ou commune", example = "Almadies") String district,
+    @Schema(description = "Nom de la rue", example = "Rue des Almadies") String street,
+    @Schema(description = "Latitude GPS", example = "14.745500") BigDecimal latitude,
+    @Schema(description = "Longitude GPS", example = "-17.489200") BigDecimal longitude,
+    @Schema(description = "Commodités du bien (standard + personnalisées)")
+        List<PropertyAmenityResponse> amenities,
+    @Schema(description = "Annonce boostée (mise en avant payante)") boolean boosted,
+    @Schema(description = "Date d'expiration du boost", nullable = true)
+        LocalDateTime boostExpiresAt,
+    @Schema(description = "Statut de l'annonce dans son cycle de publication")
+        PropertyStatus status,
+    @Schema(description = "Motif de refus par le modérateur", nullable = true)
+        String rejectionReason,
+    @Schema(description = "Date de publication de l'annonce", nullable = true)
+        LocalDateTime publishedAt,
+    @Schema(
+            description = "Type de lit principal (hôtel) : SINGLE, DOUBLE, TWIN, KING, QUEEN, BUNK",
+            nullable = true)
+        String bedType,
+    @Schema(description = "Capacité maximale d'accueil (hôtel)", nullable = true)
+        Integer maxOccupancy,
+    @Schema(
+            description =
+                "Formule repas (hôtel) : ROOM_ONLY, BREAKFAST, HALF_BOARD, FULL_BOARD, ALL_INCLUSIVE",
+            nullable = true)
+        String mealPlan,
+    @Schema(
+            description = "Fréquence de facturation (hôtel) : NIGHTLY, WEEKLY, MONTHLY",
+            nullable = true)
+        String paymentFrequency,
+    @Schema(description = "Date de création") LocalDateTime createdAt,
+    @Schema(description = "Date de dernière modification") LocalDateTime updatedAt) {}
