@@ -35,4 +35,10 @@ public record PropertyUpdateRequest(
     Boolean hasGarden,
     Boolean furnished,
     Boolean acceptsPets,
-    Boolean pmrAccessible) {}
+    Boolean pmrAccessible,
+
+    // ── Champs hôtel ──────────────────────────────────────────────
+    String bedType,
+    Integer maxOccupancy,
+    String mealPlan,
+    String paymentFrequency) {}

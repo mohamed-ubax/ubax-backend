@@ -86,6 +86,7 @@ public class Constants {
     public static class PropertyType {
       private PropertyType() {}
 
+      // Immobilier
       public static final String APARTMENT = "APARTMENT";
       public static final String VILLA = "VILLA";
       public static final String HOUSE = "HOUSE";
@@ -93,6 +94,14 @@ public class Constants {
       public static final String OFFICE = "OFFICE";
       public static final String WAREHOUSE = "WAREHOUSE";
       public static final String STORE = "STORE";
+
+      // Hôtel
+      public static final String HOTEL_ROOM = "HOTEL_ROOM";
+      public static final String HOTEL_SUITE = "HOTEL_SUITE";
+      public static final String HOTEL_STUDIO = "HOTEL_STUDIO";
+      public static final String EVENT_SPACE = "EVENT_SPACE";
+      public static final String CONFERENCE_ROOM = "CONFERENCE_ROOM";
+      public static final String RESTAURANT_SPACE = "RESTAURANT_SPACE";
     }
 
     public static class TransactionType {
@@ -101,6 +110,7 @@ public class Constants {
       public static final String SALE = "SALE";
       public static final String RENT = "RENT";
       public static final String RENT_FURNISHED = "RENT_FURNISHED";
+      public static final String SHORT_STAY = "SHORT_STAY";
     }
 
     public static class PropertyCondition {
@@ -109,6 +119,35 @@ public class Constants {
       public static final String NEW = "NEW";
       public static final String GOOD = "GOOD";
       public static final String RENOVATE = "RENOVATE";
+    }
+
+    public static class BedType {
+      private BedType() {}
+
+      public static final String SINGLE = "SINGLE";
+      public static final String DOUBLE = "DOUBLE";
+      public static final String TWIN = "TWIN";
+      public static final String KING = "KING";
+      public static final String QUEEN = "QUEEN";
+      public static final String BUNK = "BUNK";
+    }
+
+    public static class MealPlan {
+      private MealPlan() {}
+
+      public static final String ROOM_ONLY = "ROOM_ONLY";
+      public static final String BREAKFAST = "BREAKFAST";
+      public static final String HALF_BOARD = "HALF_BOARD";
+      public static final String FULL_BOARD = "FULL_BOARD";
+      public static final String ALL_INCLUSIVE = "ALL_INCLUSIVE";
+    }
+
+    public static class PaymentFrequency {
+      private PaymentFrequency() {}
+
+      public static final String NIGHTLY = "NIGHTLY";
+      public static final String WEEKLY = "WEEKLY";
+      public static final String MONTHLY = "MONTHLY";
     }
 
     public static class MediaType {

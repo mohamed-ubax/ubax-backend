@@ -82,6 +82,10 @@ public class PropertyMapper {
         p.getStatus(),
         p.getRejectionReason(),
         p.getPublishedAt(),
+        p.getBedType(),
+        p.getMaxOccupancy(),
+        p.getMealPlan(),
+        p.getPaymentFrequency(),
         p.getCreatedAt(),
         p.getUpdatedAt());
   }
