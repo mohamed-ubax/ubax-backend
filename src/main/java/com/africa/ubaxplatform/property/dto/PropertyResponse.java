@@ -50,6 +50,11 @@ import java.util.UUID;
  * @param status statut de l'annonce dans son cycle de publication
  * @param rejectionReason motif de refus par le modérateur
  * @param publishedAt date de publication de l'annonce
+ * @param bedType type de lit principal (hôtel) : SINGLE, DOUBLE, TWIN, KING, QUEEN, BUNK
+ * @param maxOccupancy capacité maximale d'accueil (hôtel)
+ * @param mealPlan formule repas incluse (hôtel) : ROOM_ONLY, BREAKFAST, HALF_BOARD, FULL_BOARD,
+ *     ALL_INCLUSIVE
+ * @param paymentFrequency fréquence de facturation : NIGHTLY, WEEKLY, MONTHLY
  * @param createdAt date de création
  * @param updatedAt date de dernière modification
  */
@@ -96,5 +101,9 @@ public record PropertyResponse(
     PropertyStatus status,
     String rejectionReason,
     LocalDateTime publishedAt,
+    String bedType,
+    Integer maxOccupancy,
+    String mealPlan,
+    String paymentFrequency,
     LocalDateTime createdAt,
     LocalDateTime updatedAt) {}

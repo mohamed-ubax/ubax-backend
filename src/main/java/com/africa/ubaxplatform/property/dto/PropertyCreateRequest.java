@@ -41,4 +41,17 @@ public record PropertyCreateRequest(
     Boolean pmrAccessible,
 
     /** UUID du propriétaire réel du bien. Optionnel : si absent, l'appelant est le propriétaire. */
-    UUID ownerId) {}
+    UUID ownerId,
+
+    // ── Champs hôtel (optionnels pour les agences immobilières) ──
+    /** Type de lit. Valeurs : {@code SINGLE | DOUBLE | TWIN | KING | QUEEN | BUNK} */
+    String bedType,
+    /** Nombre maximum de personnes pouvant occuper le bien. */
+    Integer maxOccupancy,
+    /**
+     * Formule repas. Valeurs : {@code ROOM_ONLY | BREAKFAST | HALF_BOARD | FULL_BOARD |
+     * ALL_INCLUSIVE}
+     */
+    String mealPlan,
+    /** Fréquence de facturation. Valeurs : {@code NIGHTLY | WEEKLY | MONTHLY} */
+    String paymentFrequency) {}

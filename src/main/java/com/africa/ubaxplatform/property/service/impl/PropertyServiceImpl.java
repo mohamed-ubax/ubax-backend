@@ -148,6 +148,10 @@ public class PropertyServiceImpl implements PropertyService {
             .furnished(Boolean.TRUE.equals(req.furnished()))
             .acceptsPets(Boolean.TRUE.equals(req.acceptsPets()))
             .pmrAccessible(Boolean.TRUE.equals(req.pmrAccessible()))
+            .bedType(req.bedType())
+            .maxOccupancy(req.maxOccupancy())
+            .mealPlan(req.mealPlan())
+            .paymentFrequency(req.paymentFrequency())
             .status(PropertyStatus.DRAFT)
             .build();
 
@@ -256,6 +260,10 @@ public class PropertyServiceImpl implements PropertyService {
     if (req.furnished() != null) property.setFurnished(req.furnished());
     if (req.acceptsPets() != null) property.setAcceptsPets(req.acceptsPets());
     if (req.pmrAccessible() != null) property.setPmrAccessible(req.pmrAccessible());
+    if (req.bedType() != null) property.setBedType(req.bedType());
+    if (req.maxOccupancy() != null) property.setMaxOccupancy(req.maxOccupancy());
+    if (req.mealPlan() != null) property.setMealPlan(req.mealPlan());
+    if (req.paymentFrequency() != null) property.setPaymentFrequency(req.paymentFrequency());
 
     return PropertyMapper.toResponse(propertyRepo.save(property));
   }

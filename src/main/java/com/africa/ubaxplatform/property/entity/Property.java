@@ -273,6 +273,28 @@ public class Property extends BaseEntity {
     return latitude != null && longitude != null;
   }
 
+  /**
+   * Type de lit principal de la chambre. Valeurs : {@code SINGLE | DOUBLE | TWIN | KING | QUEEN |
+   * BUNK}
+   */
+  @Column(name = "bed_type", length = 20)
+  private String bedType;
+
+  /** Capacité maximale d'accueil (nombre de personnes). */
+  @Column(name = "max_occupancy")
+  private Integer maxOccupancy;
+
+  /**
+   * Formule repas incluse. Valeurs : {@code ROOM_ONLY | BREAKFAST | HALF_BOARD | FULL_BOARD |
+   * ALL_INCLUSIVE}
+   */
+  @Column(name = "meal_plan", length = 30)
+  private String mealPlan;
+
+  /** Fréquence de facturation du prix. Valeurs : {@code NIGHTLY | WEEKLY | MONTHLY} */
+  @Column(name = "payment_frequency", length = 20)
+  private String paymentFrequency;
+
   /** {@code true} si le bien est géré par une agence. */
   public boolean isManagedByAgency() {
     return agency != null;
