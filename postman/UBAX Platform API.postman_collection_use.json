@@ -1242,7 +1242,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"docType\": \"TITRE_FONCIER\",\n  \"title\": \"Titre foncier\",\n  \"fileUrl\": \"{{file_url}}\",\n  \"fileName\": \"titre-foncier.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"visibleToPublic\": false\n}",
+                  "raw": "{\n  \"docType\": \"TITLE_DEED\",\n  \"title\": \"Titre foncier\",\n  \"fileUrl\": \"{{file_url}}\",\n  \"fileName\": \"titre-foncier.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"visibleToPublic\": false\n}",
                   "options": { "raw": { "language": "json" } }
                 },
                 "url": {
