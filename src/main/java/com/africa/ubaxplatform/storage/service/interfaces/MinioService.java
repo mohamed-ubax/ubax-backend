@@ -139,7 +139,7 @@ public interface MinioService {
       String slug, String docKey, InputStream inputStream, long size, String contentType);
 
   /**
-   * Upload le logo d'un partenaire dans {@code partner-documents/{slug}/logo/}.
+   * Upload le logo d'un partenaire dans {@code agencies-logos/{slug}/}.
    *
    * @param slug répertoire du partenaire
    * @param inputStream flux de l'image
