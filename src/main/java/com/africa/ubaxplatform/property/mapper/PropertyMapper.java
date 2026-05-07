@@ -2,12 +2,15 @@ package com.africa.ubaxplatform.property.mapper;
 
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.property.dto.PropertyAmenityResponse;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentResponse;
 import com.africa.ubaxplatform.property.dto.PropertyMediaResponse;
 import com.africa.ubaxplatform.property.dto.PropertyResponse;
 import com.africa.ubaxplatform.property.entity.Property;
+import com.africa.ubaxplatform.property.entity.PropertyAmenity;
 import com.africa.ubaxplatform.property.entity.PropertyDocument;
 import com.africa.ubaxplatform.property.entity.PropertyMedia;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
@@ -39,6 +42,8 @@ public class PropertyMapper {
   public static PropertyResponse toResponse(Property p) {
     User owner = p.getOwner();
     Agency agency = p.getAgency();
+    List<PropertyAmenityResponse> amenities =
+        p.getAmenities().stream().map(PropertyMapper::toAmenityResponse).toList();
     return new PropertyResponse(
         p.getId(),
         owner != null ? owner.getId() : null,
@@ -66,17 +71,7 @@ public class PropertyMapper {
         p.getStreet(),
         p.getLatitude(),
         p.getLongitude(),
-        p.isHasPool(),
-        p.isHasGenerator(),
-        p.isHasWaterTank(),
-        p.isHasAc(),
-        p.isHasSecurity(),
-        p.isHasParking(),
-        p.isHasElevator(),
-        p.isHasGarden(),
-        p.isFurnished(),
-        p.isAcceptsPets(),
-        p.isPmrAccessible(),
+        amenities,
         p.isBoosted(),
         p.getBoostExpiresAt(),
         p.getStatus(),
@@ -88,6 +83,11 @@ public class PropertyMapper {
         p.getPaymentFrequency(),
         p.getCreatedAt(),
         p.getUpdatedAt());
+  }
+
+  public static PropertyAmenityResponse toAmenityResponse(PropertyAmenity a) {
+    return new PropertyAmenityResponse(
+        a.getId(), a.getCode(), a.getCustomValue(), a.getCustomDescription());
   }
 
   /**

@@ -246,8 +246,11 @@ public class ModuleController {
 | V024 | `add_coordinates_to_partner_applications.sql` | `latitude`, `longitude` sur `partner_applications` |
 | V025 | `create_bailleur_applications.sql` | `bailleur_applications`, `bailleur_application_properties` |
 | V026 | `seed_id_type_code_list.sql` | Seed `la_code_list` (ID_TYPE : CNI, PASSEPORT, PERMIS_CONDUIRE, TITRE_SEJOUR, CARTE_CONSULAIRE) |
+| V027–V034 | *(migrations hôtel, villes, représentant légal…)* | Voir fichiers SQL |
+| V035 | `create_property_amenities.sql` | Table `property_amenities`, migration booléens → table, suppression colonnes booléennes |
+| V036 | `seed_property_amenity_code_lists.sql` | Seed `la_code_list` (PROPERTY_AMENITY : POOL, GENERATOR, WATER_TANK, AC, SECURITY, PARKING, ELEVATOR, GARDEN, FURNISHED, PETS) |
 
-Prochaine version disponible : **V027**
+Prochaine version disponible : **V037**
 
 ---
 

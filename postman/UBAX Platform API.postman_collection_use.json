@@ -893,7 +893,7 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Villa 4 chambres avec piscine aux Almadies\",\n  \"description\": \"Magnifique villa moderne avec vue sur l'océan. Idéale pour une famille. Gardiennage 24h/24, groupe électrogène, piscine privée.\",\n  \"propertyType\": \"VILLA\",\n  \"transactionType\": \"SALE\",\n  \"price\": 150000000,\n  \"condition\": \"GOOD\",\n  \"yearBuilt\": 2018,\n  \"surfaceTotal\": 400.0,\n  \"surfaceLiving\": 280.0,\n  \"rooms\": 6,\n  \"bedrooms\": 4,\n  \"bathrooms\": 3,\n  \"balconies\": 2,\n  \"floor\": null,\n  \"totalFloors\": null,\n  \"address\": \"12 Rue des Almadies, Dakar\",\n  \"city\": \"Dakar\",\n  \"district\": \"Almadies\",\n  \"street\": \"Rue des Almadies\",\n  \"latitude\": 14.745500,\n  \"longitude\": -17.489200,\n  \"hasPool\": true,\n  \"hasGenerator\": true,\n  \"hasWaterTank\": true,\n  \"hasAc\": true,\n  \"hasSecurity\": true,\n  \"hasParking\": true,\n  \"hasElevator\": false,\n  \"hasGarden\": true,\n  \"furnished\": false,\n  \"acceptsPets\": false,\n  \"pmrAccessible\": false\n}"
+                  "raw": "{\n  \"title\": \"Villa 4 chambres avec piscine aux Almadies\",\n  \"description\": \"Magnifique villa moderne avec vue sur l'océan. Idéale pour une famille. Gardiennage 24h/24, groupe électrogène, piscine privée.\",\n  \"propertyType\": \"VILLA\",\n  \"transactionType\": \"SALE\",\n  \"price\": 150000000,\n  \"condition\": \"GOOD\",\n  \"yearBuilt\": 2018,\n  \"surfaceTotal\": 400.0,\n  \"surfaceLiving\": 280.0,\n  \"rooms\": 6,\n  \"bedrooms\": 4,\n  \"bathrooms\": 3,\n  \"balconies\": 2,\n  \"floor\": null,\n  \"totalFloors\": null,\n  \"address\": \"12 Rue des Almadies, Dakar\",\n  \"city\": \"Dakar\",\n  \"district\": \"Almadies\",\n  \"street\": \"Rue des Almadies\",\n  \"latitude\": 14.745500,\n  \"longitude\": -17.489200,\n  \"amenities\": [\n    { \"code\": \"POOL\" },\n    { \"code\": \"GENERATOR\" },\n    { \"code\": \"WATER_TANK\" },\n    { \"code\": \"AC\" },\n    { \"code\": \"SECURITY\" },\n    { \"code\": \"PARKING\" },\n    { \"code\": \"GARDEN\" },\n    { \"customValue\": \"Salle de sport\", \"customDescription\": \"Salle de sport équipée au sous-sol\" }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties",
@@ -927,7 +927,7 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Chambre Deluxe Vue Mer - Hôtel La Gondole\",\n  \"description\": \"Chambre double avec terrasse privée et vue panoramique sur l'océan Atlantique.\",\n  \"propertyType\": \"HOTEL_ROOM\",\n  \"transactionType\": \"SHORT_STAY\",\n  \"price\": 85000,\n  \"condition\": \"NEW\",\n  \"surfaceTotal\": 32.0,\n  \"surfaceLiving\": 28.0,\n  \"rooms\": 1,\n  \"bedrooms\": 1,\n  \"bathrooms\": 1,\n  \"balconies\": 1,\n  \"city\": \"Dakar\",\n  \"district\": \"Corniche Ouest\",\n  \"address\": \"Route de la Corniche Ouest, Dakar\",\n  \"hasPool\": true,\n  \"hasSecurity\": true,\n  \"hasParking\": true,\n  \"hasAc\": true,\n  \"hasElevator\": true,\n  \"furnished\": true,\n  \"bedType\": \"DOUBLE\",\n  \"maxOccupancy\": 2,\n  \"mealPlan\": \"BREAKFAST\",\n  \"paymentFrequency\": \"NIGHTLY\"\n}"
+                  "raw": "{\n  \"title\": \"Chambre Deluxe Vue Mer - Hôtel La Gondole\",\n  \"description\": \"Chambre double avec terrasse privée et vue panoramique sur l'océan Atlantique.\",\n  \"propertyType\": \"HOTEL_ROOM\",\n  \"transactionType\": \"SHORT_STAY\",\n  \"price\": 85000,\n  \"condition\": \"NEW\",\n  \"surfaceTotal\": 32.0,\n  \"surfaceLiving\": 28.0,\n  \"rooms\": 1,\n  \"bedrooms\": 1,\n  \"bathrooms\": 1,\n  \"balconies\": 1,\n  \"city\": \"Dakar\",\n  \"district\": \"Corniche Ouest\",\n  \"address\": \"Route de la Corniche Ouest, Dakar\",\n  \"amenities\": [\n    { \"code\": \"POOL\" },\n    { \"code\": \"SECURITY\" },\n    { \"code\": \"PARKING\" },\n    { \"code\": \"AC\" },\n    { \"code\": \"ELEVATOR\" },\n    { \"code\": \"FURNISHED\" }\n  ],\n  \"bedType\": \"DOUBLE\",\n  \"maxOccupancy\": 2,\n  \"mealPlan\": \"BREAKFAST\",\n  \"paymentFrequency\": \"NIGHTLY\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties",
@@ -964,7 +964,7 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Villa 4 chambres avec piscine aux Almadies — MàJ\",\n  \"price\": 145000000,\n  \"description\": \"Description mise à jour.\",\n  \"hasPool\": true,\n  \"hasGenerator\": true\n}"
+                  "raw": "{\n  \"title\": \"Villa 4 chambres avec piscine aux Almadies — MàJ\",\n  \"price\": 145000000,\n  \"description\": \"Description mise à jour.\",\n  \"amenities\": [\n    { \"code\": \"POOL\" },\n    { \"code\": \"GENERATOR\" },\n    { \"customValue\": \"Salle de sport\", \"customDescription\": \"Salle de sport équipée au sous-sol\" }\n  ]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}",
@@ -2349,6 +2349,21 @@
           "name": "Public",
           "item": [
             {
+              "name": "Lister les commodités (PROPERTY_AMENITY)",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/code-list/type/PROPERTY_AMENITY",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "code-list", "type", "PROPERTY_AMENITY"]
+                },
+                "description": "Public : Liste des commodités standard disponibles pour un bien.\nChaque entrée a un code (à utiliser dans amenities[].code) et une description en français.\nSi la commodité souhaitée est absente, utiliser customValue + customDescription."
+              },
+              "response": []
+            },
+            {
               "name": "Get Values by Type",
               "request": {
                 "auth": { "type": "noauth" },
@@ -2359,7 +2374,7 @@
                   "host": ["{{base_url}}"],
                   "path": ["v1", "code-list", "type", "CITY"]
                 },
-                "description": "Public : Récupérer les valeurs d'un type de code list.\n\nTypes disponibles :\nBiens : PROPERTY_TYPE | TRANSACTION_TYPE | PROPERTY_CONDITION | PROPERTY_DOCUMENT_TYPE | MEDIA_TYPE\nHôtel : BED_TYPE | MEAL_PLAN | PAYMENT_FREQUENCY\nGéo : CITY | COUNTRY\nPartenaires : PARTNER_TYPE | ID_TYPE\nLocataires : EMPLOYMENT_STATUS | ID_DOCUMENT_TYPE\nTickets : TICKET_CATEGORY | TICKET_PRIORITY | TICKET_ATTACHMENT_TYPE\nFinance : COST_IMPUTED_TO | EXPENSE_CATEGORY\nContracts : CONTRACT_TYPE\nRôles : ROLE_AGENCE | ROLE_HOTEL | ROLE_UBAX_INTERNAL\nSystème : SUBSCRIPTION_PLAN | ALERT_FREQUENCY | NEWSLETTER_FREQUENCY | DISPLAY_MODE"
+                "description": "Public : Récupérer les valeurs d'un type de code list.\n\nTypes disponibles :\nBiens : PROPERTY_TYPE | TRANSACTION_TYPE | PROPERTY_CONDITION | PROPERTY_DOCUMENT_TYPE | MEDIA_TYPE | PROPERTY_AMENITY\nHôtel : BED_TYPE | MEAL_PLAN | PAYMENT_FREQUENCY\nGéo : CITY | COUNTRY\nPartenaires : PARTNER_TYPE | ID_TYPE\nLocataires : EMPLOYMENT_STATUS | ID_DOCUMENT_TYPE\nTickets : TICKET_CATEGORY | TICKET_PRIORITY | TICKET_ATTACHMENT_TYPE\nFinance : COST_IMPUTED_TO | EXPENSE_CATEGORY\nContracts : CONTRACT_TYPE\nRôles : ROLE_AGENCE | ROLE_HOTEL | ROLE_UBAX_INTERNAL\nSystème : SUBSCRIPTION_PLAN | ALERT_FREQUENCY | NEWSLETTER_FREQUENCY | DISPLAY_MODE"
               },
               "response": []
             }
