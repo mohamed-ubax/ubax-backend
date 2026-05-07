@@ -9,11 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 @Slf4j
@@ -26,11 +30,75 @@ public class ApiExceptionHandler {
         e.getBindingResult().getFieldErrors().stream()
             .map(err -> err.getField() + " : " + err.getDefaultMessage())
             .collect(Collectors.joining(", "));
-    log.warn("Validation error: {}", message);
+    log.warn("[VALIDATION] Champs invalides → {}", message);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(
             new CustomResponse(
                 Constants.Message.BAD_REQUEST_BODY, Constants.Status.BAD_REQUEST, message, null));
+  }
+
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<CustomResponse> handleMissingParam(
+      MissingServletRequestParameterException e) {
+    log.warn(
+        "[MISSING_PARAM] Paramètre '{}' ({}) absent de la requête",
+        e.getParameterName(),
+        e.getParameterType());
+    String message =
+        "Paramètre obligatoire manquant : '"
+            + e.getParameterName()
+            + "' (type : "
+            + e.getParameterType()
+            + ")";
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(
+            new CustomResponse(
+                Constants.Message.BAD_REQUEST_BODY, Constants.Status.BAD_REQUEST, message, null));
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<CustomResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+    String expected = e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "inconnu";
+    log.warn(
+        "[TYPE_MISMATCH] Paramètre '{}' → valeur '{}' ne correspond pas au type attendu {}",
+        e.getName(),
+        e.getValue(),
+        expected);
+    String message =
+        "Valeur invalide pour '"
+            + e.getName()
+            + "' : '"
+            + e.getValue()
+            + "' — attendu : "
+            + expected;
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(
+            new CustomResponse(
+                Constants.Message.BAD_REQUEST_BODY, Constants.Status.BAD_REQUEST, message, null));
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<CustomResponse> handleMalformedJson(HttpMessageNotReadableException e) {
+    log.warn("[MALFORMED_JSON] Corps de la requête illisible : {}", e.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(
+            new CustomResponse(
+                Constants.Message.BAD_REQUEST_BODY,
+                Constants.Status.BAD_REQUEST,
+                "Corps JSON malformé ou type de contenu incorrect",
+                null));
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<CustomResponse> handleNoResource(NoResourceFoundException e) {
+    log.warn("[NOT_FOUND] Route inexistante : {} {}", e.getHttpMethod(), e.getResourcePath());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(
+            new CustomResponse(
+                Constants.Message.NOT_FOUND_BODY,
+                Constants.Status.NOT_FOUND,
+                "Route introuvable : " + e.getResourcePath(),
+                null));
   }
 
   @ExceptionHandler(CustomException.class)

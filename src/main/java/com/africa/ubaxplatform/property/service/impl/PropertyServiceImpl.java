@@ -106,6 +106,11 @@ public class PropertyServiceImpl implements PropertyService {
             && caller.getAgency() != null
             && property.getAgency().getId().equals(caller.getAgency().getId());
     if (!isOwner && !isAgency) {
+      log.warn(
+          "[OWNERSHIP] Accès refusé | propertyId={} callerId={} ownerIdAttendu={}",
+          property.getId(),
+          caller.getId(),
+          property.getOwner().getId());
       throw new CustomException(
           new UnAuthorizedException("Accès refusé – vous n'êtes pas le gestionnaire de ce bien"),
           ResponseMessageConstants.PROPERTY_UPDATE_FAILURE);
@@ -118,10 +123,26 @@ public class PropertyServiceImpl implements PropertyService {
   @Transactional
   public PropertyResponse create(String callerKeycloakId, PropertyCreateRequest req)
       throws CustomException {
+    log.info(
+        "[CREATE] caller={} | title='{}' | type={} | tx={} | city={} | price={}",
+        callerKeycloakId,
+        req.title(),
+        req.propertyType(),
+        req.transactionType(),
+        req.city(),
+        req.price());
+    log.debug(
+        "[CREATE] amenities={} | bedType={} | mealPlan={} | paymentFreq={}",
+        req.amenities(),
+        req.bedType(),
+        req.mealPlan(),
+        req.paymentFrequency());
+
     User caller = resolveUser(callerKeycloakId);
 
     User owner = caller;
     if (req.ownerId() != null && !req.ownerId().equals(caller.getId())) {
+      log.debug("[CREATE] ownerId spécifié → {}", req.ownerId());
       owner =
           userRepo
               .findById(req.ownerId())
@@ -165,14 +186,26 @@ public class PropertyServiceImpl implements PropertyService {
             .build();
 
     Property saved = propertyRepo.save(property);
+    log.info(
+        "[CREATE] ✔ bien créé | id={} | statut={} | agencyId={}",
+        saved.getId(),
+        saved.getStatus(),
+        saved.getAgency() != null ? saved.getAgency().getId() : "null");
 
     if (req.amenities() != null && !req.amenities().isEmpty()) {
       List<PropertyAmenity> amenities = buildAmenities(req.amenities(), saved);
       amenityRepo.saveAll(amenities);
       saved.getAmenities().addAll(amenities);
+      log.debug("[CREATE] {} commodité(s) sauvegardée(s)", amenities.size());
     }
 
-    return PropertyMapper.toResponse(saved);
+    PropertyResponse response = PropertyMapper.toResponse(saved);
+    log.debug(
+        "[CREATE] response → id={} status={} amenities={}",
+        response.id(),
+        response.status(),
+        response.amenities() != null ? response.amenities().size() : 0);
+    return response;
   }
 
   @Override
@@ -202,6 +235,16 @@ public class PropertyServiceImpl implements PropertyService {
       UUID agencyId,
       UUID ownerId,
       Pageable pageable) {
+    log.debug(
+        "[LIST] status={} city={} type={} tx={} minPrice={} maxPrice={} page={} size={}",
+        status,
+        city,
+        propertyType,
+        transactionType,
+        minPrice,
+        maxPrice,
+        pageable.getPageNumber(),
+        pageable.getPageSize());
     return propertyRepo
         .findWithFilters(
             status,
@@ -232,6 +275,7 @@ public class PropertyServiceImpl implements PropertyService {
   @Transactional
   public PropertyResponse update(UUID id, String callerKeycloakId, PropertyUpdateRequest req)
       throws CustomException {
+    log.info("[UPDATE] propertyId={} | caller={}", id, callerKeycloakId);
     User caller = resolveUser(callerKeycloakId);
     Property property = resolveProperty(id);
     requireOwnership(property, caller);
@@ -239,6 +283,8 @@ public class PropertyServiceImpl implements PropertyService {
     if (property.getStatus() == PropertyStatus.PUBLISHED
         || property.getStatus() == PropertyStatus.SOLD
         || property.getStatus() == PropertyStatus.ARCHIVED) {
+      log.warn(
+          "[UPDATE] Modification refusée | propertyId={} | statut={}", id, property.getStatus());
       throw new CustomException(
           new BadRequestException(
               "Un bien publié, vendu ou archivé ne peut pas être modifié directement"),
@@ -286,11 +332,16 @@ public class PropertyServiceImpl implements PropertyService {
   @Override
   @Transactional
   public PropertyResponse submit(UUID id, String callerKeycloakId) throws CustomException {
+    log.info("[SUBMIT] propertyId={} | caller={}", id, callerKeycloakId);
     User caller = resolveUser(callerKeycloakId);
     Property property = resolveProperty(id);
     requireOwnership(property, caller);
 
     if (property.getStatus() != PropertyStatus.DRAFT) {
+      log.warn(
+          "[SUBMIT] Soumission refusée | propertyId={} | statut={} (attendu: DRAFT)",
+          id,
+          property.getStatus());
       throw new CustomException(
           new BadRequestException(
               "Seul un bien en brouillon (DRAFT) peut être soumis. Statut actuel : "
@@ -299,6 +350,7 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     property.setStatus(PropertyStatus.PENDING);
+    log.info("[SUBMIT] ✔ DRAFT → PENDING | propertyId={}", id);
     return PropertyMapper.toResponse(propertyRepo.save(property));
   }
 
@@ -316,10 +368,13 @@ public class PropertyServiceImpl implements PropertyService {
   @Transactional
   public PropertyResponse updateStatus(UUID id, PropertyStatusUpdateRequest req)
       throws CustomException {
+    log.info("[STATUS] propertyId={} | {} → {}", id, "?", req.status());
     Property property = resolveProperty(id);
+    log.info("[STATUS] propertyId={} | {} → {}", id, property.getStatus(), req.status());
 
     if (req.status() == PropertyStatus.REJECTED
         && (req.rejectionReason() == null || req.rejectionReason().isBlank())) {
+      log.warn("[STATUS] REJECTED sans motif | propertyId={}", id);
       throw new CustomException(
           new BadRequestException("Le motif de refus est obligatoire pour le statut REJECTED"),
           ResponseMessageConstants.PROPERTY_UPDATE_FAILURE);
@@ -330,6 +385,8 @@ public class PropertyServiceImpl implements PropertyService {
 
     if (req.status() == PropertyStatus.PUBLISHED && property.getPublishedAt() == null) {
       property.setPublishedAt(LocalDateTime.now());
+      log.info(
+          "[STATUS] ✔ PUBLISHED | propertyId={} | publishedAt={}", id, property.getPublishedAt());
     }
 
     return PropertyMapper.toResponse(propertyRepo.save(property));
