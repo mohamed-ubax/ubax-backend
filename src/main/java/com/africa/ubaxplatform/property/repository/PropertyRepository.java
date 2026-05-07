@@ -18,7 +18,7 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
       """
       SELECT p FROM Property p
       WHERE (:status   IS NULL OR p.status          = :status)
-        AND (:city     IS NULL OR LOWER(p.city)     = LOWER(:city))
+        AND (:city     IS NULL OR LOWER(p.city)     = :city)
         AND (:propType IS NULL OR p.propertyType    = :propType)
         AND (:txType   IS NULL OR p.transactionType = :txType)
         AND (:minPrice IS NULL OR p.price           >= :minPrice)

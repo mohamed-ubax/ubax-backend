@@ -51,7 +51,7 @@ public class SecurityConfig {
     "/v1/bailleur/apply",
     "/v1/code-list/type/**",
     "/v1/properties",
-    "/v1/properties/**"
+    "/v1/properties/**",
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")

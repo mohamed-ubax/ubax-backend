@@ -890,7 +890,10 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"title\": \"Villa 4 chambres avec piscine aux Almadies\",\n  \"description\": \"Magnifique villa moderne avec vue sur l'océan. Idéale pour une famille. Gardiennage 24h/24, groupe électrogène, piscine privée.\",\n  \"propertyType\": \"VILLA\",\n  \"transactionType\": \"SALE\",\n  \"price\": 150000000,\n  \"condition\": \"GOOD\",\n  \"yearBuilt\": 2018,\n  \"surfaceTotal\": 400.0,\n  \"surfaceLiving\": 280.0,\n  \"rooms\": 6,\n  \"bedrooms\": 4,\n  \"bathrooms\": 3,\n  \"balconies\": 2,\n  \"floor\": null,\n  \"totalFloors\": null,\n  \"address\": \"12 Rue des Almadies, Dakar\",\n  \"city\": \"Dakar\",\n  \"district\": \"Almadies\",\n  \"street\": \"Rue des Almadies\",\n  \"latitude\": 14.745500,\n  \"longitude\": -17.489200,\n  \"amenities\": [\n    { \"code\": \"POOL\" },\n    { \"code\": \"GENERATOR\" },\n    { \"code\": \"WATER_TANK\" },\n    { \"code\": \"AC\" },\n    { \"code\": \"SECURITY\" },\n    { \"code\": \"PARKING\" },\n    { \"code\": \"GARDEN\" },\n    { \"customValue\": \"Salle de sport\", \"customDescription\": \"Salle de sport équipée au sous-sol\" }\n  ]\n}"
@@ -924,7 +927,10 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"title\": \"Chambre Deluxe Vue Mer - Hôtel La Gondole\",\n  \"description\": \"Chambre double avec terrasse privée et vue panoramique sur l'océan Atlantique.\",\n  \"propertyType\": \"HOTEL_ROOM\",\n  \"transactionType\": \"SHORT_STAY\",\n  \"price\": 85000,\n  \"condition\": \"NEW\",\n  \"surfaceTotal\": 32.0,\n  \"surfaceLiving\": 28.0,\n  \"rooms\": 1,\n  \"bedrooms\": 1,\n  \"bathrooms\": 1,\n  \"balconies\": 1,\n  \"city\": \"Dakar\",\n  \"district\": \"Corniche Ouest\",\n  \"address\": \"Route de la Corniche Ouest, Dakar\",\n  \"amenities\": [\n    { \"code\": \"POOL\" },\n    { \"code\": \"SECURITY\" },\n    { \"code\": \"PARKING\" },\n    { \"code\": \"AC\" },\n    { \"code\": \"ELEVATOR\" },\n    { \"code\": \"FURNISHED\" }\n  ],\n  \"bedType\": \"DOUBLE\",\n  \"maxOccupancy\": 2,\n  \"mealPlan\": \"BREAKFAST\",\n  \"paymentFrequency\": \"NIGHTLY\"\n}"
@@ -942,7 +948,7 @@
               "name": "Lister mes biens",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/mine?page=0&size=20",
                   "host": ["{{base_url}}"],
@@ -961,7 +967,10 @@
               "name": "Mettre à jour un bien",
               "request": {
                 "method": "PUT",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"title\": \"Villa 4 chambres avec piscine aux Almadies — MàJ\",\n  \"price\": 145000000,\n  \"description\": \"Description mise à jour.\",\n  \"amenities\": [\n    { \"code\": \"POOL\" },\n    { \"code\": \"GENERATOR\" },\n    { \"customValue\": \"Salle de sport\", \"customDescription\": \"Salle de sport équipée au sous-sol\" }\n  ]\n}"
@@ -979,7 +988,7 @@
               "name": "Archiver un bien",
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}",
                   "host": ["{{base_url}}"],
@@ -1014,7 +1023,7 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "body": {
                   "mode": "formdata",
                   "formdata": [
@@ -1075,7 +1084,7 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign/property-media?propertyId={{property_id}}&fileName=facade.jpg",
                   "host": ["{{base_url}}"],
@@ -1130,7 +1139,10 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"objectKey\": \"{{object_key}}\",\n  \"type\": \"PHOTO\",\n  \"isCover\": false\n}"
@@ -1170,7 +1182,7 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign/property-document?propertyId={{property_id}}&fileName=titre-foncier.pdf",
                   "host": ["{{base_url}}"],
@@ -1224,7 +1236,10 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"objectKey\": \"{{object_key}}\",\n  \"documentType\": \"TITRE_FONCIER\"\n}"
@@ -1242,7 +1257,7 @@
               "name": "Lister les documents du bien",
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents",
                   "host": ["{{base_url}}"],
@@ -1256,7 +1271,7 @@
               "name": "Supprimer un document",
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents/{{document_id}}",
                   "host": ["{{base_url}}"],
@@ -1275,7 +1290,7 @@
               "name": "Soumettre le bien (DRAFT → PENDING)",
               "request": {
                 "method": "PATCH",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/submit",
                   "host": ["{{base_url}}"],
@@ -1294,7 +1309,7 @@
               "name": "Définir la photo de couverture",
               "request": {
                 "method": "PATCH",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/media/{{media_id}}/cover",
                   "host": ["{{base_url}}"],
@@ -1308,7 +1323,7 @@
               "name": "Supprimer un média",
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/media/{{media_id}}",
                   "host": ["{{base_url}}"],
@@ -1327,7 +1342,10 @@
               "name": "Approuver un bien (PENDING → PUBLISHED)",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PUBLISHED\"\n}"
@@ -1345,7 +1363,10 @@
               "name": "Rejeter un bien",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"REJECTED\",\n  \"rejectionReason\": \"Photos de mauvaise qualité. Veuillez fournir des photos claires avec un bon éclairage.\"\n}"
@@ -1363,7 +1384,10 @@
               "name": "Marquer comme Vendu / Réservé",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"RESERVED\"\n}"
@@ -1381,7 +1405,7 @@
               "name": "Vérifier un document légal",
               "request": {
                 "method": "PATCH",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents/{{document_id}}/verify",
                   "host": ["{{base_url}}"],
@@ -1395,7 +1419,10 @@
               "name": "Activer le boost",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"durationDays\": 30\n}"
@@ -1413,7 +1440,7 @@
               "name": "Retirer le boost",
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/boost",
                   "host": ["{{base_url}}"],
@@ -1427,7 +1454,10 @@
               "name": "Fixer une date d'expiration",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"expiresAt\": \"2026-12-31T23:59:59\"\n}"
@@ -1445,7 +1475,7 @@
               "name": "Retirer la date d'expiration",
               "request": {
                 "method": "DELETE",
-                "header": [],
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/expiration",
                   "host": ["{{base_url}}"],
