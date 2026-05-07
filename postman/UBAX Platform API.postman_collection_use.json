@@ -1242,14 +1242,15 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"objectKey\": \"{{object_key}}\",\n  \"documentType\": \"TITRE_FONCIER\"\n}"
+                  "raw": "{\n  \"docType\": \"TITRE_FONCIER\",\n  \"title\": \"Titre foncier\",\n  \"fileUrl\": \"{{file_url}}\",\n  \"fileName\": \"titre-foncier.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"visibleToPublic\": false\n}",
+                  "options": { "raw": { "language": "json" } }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents",
                   "host": ["{{base_url}}"],
                   "path": ["v1", "properties", "{{property_id}}", "documents"]
                 },
-                "description": "PARTNER/OWNER : Associer un document légal au bien.\ndocumentType : TITRE_FONCIER | PERMIS_CONSTRUIRE | DIAGNOSTIC | CONTRAT_BAIL | AUTRE"
+                "description": "PARTNER/OWNER : Associer un document légal au bien.\ndocType : TITRE_FONCIER | PERMIS_CONSTRUIRE | DIAGNOSTIC | CONTRAT_BAIL | AUTRE\nfileUrl : URL MinIO obtenue après upload (presign → PUT → fileUrl)"
               },
               "response": []
             },
