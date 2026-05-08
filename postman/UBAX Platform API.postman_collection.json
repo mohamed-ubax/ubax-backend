@@ -1,10 +1,11 @@
 {
   "info": {
-    "_postman_id": "c18b701c-8e9d-4f2e-909b-f3afeddfcce7",
+    "_postman_id": "ad64c28b-53cf-44ca-a9c4-8835388def14",
     "name": "UBAX Platform API",
     "description": "Collection complète des APIs UBAX Platform\n\nBase URL: {{base_url}}\nAuthentification: Keycloak OAuth2 (JWT Bearer Token)\n\nVariables d'environnement requises:\n- base_url: http://localhost:9999/api\n- access_token: (auto-rempli par Login)\n- refresh_token: (auto-rempli par Login)\n- keycloak_user_id\n- admin_user_id\n- tenant_id\n- partner_application_id\n- property_id\n- media_id\n- document_id\n- payment_id\n- expense_id\n- bailleur_application_id",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "28441649"
+    "_exporter_id": "28441649",
+    "_collection_link": "https://go.postman.co/collection/28441649-ad64c28b-53cf-44ca-a9c4-8835388def14?source=collection_link"
   },
   "item": [
     {
@@ -33,17 +34,30 @@
                 }
               ],
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"mba@ubax.io\",\n  \"password\": \"password123\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/login",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "login"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
                 },
                 "description": "Connexion avec email et mot de passe. Les tokens sont automatiquement sauvegardés dans l'environnement."
               },
@@ -64,22 +78,37 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"elhrm.sow@unchk.edu.sn\",\n  \"password\": \"password123\"\n}"
+                  "raw": "{\n  \"email\": \"spirittechrevolution@gmail.com\",\n  \"password\": \"password123\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/login",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "login"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
                 },
                 "description": "Connexion membre agence."
               },
@@ -105,17 +134,31 @@
                 }
               ],
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"phone\": \"+221773880047\",\n  \"password\": \"password1234\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/login/phone",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "login", "phone"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "login",
+                    "phone"
+                  ]
                 },
                 "description": "Connexion avec numéro de téléphone et mot de passe (mobile)."
               },
@@ -124,17 +167,30 @@
             {
               "name": "Logout",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/logout",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "logout"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "logout"
+                  ]
                 },
                 "description": "Déconnexion et révocation du refresh token."
               },
@@ -148,17 +204,31 @@
             {
               "name": "Step 1 - Send OTP",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"phone\": \"+221773880047\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/register/send-otp",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "register", "send-otp"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "register",
+                    "send-otp"
+                  ]
                 },
                 "description": "Inscription étape 1 : Envoi d'un OTP par SMS au numéro de téléphone."
               },
@@ -167,17 +237,31 @@
             {
               "name": "Step 2 - Verify OTP",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"phone\": \"+221773880047\",\n  \"code\": \"238936\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/register/verify-otp",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "register", "verify-otp"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "register",
+                    "verify-otp"
+                  ]
                 },
                 "description": "Inscription étape 2 : Vérification du code OTP (6 chiffres)."
               },
@@ -202,17 +286,31 @@
                 }
               ],
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"phone\": \"+221773880047\",\n  \"title\": \"Mme\",\n  \"firstName\": \"Kadiz\",\n  \"lastName\": \"Camarra\",\n  \"email\": \"mlba25116@gmail.com\",\n  \"password\": \"password123!\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/register/complete",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "register", "complete"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "register",
+                    "complete"
+                  ]
                 },
                 "description": "Inscription étape 3 : Finaliser l'inscription avec les informations personnelles."
               },
@@ -226,17 +324,30 @@
             {
               "name": "Forgot Password (Email)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"{{test_email}}\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/forgot-password",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "forgot-password"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "forgot-password"
+                  ]
                 },
                 "description": "Demande de réinitialisation du mot de passe par email."
               },
@@ -245,17 +356,31 @@
             {
               "name": "Step 1 - Send OTP (SMS)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"phone\": \"+221773880047\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/forgot-password/send-otp",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "forgot-password", "send-otp"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "forgot-password",
+                    "send-otp"
+                  ]
                 },
                 "description": "Réinitialisation étape 1 : Envoi d'un OTP par SMS."
               },
@@ -264,17 +389,31 @@
             {
               "name": "Step 2 - Verify OTP",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"phone\": \"+221773880047\",\n  \"code\": \"650269\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/forgot-password/verify-otp",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "forgot-password", "verify-otp"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "forgot-password",
+                    "verify-otp"
+                  ]
                 },
                 "description": "Réinitialisation étape 2 : Vérification du code OTP."
               },
@@ -283,17 +422,31 @@
             {
               "name": "Step 3 - Reset Password",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"phone\": \"+221773880047\",\n  \"code\": \"650269\",\n  \"newPassword\": \"password1234\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/forgot-password/reset",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "forgot-password", "reset"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "forgot-password",
+                    "reset"
+                  ]
                 },
                 "description": "Réinitialisation étape 3 : Nouveau mot de passe avec le code OTP."
               },
@@ -308,15 +461,26 @@
               "name": "Reset Password (Admin)",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"keycloakId\": \"{{keycloak_user_id}}\",\n  \"newPassword\": \"TempPassword123!\",\n  \"temporary\": true\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/reset-password",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "reset-password"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "reset-password"
+                  ]
                 },
                 "description": "Admin : Forcer la réinitialisation du mot de passe d'un utilisateur."
               },
@@ -329,8 +493,14 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/auth/roles",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "roles"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "roles"
+                  ]
                 },
                 "description": "Admin : Lister tous les rôles Keycloak disponibles."
               },
@@ -340,15 +510,28 @@
               "name": "Assign Role to User",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"role\": \"CLIENT\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/users/{{keycloak_user_id}}/roles",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "users", "{{keycloak_user_id}}", "roles"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "users",
+                    "{{keycloak_user_id}}",
+                    "roles"
+                  ]
                 },
                 "description": "Admin : Assigner un rôle à un utilisateur. Rôles : CLIENT, OWNER, PARTNER, ADMIN, SUPER_ADMIN"
               },
@@ -358,15 +541,28 @@
               "name": "Remove Role from User",
               "request": {
                 "method": "DELETE",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"role\": \"CLIENT\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/users/{{keycloak_user_id}}/roles",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "auth", "users", "{{keycloak_user_id}}", "roles"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "auth",
+                    "users",
+                    "{{keycloak_user_id}}",
+                    "roles"
+                  ]
                 },
                 "description": "Admin : Retirer un rôle d'un utilisateur."
               },
@@ -384,15 +580,26 @@
           "name": "Créer un administrateur",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"firstName\": \"Mohamed\",\n  \"lastName\": \"Ba\",\n  \"email\": \"mba25116@gmail.com\",\n  \"phone\": \"+221766897423\",\n  \"role\": \"ADMIN\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/admin/users",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "admin", "users"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users"
+              ]
             },
             "description": "SUPER_ADMIN : Créer un compte administrateur interne UBAX. Rôles acceptés : ADMIN, SUPER_ADMIN."
           },
@@ -405,8 +612,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/admin/users",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "admin", "users"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users"
+              ]
             },
             "description": "ADMIN : Retourne la liste de tous les administrateurs actifs."
           },
@@ -416,15 +629,28 @@
           "name": "Changer le rôle d'un administrateur",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"role\": \"SUPER_ADMIN\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/admin/users/{{admin_user_id}}/role",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "admin", "users", "{{admin_user_id}}", "role"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{admin_user_id}}",
+                "role"
+              ]
             },
             "description": "SUPER_ADMIN : Modifier le rôle d'un administrateur. Valeurs : ADMIN, SUPER_ADMIN."
           },
@@ -437,8 +663,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/admin/users/{{admin_user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "admin", "users", "{{admin_user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{admin_user_id}}"
+              ]
             },
             "description": "SUPER_ADMIN : Désactiver un compte administrateur (soft delete)."
           },
@@ -454,15 +687,28 @@
           "name": "Assigner des sous-rôles",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"roles\": [\"DIRECTEUR_AGENCE\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/admin/users/{{admin_user_id}}/sub-roles",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "admin", "users", "{{admin_user_id}}", "sub-roles"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{admin_user_id}}",
+                "sub-roles"
+              ]
             },
             "description": "SUPER_ADMIN : Assigner des sous-rôles applicatifs à un utilisateur.\n\nSous-rôles AGENCE (scope AGENCE) :\n- DIRECTEUR_AGENCE\n- COMMERCIAL\n- COMPTABLE_AGENCE\n- AGENT_SAV\n\nSous-rôles HOTEL (scope HOTEL) :\n- GERANT_HOTEL\n- RECEPTIONNISTE\n- COMPTABLE_HOTEL\n- RESPONSABLE_HEBERGEMENT\n\nSous-rôles UBAX (scope UBAX_INTERNAL) :\n- DIRECTEUR_GENERAL\n- SUPPORT_CLIENT\n- OPERATIONS\n- FINANCE\n- COMMERCIAL"
           },
@@ -475,8 +721,16 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/admin/users/{{admin_user_id}}/sub-roles",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "admin", "users", "{{admin_user_id}}", "sub-roles"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{admin_user_id}}",
+                "sub-roles"
+              ]
             },
             "description": "ADMIN : Consulter les sous-rôles d'un utilisateur."
           },
@@ -489,8 +743,17 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/admin/users/{{admin_user_id}}/sub-roles/DIRECTEUR_AGENCE",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "admin", "users", "{{admin_user_id}}", "sub-roles", "DIRECTEUR_AGENCE"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{admin_user_id}}",
+                "sub-roles",
+                "DIRECTEUR_AGENCE"
+              ]
             },
             "description": "SUPER_ADMIN : Révoquer un sous-rôle d'un utilisateur."
           },
@@ -520,8 +783,15 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/users/me/avatar",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "users", "me", "avatar"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "avatar"
+              ]
             },
             "description": "Upload ou remplacement de l'avatar utilisateur. Formats : JPEG, PNG, WEBP. Taille max : 5 MB."
           },
@@ -534,8 +804,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/users/keycloak/{{keycloak_user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "users", "keycloak", "{{keycloak_user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "keycloak",
+                "{{keycloak_user_id}}"
+              ]
             }
           },
           "response": []
@@ -547,8 +824,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/users/{{admin_user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "users", "{{admin_user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "{{admin_user_id}}"
+              ]
             }
           },
           "response": []
@@ -566,8 +849,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/agency/team",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "agency", "team"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team"
+              ]
             },
             "description": "PARTNER : Lister les membres actifs et inactifs de l'équipe agence."
           },
@@ -593,15 +882,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"firstName\": \"Aminata\",\n  \"lastName\": \"Diallo\",\n  \"email\": \"aminata.diallo@agence.sn\",\n  \"phone\": \"+221771234567\",\n  \"role\": \"COMMERCIAL\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/agency/team",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "agency", "team"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team"
+              ]
             },
             "description": "PARTNER + DIRECTEUR_AGENCE : Ajouter un membre à l'équipe agence. Rôles : DIRECTEUR_AGENCE, COMMERCIAL, COMPTABLE_AGENCE, AGENT_SAV."
           },
@@ -611,15 +911,28 @@
           "name": "Changer le rôle d'un membre",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"role\": \"COMPTABLE_AGENCE\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/agency/team/{{team_member_id}}/role",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "agency", "team", "{{team_member_id}}", "role"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team",
+                "{{team_member_id}}",
+                "role"
+              ]
             },
             "description": "PARTNER + DIRECTEUR_AGENCE : Modifier le rôle d'un membre."
           },
@@ -632,8 +945,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/agency/team/{{team_member_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "agency", "team", "{{team_member_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team",
+                "{{team_member_id}}"
+              ]
             },
             "description": "PARTNER + DIRECTEUR_AGENCE : Retirer un membre de l'équipe agence."
           },
@@ -668,15 +988,26 @@
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"employmentStatus\": \"SALARIE\",\n  \"employerName\": \"UBAX Corp\",\n  \"monthlyIncome\": 500000,\n  \"hasGuarantor\": true,\n  \"guarantorName\": \"Jane Doe\",\n  \"guarantorPhone\": \"+2250700000000\",\n  \"guarantorEmail\": \"jane.doe@example.com\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "profile"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "profile"
+                  ]
                 },
                 "description": "CLIENT : Créer un profil locataire (dossier KYC)."
               },
@@ -689,8 +1020,14 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "profile"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "profile"
+                  ]
                 },
                 "description": "Récupérer mon profil locataire."
               },
@@ -700,15 +1037,26 @@
               "name": "Update My Tenant Profile",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"employmentStatus\": \"SALARIE\",\n  \"employerName\": \"Updated Corp\",\n  \"monthlyIncome\": 750000,\n  \"hasGuarantor\": false,\n  \"idDocumentUrl\": \"https://minio.ubax.io/tenant-documents/id.pdf\",\n  \"idDocumentType\": \"CNI\",\n  \"idDocumentNumber\": \"CI-123456789\",\n  \"idDocumentExpiry\": \"2028-12-31\",\n  \"incomeProofUrl\": \"https://minio.ubax.io/tenant-documents/income.pdf\",\n  \"addressProofUrl\": \"https://minio.ubax.io/tenant-documents/address.pdf\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "profile"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "profile"
+                  ]
                 },
                 "description": "CLIENT : Mettre à jour mon profil locataire."
               },
@@ -726,13 +1074,31 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants?page=0&size=20&sort=createdAt,desc",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants"
+                  ],
                   "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "20" },
-                    { "key": "sort", "value": "createdAt,desc" },
-                    { "key": "status", "value": "PENDING_REVIEW", "disabled": true }
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "createdAt,desc"
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING_REVIEW",
+                      "disabled": true
+                    }
                   ]
                 },
                 "description": "ADMIN/PARTNER : Lister tous les profils locataires. Statuts : INCOMPLETE, PENDING_REVIEW, QUALIFIED, REJECTED, BLACKLISTED."
@@ -746,8 +1112,14 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/{{tenant_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "{{tenant_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "{{tenant_id}}"
+                  ]
                 },
                 "description": "ADMIN/PARTNER : Détail d'un profil locataire."
               },
@@ -760,8 +1132,15 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/{{tenant_id}}/qualify",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "{{tenant_id}}", "qualify"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "{{tenant_id}}",
+                    "qualify"
+                  ]
                 },
                 "description": "ADMIN/PARTNER : Qualifier (approuver) un profil locataire."
               },
@@ -774,9 +1153,21 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/{{tenant_id}}/reject?reason=Documents incomplets",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "{{tenant_id}}", "reject"],
-                  "query": [{ "key": "reason", "value": "Documents incomplets" }]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "{{tenant_id}}",
+                    "reject"
+                  ],
+                  "query": [
+                    {
+                      "key": "reason",
+                      "value": "Documents incomplets"
+                    }
+                  ]
                 },
                 "description": "ADMIN/PARTNER : Rejeter un profil locataire (motif obligatoire)."
               },
@@ -789,8 +1180,14 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/{{tenant_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "{{tenant_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "{{tenant_id}}"
+                  ]
                 },
                 "description": "ADMIN : Archiver (suppression logique) un profil locataire."
               },
@@ -810,24 +1207,68 @@
             {
               "name": "List Properties (Public)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/properties?page=0&size=20&sort=createdAt,desc",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties"
+                  ],
                   "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "20" },
-                    { "key": "sort", "value": "createdAt,desc" },
-                    { "key": "city", "value": "Dakar", "disabled": true },
-                    { "key": "propertyType", "value": "VILLA", "disabled": true },
-                    { "key": "transactionType", "value": "SALE", "disabled": true },
-                    { "key": "minPrice", "value": "50000000", "disabled": true },
-                    { "key": "maxPrice", "value": "200000000", "disabled": true },
-                    { "key": "bedrooms", "value": "3", "disabled": true },
-                    { "key": "hasPool", "value": "true", "disabled": true }
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "createdAt,desc"
+                    },
+                    {
+                      "key": "city",
+                      "value": "Dakar",
+                      "disabled": true
+                    },
+                    {
+                      "key": "propertyType",
+                      "value": "VILLA",
+                      "disabled": true
+                    },
+                    {
+                      "key": "transactionType",
+                      "value": "SALE",
+                      "disabled": true
+                    },
+                    {
+                      "key": "minPrice",
+                      "value": "50000000",
+                      "disabled": true
+                    },
+                    {
+                      "key": "maxPrice",
+                      "value": "200000000",
+                      "disabled": true
+                    },
+                    {
+                      "key": "bedrooms",
+                      "value": "3",
+                      "disabled": true
+                    },
+                    {
+                      "key": "hasPool",
+                      "value": "true",
+                      "disabled": true
+                    }
                   ]
                 },
                 "description": "Public : Lister les biens publiés avec filtres.\n\nFiltres disponibles : city, propertyType, transactionType, minPrice, maxPrice, bedrooms, bathrooms, hasPool, hasGenerator, hasParking, hasAc, furnished"
@@ -837,13 +1278,21 @@
             {
               "name": "Get Property Details (Public)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}"
+                  ]
                 },
                 "description": "Public : Détail d'un bien immobilier."
               },
@@ -852,13 +1301,22 @@
             {
               "name": "Get Property Media (Public)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/media",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "media"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "media"
+                  ]
                 },
                 "description": "Public : Lister les médias d'un bien (photos, vidéos, plans)."
               },
@@ -884,24 +1342,37 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Villa 4 chambres avec piscine aux Almadies\",\n  \"description\": \"Magnifique villa moderne avec vue sur l'océan. Idéale pour une famille. Gardiennage 24h/24, groupe électrogène, piscine privée.\",\n  \"propertyType\": \"VILLA\",\n  \"transactionType\": \"SALE\",\n  \"price\": 150000000,\n  \"condition\": \"GOOD\",\n  \"yearBuilt\": 2018,\n  \"surfaceTotal\": 400.0,\n  \"surfaceLiving\": 280.0,\n  \"rooms\": 6,\n  \"bedrooms\": 4,\n  \"bathrooms\": 3,\n  \"balconies\": 2,\n  \"floor\": null,\n  \"totalFloors\": null,\n  \"address\": \"12 Rue des Almadies, Dakar\",\n  \"city\": \"Dakar\",\n  \"district\": \"Almadies\",\n  \"street\": \"Rue des Almadies\",\n  \"latitude\": 14.745500,\n  \"longitude\": -17.489200,\n  \"amenities\": [\n    { \"code\": \"POOL\" },\n    { \"code\": \"GENERATOR\" },\n    { \"code\": \"WATER_TANK\" },\n    { \"code\": \"AC\" },\n    { \"code\": \"SECURITY\" },\n    { \"code\": \"PARKING\" },\n    { \"code\": \"GARDEN\" },\n    { \"customValue\": \"Salle de sport\", \"customDescription\": \"Salle de sport équipée au sous-sol\" }\n  ]\n}"
+                  "raw": " {\n    \"title\": \"Villa R+1 avec jardin à Sacré-Cœur 3\",\n    \"description\": \"Belle villa de standing à deux niveaux, entièrement clôturée, dans une rue calme et sécurisée de Sacré-Cœur 3. Idéale pour famille ou investissement locatif haut de gamme.\",\n    \"propertyType\": \"VILLA\",\n    \"transactionType\": \"SALE\",\n    \"price\": 185000000,\n    \"condition\": \"GOOD\",\n    \"yearBuilt\": 2017,\n    \"surfaceTotal\": 350.0,\n    \"surfaceLiving\": 240.0,\n    \"rooms\": 7,\n    \"bedrooms\": 4,\n    \"bathrooms\": 3,\n    \"balconies\": 2,\n    \"floor\": null,\n    \"totalFloors\": 2,\n    \"address\": \"Villa 14, Rue 10 x 13, Sacré-Cœur 3, Dakar\",\n    \"city\": \"Dakar\",\n    \"district\": \"Sacré-Cœur 3\",\n    \"street\": \"Rue 10\",\n    \"latitude\": 14.7193,\n    \"longitude\": -17.4729,\n    \"amenities\": [\n      { \"code\": \"POOL\" },\n      { \"code\": \"GENERATOR\" },\n      { \"code\": \"WATER_TANK\" },\n      { \"code\": \"SECURITY\" },\n      { \"code\": \"PARKING\" },\n      { \"code\": \"GARDEN\" },\n      { \"code\": \"AC\" },\n      { \"customValue\": \"Domotique\", \"customDescription\": \"Système domotique intégré (éclairage, volets, alarme)\" }\n    ]\n  }"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Créer un brouillon de bien immobilier (statut DRAFT).\nL'ID est sauvegardé automatiquement dans {{property_id}}."
               },
@@ -928,8 +1399,14 @@
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
@@ -937,8 +1414,13 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties"
+                  ]
                 },
                 "description": "PARTNER : Créer un bien de type hôtelier (SHORT_STAY).\nChamps hôtel : bedType (SINGLE|DOUBLE|TWIN|KING|QUEEN|BUNK), maxOccupancy, mealPlan (ROOM_ONLY|BREAKFAST|HALF_BOARD|FULL_BOARD|ALL_INCLUSIVE), paymentFrequency (NIGHTLY|WEEKLY|MONTHLY)"
               },
@@ -948,15 +1430,36 @@
               "name": "Lister mes biens",
               "request": {
                 "method": "GET",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/mine?page=0&size=20",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "mine"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "mine"
+                  ],
                   "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "20" },
-                    { "key": "status", "value": "DRAFT", "disabled": true }
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "status",
+                      "value": "DRAFT",
+                      "disabled": true
+                    }
                   ]
                 },
                 "description": "PARTNER/OWNER : Lister ses propres biens (tous statuts). Filtre optionnel : status"
@@ -968,8 +1471,14 @@
               "request": {
                 "method": "PUT",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
@@ -977,8 +1486,14 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Mettre à jour un bien (statut DRAFT uniquement). Tous les champs sont optionnels."
               },
@@ -988,11 +1503,22 @@
               "name": "Archiver un bien",
               "request": {
                 "method": "DELETE",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Archiver un bien (soft delete → statut ARCHIVED)."
               },
@@ -1017,13 +1543,20 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "body": {
                   "mode": "formdata",
                   "formdata": [
@@ -1031,7 +1564,7 @@
                       "key": "file",
                       "type": "file",
                       "description": "Photo/vidéo/plan (JPEG, PNG, MP4 — max 50 MB)",
-                      "src": ""
+                      "src": "/C:/Users/snbam/Documents/img/photo_villa1.jpg"
                     },
                     {
                       "key": "type",
@@ -1041,7 +1574,7 @@
                     },
                     {
                       "key": "isCover",
-                      "value": "true",
+                      "value": "false",
                       "type": "text",
                       "description": "true = photo de couverture"
                     }
@@ -1049,8 +1582,16 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/media/upload",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "media", "upload"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "media",
+                    "upload"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Upload direct d'un média via multipart/form-data.\nLe fichier est uploadé directement sur MinIO.\nL'ID du média est sauvegardé dans {{media_id}}."
               },
@@ -1073,26 +1614,55 @@
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
                       "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
                       "        console.log('uploadUrl:', json.data.uploadUrl);",
                       "        console.log('objectKey:', json.data.objectKey);",
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
                 "method": "GET",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
-                  "raw": "{{base_url}}/v1/storage/presign/property-media?propertyId={{property_id}}&fileName=facade.jpg",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "property-media"],
+                  "raw": "{{base_url}}/v1/storage/presign/property-media?propertyId={{property_id}}&fileName=facade.jpeg&contentType=image/jpeg",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "property-media"
+                  ],
                   "query": [
-                    { "key": "propertyId", "value": "{{property_id}}" },
-                    { "key": "fileName", "value": "facade.jpg" },
-                    { "key": "expires", "value": "900", "disabled": true }
+                    {
+                      "key": "propertyId",
+                      "value": "{{property_id}}"
+                    },
+                    {
+                      "key": "fileName",
+                      "value": "facade.jpeg"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "900",
+                      "disabled": true
+                    },
+                    {
+                      "key": "contentType",
+                      "value": "image/jpeg"
+                    }
                   ]
                 },
                 "description": "PARTNER/OWNER : Obtenir une URL presignée PUT pour uploader un média vers MinIO.\nRéponse : { uploadUrl, objectKey }\nL'uploadUrl et l'objectKey sont sauvegardés automatiquement."
@@ -1102,18 +1672,27 @@
             {
               "name": "2. PUT fichier vers MinIO (uploadUrl)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "PUT",
                 "header": [
-                  { "key": "Content-Type", "value": "image/jpeg" }
+                  {
+                    "key": "Content-Type",
+                    "value": "image/jpeg"
+                  }
                 ],
                 "body": {
                   "mode": "file",
-                  "file": { "src": "" }
+                  "file": {
+                    "src": "/C:/Users/snbam/Pictures/Screenshots/Capture d'écran 2026-02-17 140805.png"
+                  }
                 },
                 "url": {
                   "raw": "{{upload_url}}",
-                  "host": ["{{upload_url}}"]
+                  "host": [
+                    "{{upload_url}}"
+                  ]
                 },
                 "description": "Upload direct vers MinIO via l'URL presignée (PUT).\nUtiliser le body mode 'Binary' et sélectionner le fichier.\nContent-Type doit correspondre au type du fichier (image/jpeg, image/png, video/mp4...).\nAucun header Authorization requis — l'URL presignée contient déjà les credentials."
               },
@@ -1133,24 +1712,39 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"objectKey\": \"{{object_key}}\",\n  \"type\": \"PHOTO\",\n  \"isCover\": false\n}"
+                  "raw": "{\n  \"fileUrl\": \"{{file_url}}\",\n  \"mediaType\": \"PHOTO\",\n  \"cover\": false\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/media",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "media"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "media"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Enregistrer le média pré-uploadé dans la base.\ntype : PHOTO | VIDEO | PLAN"
               },
@@ -1172,24 +1766,56 @@
                       "    var json = pm.response.json();",
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
-                      "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('object_key', json.data.objectName);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
+                      "        var fileName = pm.request.url.query.get('fileName');",
+                      "        var contentType = pm.request.url.query.get('contentType');",
+                      "        if (fileName) pm.environment.set('doc_file_name', fileName);",
+                      "        if (contentType) pm.environment.set('doc_mime_type', contentType);",
+                      "        console.log('file_url:', json.data.publicUrl);",
+                      "        console.log('doc_file_name:', fileName);",
+                      "        console.log('doc_mime_type:', contentType);",
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
                 "method": "GET",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
-                  "raw": "{{base_url}}/v1/storage/presign/property-document?propertyId={{property_id}}&fileName=titre-foncier.pdf",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "property-document"],
+                  "raw": "{{base_url}}/v1/storage/presign/property-document?propertyId={{property_id}}&fileName=titre-foncier.pdf&contentType=application/pdf",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "property-document"
+                  ],
                   "query": [
-                    { "key": "propertyId", "value": "{{property_id}}" },
-                    { "key": "fileName", "value": "titre-foncier.pdf" }
+                    {
+                      "key": "propertyId",
+                      "value": "{{property_id}}"
+                    },
+                    {
+                      "key": "fileName",
+                      "value": "titre-foncier.pdf"
+                    },
+                    {
+                      "key": "contentType",
+                      "value": "application/pdf"
+                    }
                   ]
                 },
                 "description": "PARTNER/OWNER : Obtenir une URL presignée pour uploader un document légal."
@@ -1199,18 +1825,27 @@
             {
               "name": "2. PUT document vers MinIO (uploadUrl)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "PUT",
                 "header": [
-                  { "key": "Content-Type", "value": "application/pdf" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/pdf"
+                  }
                 ],
                 "body": {
                   "mode": "file",
-                  "file": { "src": "" }
+                  "file": {
+                    "src": "/C:/Users/snbam/Downloads/Invoice-UEXROT7D-0005.pdf"
+                  }
                 },
                 "url": {
                   "raw": "{{upload_url}}",
-                  "host": ["{{upload_url}}"]
+                  "host": [
+                    "{{upload_url}}"
+                  ]
                 },
                 "description": "Upload du document PDF vers MinIO via URL presignée."
               },
@@ -1230,27 +1865,42 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
                 "method": "POST",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"docType\": \"TITLE_DEED\",\n  \"title\": \"Titre foncier\",\n  \"fileUrl\": \"{{file_url}}\",\n  \"fileName\": \"titre-foncier.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"visibleToPublic\": false\n}",
+                  "raw": "{\n  \"docType\": \"TITLE_DEED\",\n  \"title\": \"Titre foncier\",\n  \"fileUrl\": \"{{file_url}}\",\n  \"fileName\": \"{{doc_file_name}}\",\n  \"mimeType\": \"{{doc_mime_type}}\",\n  \"visibleToPublic\": false\n}",
                   "options": { "raw": { "language": "json" } }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "documents"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "documents"
+                  ]
                 },
-                "description": "PARTNER/OWNER : Associer un document légal au bien.\ndocType : TITRE_FONCIER | PERMIS_CONSTRUIRE | DIAGNOSTIC | CONTRAT_BAIL | AUTRE\nfileUrl : URL MinIO obtenue après upload (presign → PUT → fileUrl)"
+                "description": "PARTNER/OWNER : Associer un document légal au bien.\ndocumentType : TITLE_DEED | BUILDING_PERMIT | DIAGNOSTIC | CADASTRAL_PLAN | INSURANCE | CONFORMITY_CERTIFICATE | OTHER"
               },
               "response": []
             },
@@ -1258,11 +1908,23 @@
               "name": "Lister les documents du bien",
               "request": {
                 "method": "GET",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "documents"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "documents"
+                  ]
                 },
                 "description": "Authentifié : Lister les documents légaux d'un bien."
               },
@@ -1272,11 +1934,24 @@
               "name": "Supprimer un document",
               "request": {
                 "method": "DELETE",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents/{{document_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "documents", "{{document_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "documents",
+                    "{{document_id}}"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Supprimer un document légal."
               },
@@ -1291,11 +1966,23 @@
               "name": "Soumettre le bien (DRAFT → PENDING)",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/submit",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "submit"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "submit"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Soumettre le bien en modération (statut DRAFT → PENDING).\nPré-requis : au moins 1 photo de couverture."
               },
@@ -1310,11 +1997,25 @@
               "name": "Définir la photo de couverture",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/media/{{media_id}}/cover",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "media", "{{media_id}}", "cover"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "media",
+                    "{{media_id}}",
+                    "cover"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Définir un média comme photo de couverture."
               },
@@ -1324,11 +2025,24 @@
               "name": "Supprimer un média",
               "request": {
                 "method": "DELETE",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/media/{{media_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "media", "{{media_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "media",
+                    "{{media_id}}"
+                  ]
                 },
                 "description": "PARTNER/OWNER : Supprimer un média du bien."
               },
@@ -1344,8 +2058,14 @@
               "request": {
                 "method": "PATCH",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
@@ -1353,8 +2073,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/status",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "status"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "status"
+                  ]
                 },
                 "description": "ADMIN : Approuver un bien en modération (PENDING → PUBLISHED)."
               },
@@ -1365,8 +2092,14 @@
               "request": {
                 "method": "PATCH",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
@@ -1374,8 +2107,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/status",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "status"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "status"
+                  ]
                 },
                 "description": "ADMIN : Rejeter un bien (motif obligatoire)."
               },
@@ -1386,8 +2126,14 @@
               "request": {
                 "method": "PATCH",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
@@ -1395,8 +2141,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/status",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "status"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "status"
+                  ]
                 },
                 "description": "ADMIN : Changer le statut. Valeurs : PUBLISHED | RESERVED | SOLD | ARCHIVED | REJECTED"
               },
@@ -1406,11 +2159,25 @@
               "name": "Vérifier un document légal",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents/{{document_id}}/verify",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "documents", "{{document_id}}", "verify"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "documents",
+                    "{{document_id}}",
+                    "verify"
+                  ]
                 },
                 "description": "ADMIN : Marquer un document légal comme vérifié."
               },
@@ -1421,8 +2188,14 @@
               "request": {
                 "method": "PATCH",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
@@ -1430,8 +2203,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/boost",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "boost"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "boost"
+                  ]
                 },
                 "description": "ADMIN : Activer le boost payant sur un bien. durationDays : durée en jours."
               },
@@ -1441,11 +2221,23 @@
               "name": "Retirer le boost",
               "request": {
                 "method": "DELETE",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/boost",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "boost"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "boost"
+                  ]
                 },
                 "description": "ADMIN : Retirer le boost d'un bien."
               },
@@ -1456,8 +2248,14 @@
               "request": {
                 "method": "PATCH",
                 "header": [
-                  { "key": "Content-Type", "value": "application/json" },
-                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
@@ -1465,8 +2263,15 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/expiration",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "expiration"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "expiration"
+                  ]
                 },
                 "description": "ADMIN : Fixer la date d'expiration automatique d'une annonce."
               },
@@ -1476,11 +2281,23 @@
               "name": "Retirer la date d'expiration",
               "request": {
                 "method": "DELETE",
-                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/expiration",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "properties", "{{property_id}}", "expiration"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "properties",
+                    "{{property_id}}",
+                    "expiration"
+                  ]
                 },
                 "description": "ADMIN : Supprimer la date d'expiration d'une annonce."
               },
@@ -1514,15 +2331,25 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"tenantId\": \"{{tenant_id}}\",\n  \"propertyId\": \"{{property_id}}\",\n  \"amount\": 350000,\n  \"paymentType\": \"RENT\",\n  \"paymentMethod\": \"WAVE\",\n  \"paymentDate\": \"2026-05-01\",\n  \"periodStart\": \"2026-05-01\",\n  \"periodEnd\": \"2026-05-31\",\n  \"reference\": \"WAVE-2026050001\",\n  \"notes\": \"Loyer mois de mai 2026\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/payments",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "payments"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "payments"
+              ]
             },
             "description": "PARTNER/ADMIN : Enregistrer un paiement.\npaymentType : RENT | DEPOSIT | COMMISSION | OTHER\npaymentMethod : CASH | WAVE | ORANGE_MONEY | BANK_TRANSFER | CHEQUE"
           },
@@ -1535,15 +2362,41 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/payments?page=0&size=20&sort=paymentDate,desc",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "payments"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "payments"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" },
-                { "key": "sort", "value": "paymentDate,desc" },
-                { "key": "status", "value": "PENDING", "disabled": true },
-                { "key": "tenantId", "value": "{{tenant_id}}", "disabled": true },
-                { "key": "propertyId", "value": "{{property_id}}", "disabled": true }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "paymentDate,desc"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "disabled": true
+                },
+                {
+                  "key": "tenantId",
+                  "value": "{{tenant_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "propertyId",
+                  "value": "{{property_id}}",
+                  "disabled": true
+                }
               ]
             },
             "description": "PARTNER/ADMIN : Lister les paiements avec pagination et filtres.\nFiltres : status (PENDING|PAID|LATE|CANCELLED), tenantId, propertyId"
@@ -1557,11 +2410,23 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/payments/late?page=0&size=20",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "payments", "late"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "payments",
+                "late"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             },
             "description": "PARTNER/ADMIN : Lister les loyers en retard de paiement."
@@ -1575,8 +2440,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/payments/{{payment_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "payments", "{{payment_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "payments",
+                "{{payment_id}}"
+              ]
             },
             "description": "PARTNER/ADMIN : Détail d'un paiement."
           },
@@ -1586,15 +2457,27 @@
           "name": "Mettre à jour le statut d'un paiement",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"PAID\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/payments/{{payment_id}}/status",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "payments", "{{payment_id}}", "status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "payments",
+                "{{payment_id}}",
+                "status"
+              ]
             },
             "description": "PARTNER/ADMIN : Mettre à jour le statut d'un paiement.\nStatuts : PENDING | PAID | LATE | CANCELLED"
           },
@@ -1607,8 +2490,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/payments/{{payment_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "payments", "{{payment_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "payments",
+                "{{payment_id}}"
+              ]
             },
             "description": "PARTNER/ADMIN : Supprimer un paiement."
           },
@@ -1640,15 +2529,25 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"amount\": 75000,\n  \"category\": \"MAINTENANCE\",\n  \"costCenter\": \"PROPERTY\",\n  \"description\": \"Réparation plomberie salle de bain\",\n  \"expenseDate\": \"2026-05-07\",\n  \"propertyId\": \"{{property_id}}\",\n  \"reference\": \"FACT-2026050701\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/expenses",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "expenses"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "expenses"
+              ]
             },
             "description": "PARTNER/ADMIN : Enregistrer une dépense.\ncategory : MAINTENANCE | SALARY | MARKETING | TAXES | UTILITIES | OTHER\ncostCenter : PROPERTY | AGENCY | HOTEL"
           },
@@ -1661,14 +2560,36 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/expenses?page=0&size=20&sort=expenseDate,desc",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "expenses"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "expenses"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" },
-                { "key": "sort", "value": "expenseDate,desc" },
-                { "key": "category", "value": "MAINTENANCE", "disabled": true },
-                { "key": "propertyId", "value": "{{property_id}}", "disabled": true }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "expenseDate,desc"
+                },
+                {
+                  "key": "category",
+                  "value": "MAINTENANCE",
+                  "disabled": true
+                },
+                {
+                  "key": "propertyId",
+                  "value": "{{property_id}}",
+                  "disabled": true
+                }
               ]
             },
             "description": "PARTNER/ADMIN : Lister les dépenses avec pagination et filtres."
@@ -1682,8 +2603,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/expenses/{{expense_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "expenses", "{{expense_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "expenses",
+                "{{expense_id}}"
+              ]
             },
             "description": "PARTNER/ADMIN : Détail d'une dépense."
           },
@@ -1696,8 +2623,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/expenses/{{expense_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "expenses", "{{expense_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "expenses",
+                "{{expense_id}}"
+              ]
             },
             "description": "PARTNER/ADMIN : Supprimer une dépense."
           },
@@ -1716,8 +2649,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v1/dashboard/agency",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "dashboard", "agency"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "dashboard",
+                "agency"
+              ]
             },
             "description": "PARTNER/ADMIN : Tableau de bord agence adapté au sous-rôle de l'appelant.\n\nSous-rôle DIRECTEUR_AGENCE → vue complète (revenus, dépenses, biens, locataires, tickets)\nSous-rôle COMMERCIAL → prospects, rendez-vous, biens actifs\nSous-rôle COMPTABLE_AGENCE → revenus et dépenses (solde masqué)\nSous-rôle AGENT_SAV → tickets ouverts et interventions"
           },
@@ -1751,17 +2690,30 @@
                 }
               ],
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"firstName\": \"Oumar\",\n  \"lastName\": \"Sow\",\n  \"phone\": \"+221771234567\",\n  \"email\": \"oumar.sow@gmail.com\",\n  \"idType\": \"CNI\",\n  \"idNumber\": \"1234567890\",\n  \"agencyId\": \"{{agency_id}}\",\n  \"properties\": [\n    {\n      \"description\": \"Villa 4 chambres à Almadies\",\n      \"address\": \"12 Rue des Almadies, Dakar\",\n      \"city\": \"Dakar\",\n      \"propertyType\": \"VILLA\",\n      \"estimatedRent\": 350000\n    }\n  ],\n  \"message\": \"Je souhaite confier la gestion de mes biens à votre agence.\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/apply",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "bailleur", "apply"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "apply"
+                  ]
                 },
                 "description": "Public : Soumettre une demande d'adhésion bailleur auprès d'une agence."
               },
@@ -1779,12 +2731,29 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/agency/applications?page=0&size=20",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "bailleur", "agency", "applications"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "agency",
+                    "applications"
+                  ],
                   "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "20" },
-                    { "key": "status", "value": "PENDING", "disabled": true }
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING",
+                      "disabled": true
+                    }
                   ]
                 },
                 "description": "PARTNER + DIRECTEUR_AGENCE : Lister les demandes d'adhésion bailleur reçues par l'agence.\nStatuts : PENDING | APPROVED | REJECTED | CANCELLED"
@@ -1798,8 +2767,16 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/agency/applications/{{bailleur_application_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "bailleur", "agency", "applications", "{{bailleur_application_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "agency",
+                    "applications",
+                    "{{bailleur_application_id}}"
+                  ]
                 },
                 "description": "PARTNER + DIRECTEUR_AGENCE : Détail d'une demande d'adhésion bailleur."
               },
@@ -1809,15 +2786,29 @@
               "name": "Approuver une demande",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"decision\": \"APPROVED\",\n  \"comment\": \"Dossier complet. Bienvenue dans notre portefeuille bailleurs.\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/agency/applications/{{bailleur_application_id}}/decision",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "bailleur", "agency", "applications", "{{bailleur_application_id}}", "decision"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "agency",
+                    "applications",
+                    "{{bailleur_application_id}}",
+                    "decision"
+                  ]
                 },
                 "description": "PARTNER + DIRECTEUR_AGENCE : Approuver une demande bailleur.\nCrée automatiquement un compte OWNER et le lien bailleur↔agence."
               },
@@ -1827,15 +2818,29 @@
               "name": "Rejeter une demande",
               "request": {
                 "method": "PATCH",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"decision\": \"REJECTED\",\n  \"comment\": \"Zone géographique hors de notre périmètre d'intervention.\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/agency/applications/{{bailleur_application_id}}/decision",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "bailleur", "agency", "applications", "{{bailleur_application_id}}", "decision"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "agency",
+                    "applications",
+                    "{{bailleur_application_id}}",
+                    "decision"
+                  ]
                 },
                 "description": "PARTNER + DIRECTEUR_AGENCE : Rejeter une demande bailleur (commentaire obligatoire)."
               },
@@ -1853,12 +2858,29 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/admin/applications?page=0&size=20",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "bailleur", "admin", "applications"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "admin",
+                    "applications"
+                  ],
                   "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "20" },
-                    { "key": "status", "value": "PENDING", "disabled": true }
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING",
+                      "disabled": true
+                    }
                   ]
                 },
                 "description": "ADMIN/SUPER_ADMIN : Vue globale de toutes les demandes bailleurs toutes agences confondues."
@@ -1880,19 +2902,44 @@
               "name": "Upload direct (multipart générique)",
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "body": {
                   "mode": "formdata",
                   "formdata": [
-                    { "key": "file", "type": "file", "src": "" },
-                    { "key": "bucket", "value": "tenant-documents", "type": "text", "description": "Bucket cible" },
-                    { "key": "folder", "value": "kyc", "type": "text", "description": "Sous-dossier (optionnel)" }
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "value": ""
+                    },
+                    {
+                      "key": "bucket",
+                      "value": "tenant-documents",
+                      "type": "text",
+                      "description": "Bucket cible"
+                    },
+                    {
+                      "key": "folder",
+                      "value": "kyc",
+                      "type": "text",
+                      "description": "Sous-dossier (optionnel)"
+                    }
                   ]
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/storage/upload",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "upload"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "upload"
+                  ]
                 },
                 "description": "Authentifié : Upload direct d'un fichier (multipart).\nBuckets : properties-media, property-documents, tenant-documents, agencies-logos, users-avatars, ticket-attachments"
               },
@@ -1902,17 +2949,34 @@
               "name": "Upload Logo Agence",
               "request": {
                 "method": "POST",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "body": {
                   "mode": "formdata",
                   "formdata": [
-                    { "key": "file", "type": "file", "description": "Logo (JPEG, PNG, WEBP — max 5 MB)", "src": "" }
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Logo (JPEG, PNG, WEBP — max 5 MB)",
+                      "value": ""
+                    }
                   ]
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/storage/upload/agency-logo",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "upload", "agency-logo"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "upload",
+                    "agency-logo"
+                  ]
                 },
                 "description": "Authentifié : Upload direct du logo agence vers le bucket agencies-logos (public)."
               },
@@ -1935,6 +2999,7 @@
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
                       "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
                       "    }",
                       "}"
                     ],
@@ -1944,15 +3009,38 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign?bucket=tenant-documents&key=kyc/mon-fichier.pdf&expires=900",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign"
+                  ],
                   "query": [
-                    { "key": "bucket", "value": "tenant-documents", "description": "Bucket cible" },
-                    { "key": "key", "value": "kyc/mon-fichier.pdf", "description": "Chemin dans le bucket (optionnel — auto-généré si absent)" },
-                    { "key": "expires", "value": "900", "description": "Durée en secondes (défaut 900, max 3600)" }
+                    {
+                      "key": "bucket",
+                      "value": "tenant-documents",
+                      "description": "Bucket cible"
+                    },
+                    {
+                      "key": "key",
+                      "value": "kyc/mon-fichier.pdf",
+                      "description": "Chemin dans le bucket (optionnel — auto-généré si absent)"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "900",
+                      "description": "Durée en secondes (défaut 900, max 3600)"
+                    }
                   ]
                 },
                 "description": "Authentifié : Générer une URL presignée PUT pour uploader vers n'importe quel bucket.\nRéponse : { uploadUrl (PUT vers MinIO), objectKey }"
@@ -1971,6 +3059,7 @@
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
                       "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
                       "    }",
                       "}"
                     ],
@@ -1980,14 +3069,32 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign/property-media?propertyId={{property_id}}&fileName=salon.jpg",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "property-media"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "property-media"
+                  ],
                   "query": [
-                    { "key": "propertyId", "value": "{{property_id}}" },
-                    { "key": "fileName", "value": "salon.jpg" }
+                    {
+                      "key": "propertyId",
+                      "value": "{{property_id}}"
+                    },
+                    {
+                      "key": "fileName",
+                      "value": "salon.jpg"
+                    }
                   ]
                 },
                 "description": "PARTNER/OWNER : URL presignée pour uploader une photo/vidéo/plan du bien.\nBucket : properties-media"
@@ -2006,6 +3113,7 @@
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
                       "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
                       "    }",
                       "}"
                     ],
@@ -2015,14 +3123,32 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign/property-document?propertyId={{property_id}}&fileName=titre-foncier.pdf",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "property-document"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "property-document"
+                  ],
                   "query": [
-                    { "key": "propertyId", "value": "{{property_id}}" },
-                    { "key": "fileName", "value": "titre-foncier.pdf" }
+                    {
+                      "key": "propertyId",
+                      "value": "{{property_id}}"
+                    },
+                    {
+                      "key": "fileName",
+                      "value": "titre-foncier.pdf"
+                    }
                   ]
                 },
                 "description": "PARTNER/OWNER : URL presignée pour uploader un document légal du bien.\nBucket : property-documents (privé)"
@@ -2041,6 +3167,7 @@
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
                       "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
                       "    }",
                       "}"
                     ],
@@ -2050,13 +3177,28 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign/tenant-document?fileName=carte-identite.jpg",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "tenant-document"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "tenant-document"
+                  ],
                   "query": [
-                    { "key": "fileName", "value": "carte-identite.jpg" }
+                    {
+                      "key": "fileName",
+                      "value": "carte-identite.jpg"
+                    }
                   ]
                 },
                 "description": "CLIENT : URL presignée pour uploader un document KYC.\nBucket : tenant-documents (privé)"
@@ -2075,6 +3217,7 @@
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
                       "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
                       "    }",
                       "}"
                     ],
@@ -2084,13 +3227,28 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign/agency-logo?fileName=logo.png",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "agency-logo"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "agency-logo"
+                  ],
                   "query": [
-                    { "key": "fileName", "value": "logo.png" }
+                    {
+                      "key": "fileName",
+                      "value": "logo.png"
+                    }
                   ]
                 },
                 "description": "PARTNER : URL presignée pour uploader un logo agence.\nBucket : agencies-logos (public)"
@@ -2109,6 +3267,7 @@
                       "    if (json.data) {",
                       "        pm.environment.set('upload_url', json.data.uploadUrl);",
                       "        pm.environment.set('object_key', json.data.objectKey);",
+                      "        pm.environment.set('file_url', json.data.publicUrl);",
                       "    }",
                       "}"
                     ],
@@ -2118,13 +3277,28 @@
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
                   "raw": "{{base_url}}/v1/storage/presign/ticket-attachment?fileName=screenshot.png",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "ticket-attachment"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "ticket-attachment"
+                  ],
                   "query": [
-                    { "key": "fileName", "value": "screenshot.png" }
+                    {
+                      "key": "fileName",
+                      "value": "screenshot.png"
+                    }
                   ]
                 },
                 "description": "Authentifié : URL presignée pour uploader une pièce jointe ticket.\nBucket : ticket-attachments (privé)"
@@ -2151,21 +3325,37 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
               "request": {
                 "method": "GET",
-                "header": [],
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
                 "url": {
-                  "raw": "{{base_url}}/v1/storage/presign/read?bucket=property-documents&key={{object_key}}&expires=3600",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "storage", "presign", "read"],
+                  "raw": "{{base_url}}/v1/storage/presign/read?fileUrl={{file_url}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "read"
+                  ],
                   "query": [
-                    { "key": "bucket", "value": "property-documents", "description": "Bucket privé : property-documents, tenant-documents, partner-documents, ticket-attachments" },
-                    { "key": "key", "value": "{{object_key}}", "description": "Chemin du fichier dans le bucket" },
-                    { "key": "expires", "value": "3600", "description": "Durée de validité en secondes (max 3600)" }
+                    {
+                      "key": "fileUrl",
+                      "value": "{{file_url}}",
+                      "description": "URL complète MinIO du fichier privé à lire"
+                    }
                   ]
                 },
                 "description": "Authentifié : Générer une URL presignée GET pour lire un fichier privé.\nRéponse : { readUrl } — URL temporaire accessible sans authentification.\nUtilisation : ouvrir directement dans le navigateur ou afficher dans une image."
@@ -2175,7 +3365,7 @@
           ]
         }
       ],
-      "description": "Gestion du stockage MinIO\n\nBuckets publics (accès direct URL) : agencies-logos, users-avatars, properties-media\nBuckets privés (nécessitent presign/read) : property-documents, tenant-documents, partner-documents, ticket-attachments\n\nFlux upload (buckets privés) :\n1. GET /v1/storage/presign/<type> → uploadUrl + objectKey\n2. PUT {{upload_url}} (body = fichier binaire, pas de Authorization)\n3. Stocker l'objectKey en base (l'URL publique ou presignée est générée à la demande)\n\nFlux lecture (buckets privés) :\n1. GET /v1/storage/presign/read?bucket=...&key=... → readUrl\n2. Ouvrir readUrl dans le navigateur (valide 1h)"
+      "description": "Gestion du stockage MinIO\n\nBuckets publics (accès direct URL) : agencies-logos, users-avatars, properties-media\nBuckets privés (nécessitent presign/read) : property-documents, tenant-documents, partner-documents, ticket-attachments\n\nFlux upload (buckets privés) :\n1. GET /v1/storage/presign/<type> → uploadUrl + objectKey + publicUrl\n2. PUT {{upload_url}} (body = fichier binaire, pas de Authorization)\n3. Stocker le fileUrl (publicUrl) en base pour le passer aux endpoints document/media\n\nFlux lecture (buckets privés) :\n1. GET /v1/storage/presign/read?fileUrl={{file_url}} → readUrl\n2. Ouvrir readUrl dans le navigateur (valide 1h)"
     },
     {
       "name": "Partners",
@@ -2202,7 +3392,9 @@
                 }
               ],
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
                 "header": [],
                 "body": {
@@ -2214,16 +3406,42 @@
                       "type": "text",
                       "contentType": "application/json"
                     },
-                    { "key": "rccm", "type": "file", "description": "RCCM (PDF/JPEG/PNG, max 10 MB)", "src": "/C:/Users/snbam/Documents/ubax project/doc test/rccm.pdf" },
-                    { "key": "dfe", "type": "file", "description": "DFE (PDF/JPEG/PNG, max 10 MB)", "src": "/C:/Users/snbam/Documents/ubax project/doc test/dfe.pdf" },
-                    { "key": "bail", "type": "file", "description": "Bail (PDF/JPEG/PNG, max 10 MB)", "src": "/C:/Users/snbam/Documents/ubax project/doc test/bail.pdf" },
-                    { "key": "logo", "type": "file", "description": "Logo (JPEG/PNG/WEBP, max 5 MB)", "src": "/C:/Users/snbam/Documents/ubax project/doc test/logo_hotel.jpg" }
+                    {
+                      "key": "rccm",
+                      "type": "file",
+                      "description": "RCCM (PDF/JPEG/PNG, max 10 MB)",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/rccm.pdf"
+                    },
+                    {
+                      "key": "dfe",
+                      "type": "file",
+                      "description": "DFE (PDF/JPEG/PNG, max 10 MB)",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/dfe.pdf"
+                    },
+                    {
+                      "key": "bail",
+                      "type": "file",
+                      "description": "Bail (PDF/JPEG/PNG, max 10 MB)",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/bail.pdf"
+                    },
+                    {
+                      "key": "logo",
+                      "type": "file",
+                      "description": "Logo (JPEG/PNG/WEBP, max 5 MB)",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/logo_hotel.jpg"
+                    }
                   ]
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/partner/apply",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "partner", "apply"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "partner",
+                    "apply"
+                  ]
                 },
                 "description": "Public : Soumettre une candidature partenaire agence immobilière (multipart)."
               },
@@ -2248,7 +3466,9 @@
                 }
               ],
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "POST",
                 "header": [],
                 "body": {
@@ -2260,16 +3480,42 @@
                       "type": "text",
                       "contentType": "application/json"
                     },
-                    { "key": "rccm", "type": "file", "description": "RCCM", "src": "/C:/Users/snbam/Documents/ubax project/doc test/rccm.pdf" },
-                    { "key": "dfe", "type": "file", "description": "DFE", "src": "/C:/Users/snbam/Documents/ubax project/doc test/dfe.pdf" },
-                    { "key": "bail", "type": "file", "description": "Bail", "src": "/C:/Users/snbam/Documents/ubax project/doc test/bail.pdf" },
-                    { "key": "logo", "type": "file", "description": "Logo", "src": "/C:/Users/snbam/Documents/ubax project/doc test/logo_hotel.jpg" }
+                    {
+                      "key": "rccm",
+                      "type": "file",
+                      "description": "RCCM",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/rccm.pdf"
+                    },
+                    {
+                      "key": "dfe",
+                      "type": "file",
+                      "description": "DFE",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/dfe.pdf"
+                    },
+                    {
+                      "key": "bail",
+                      "type": "file",
+                      "description": "Bail",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/bail.pdf"
+                    },
+                    {
+                      "key": "logo",
+                      "type": "file",
+                      "description": "Logo",
+                      "src": "/C:/Users/snbam/Documents/ubax project/doc test/logo_hotel.jpg"
+                    }
                   ]
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/partner/apply",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "partner", "apply"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "partner",
+                    "apply"
+                  ]
                 },
                 "description": "Public : Soumettre une candidature partenaire hôtel (multipart)."
               },
@@ -2287,13 +3533,33 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/partner/admin/applications?page=0&size=20&sort=submittedAt,desc",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "partner", "admin", "applications"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "partner",
+                    "admin",
+                    "applications"
+                  ],
                   "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "20" },
-                    { "key": "sort", "value": "submittedAt,desc" },
-                    { "key": "status", "value": "PENDING", "disabled": true }
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "submittedAt,desc"
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING",
+                      "disabled": true
+                    }
                   ]
                 },
                 "description": "ADMIN : Lister toutes les candidatures partenaires. Statuts : PENDING, UNDER_REVIEW, INCOMPLETE, APPROVED, REJECTED."
@@ -2307,8 +3573,16 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/partner/admin/applications/{{partner_application_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "partner", "admin", "applications", "{{partner_application_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "partner",
+                    "admin",
+                    "applications",
+                    "{{partner_application_id}}"
+                  ]
                 },
                 "description": "ADMIN : Détail d'une candidature partenaire."
               },
@@ -2321,11 +3595,26 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/partner/admin/applications/{{partner_application_id}}/decision?newStatus=APPROVED&comment=Dossier complet et validé",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "partner", "admin", "applications", "{{partner_application_id}}", "decision"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "partner",
+                    "admin",
+                    "applications",
+                    "{{partner_application_id}}",
+                    "decision"
+                  ],
                   "query": [
-                    { "key": "newStatus", "value": "APPROVED" },
-                    { "key": "comment", "value": "Dossier complet et validé" }
+                    {
+                      "key": "newStatus",
+                      "value": "APPROVED"
+                    },
+                    {
+                      "key": "comment",
+                      "value": "Dossier complet et validé"
+                    }
                   ]
                 },
                 "description": "ADMIN : Approuver une candidature partenaire."
@@ -2339,11 +3628,26 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/partner/admin/applications/{{partner_application_id}}/decision?newStatus=REJECTED&comment=Documents non conformes",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "partner", "admin", "applications", "{{partner_application_id}}", "decision"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "partner",
+                    "admin",
+                    "applications",
+                    "{{partner_application_id}}",
+                    "decision"
+                  ],
                   "query": [
-                    { "key": "newStatus", "value": "REJECTED" },
-                    { "key": "comment", "value": "Documents non conformes" }
+                    {
+                      "key": "newStatus",
+                      "value": "REJECTED"
+                    },
+                    {
+                      "key": "comment",
+                      "value": "Documents non conformes"
+                    }
                   ]
                 },
                 "description": "ADMIN : Rejeter une candidature partenaire."
@@ -2357,11 +3661,26 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/partner/admin/applications/{{partner_application_id}}/decision?newStatus=INCOMPLETE&comment=Veuillez fournir le DFE",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "partner", "admin", "applications", "{{partner_application_id}}", "decision"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "partner",
+                    "admin",
+                    "applications",
+                    "{{partner_application_id}}",
+                    "decision"
+                  ],
                   "query": [
-                    { "key": "newStatus", "value": "INCOMPLETE" },
-                    { "key": "comment", "value": "Veuillez fournir le DFE" }
+                    {
+                      "key": "newStatus",
+                      "value": "INCOMPLETE"
+                    },
+                    {
+                      "key": "comment",
+                      "value": "Veuillez fournir le DFE"
+                    }
                   ]
                 },
                 "description": "ADMIN : Marquer une candidature comme incomplète."
@@ -2382,13 +3701,22 @@
             {
               "name": "Lister les commodités (PROPERTY_AMENITY)",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/code-list/type/PROPERTY_AMENITY",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "code-list", "type", "PROPERTY_AMENITY"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "code-list",
+                    "type",
+                    "PROPERTY_AMENITY"
+                  ]
                 },
                 "description": "Public : Liste des commodités standard disponibles pour un bien.\nChaque entrée a un code (à utiliser dans amenities[].code) et une description en français.\nSi la commodité souhaitée est absente, utiliser customValue + customDescription."
               },
@@ -2397,13 +3725,22 @@
             {
               "name": "Get Values by Type",
               "request": {
-                "auth": { "type": "noauth" },
+                "auth": {
+                  "type": "noauth"
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/code-list/type/CITY",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "code-list", "type", "CITY"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "code-list",
+                    "type",
+                    "CITY"
+                  ]
                 },
                 "description": "Public : Récupérer les valeurs d'un type de code list.\n\nTypes disponibles :\nBiens : PROPERTY_TYPE | TRANSACTION_TYPE | PROPERTY_CONDITION | PROPERTY_DOCUMENT_TYPE | MEDIA_TYPE | PROPERTY_AMENITY\nHôtel : BED_TYPE | MEAL_PLAN | PAYMENT_FREQUENCY\nGéo : CITY | COUNTRY\nPartenaires : PARTNER_TYPE | ID_TYPE\nLocataires : EMPLOYMENT_STATUS | ID_DOCUMENT_TYPE\nTickets : TICKET_CATEGORY | TICKET_PRIORITY | TICKET_ATTACHMENT_TYPE\nFinance : COST_IMPUTED_TO | EXPENSE_CATEGORY\nContracts : CONTRACT_TYPE\nRôles : ROLE_AGENCE | ROLE_HOTEL | ROLE_UBAX_INTERNAL\nSystème : SUBSCRIPTION_PLAN | ALERT_FREQUENCY | NEWSLETTER_FREQUENCY | DISPLAY_MODE"
               },
@@ -2421,12 +3758,26 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/code-list?page=0&size=25&sort=type,asc",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "code-list"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "code-list"
+                  ],
                   "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "25" },
-                    { "key": "sort", "value": "type,asc" }
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "25"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "type,asc"
+                    }
                   ]
                 },
                 "description": "Authentifié : Lister toutes les entrées de code lists avec pagination."
@@ -2440,8 +3791,14 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/code-list/{{code_list_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "code-list", "{{code_list_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "code-list",
+                    "{{code_list_id}}"
+                  ]
                 },
                 "description": "Authentifié : Détail d'une entrée code list par ID."
               },
@@ -2456,15 +3813,25 @@
               "name": "Create Code List",
               "request": {
                 "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"type\": \"PROPERTY_TYPE\",\n  \"value\": \"CHALET\",\n  \"description\": \"Chalet de montagne\",\n  \"isSystemAssign\": false\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/code-list",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "code-list"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "code-list"
+                  ]
                 },
                 "description": "ADMIN : Créer une nouvelle entrée code list."
               },
@@ -2474,15 +3841,26 @@
               "name": "Update Code List",
               "request": {
                 "method": "PUT",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"type\": \"PROPERTY_TYPE\",\n  \"value\": \"VILLA\",\n  \"description\": \"Villa individuelle mise à jour\",\n  \"isSystemAssign\": false\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/code-list/{{code_list_id}}",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "code-list", "{{code_list_id}}"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "code-list",
+                    "{{code_list_id}}"
+                  ]
                 },
                 "description": "ADMIN : Mettre à jour une entrée code list."
               },
@@ -2499,13 +3877,20 @@
         {
           "name": "Health Check",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/actuator/health",
-              "host": ["{{base_url}}"],
-              "path": ["actuator", "health"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
             },
             "description": "Vérification de l'état de santé de l'application."
           },
@@ -2514,13 +3899,20 @@
         {
           "name": "Application Info",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/actuator/info",
-              "host": ["{{base_url}}"],
-              "path": ["actuator", "info"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "actuator",
+                "info"
+              ]
             },
             "description": "Informations sur l'application."
           },
@@ -2529,13 +3921,20 @@
         {
           "name": "Prometheus Metrics",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/actuator/prometheus",
-              "host": ["{{base_url}}"],
-              "path": ["actuator", "prometheus"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "actuator",
+                "prometheus"
+              ]
             },
             "description": "Métriques Prometheus pour le monitoring."
           },
@@ -2560,7 +3959,9 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "exec": [""]
+        "exec": [
+          ""
+        ]
       }
     }
   ]
