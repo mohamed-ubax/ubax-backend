@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -30,12 +31,10 @@ import org.springframework.stereotype.Service;
 public class MinioServiceImpl implements MinioService {
 
   private final MinioClient minioClient;
+  private final MinioClient minioPresignClient;
   private static final String BUCKET_PARTNER_DOCS = "partner-documents";
   private static final String BUCKET_AGENCIES_LOGOS = "agencies-logos";
   private static final String[] PARTNER_SUB_DIRS = {"legal", "contracts"};
-
-  @Value("${minio.endpoint}")
-  private String endpoint;
 
   @Value("${minio.public-endpoint}")
   private String publicEndpoint;
@@ -43,8 +42,10 @@ public class MinioServiceImpl implements MinioService {
   @Value("${minio.buckets}")
   private List<String> buckets;
 
-  public MinioServiceImpl(MinioClient minioClient) {
+  public MinioServiceImpl(
+      MinioClient minioClient, @Qualifier("minioPresignClient") MinioClient minioPresignClient) {
     this.minioClient = minioClient;
+    this.minioPresignClient = minioPresignClient;
   }
 
   /** Crée les buckets déclarés dans application.yml s'ils n'existent pas encore. */
@@ -105,15 +106,13 @@ public class MinioServiceImpl implements MinioService {
       String bucket, String objectName, int expiresInSeconds) {
     try {
       String uploadUrl =
-          minioClient
-              .getPresignedObjectUrl(
-                  GetPresignedObjectUrlArgs.builder()
-                      .method(Method.PUT)
-                      .bucket(bucket)
-                      .object(objectName)
-                      .expiry(expiresInSeconds, TimeUnit.SECONDS)
-                      .build())
-              .replaceFirst("https?://[^/]+", publicEndpoint);
+          minioPresignClient.getPresignedObjectUrl(
+              GetPresignedObjectUrlArgs.builder()
+                  .method(Method.PUT)
+                  .bucket(bucket)
+                  .object(objectName)
+                  .expiry(expiresInSeconds, TimeUnit.SECONDS)
+                  .build());
 
       return PresignedUrlResponse.builder()
           .uploadUrl(uploadUrl)
@@ -132,15 +131,13 @@ public class MinioServiceImpl implements MinioService {
   @Override
   public String generatePresignedReadUrl(String bucket, String objectName, int expiresInSeconds) {
     try {
-      return minioClient
-          .getPresignedObjectUrl(
-              GetPresignedObjectUrlArgs.builder()
-                  .method(Method.GET)
-                  .bucket(bucket)
-                  .object(objectName)
-                  .expiry(expiresInSeconds, TimeUnit.SECONDS)
-                  .build())
-          .replaceFirst("https?://[^/]+", publicEndpoint);
+      return minioPresignClient.getPresignedObjectUrl(
+          GetPresignedObjectUrlArgs.builder()
+              .method(Method.GET)
+              .bucket(bucket)
+              .object(objectName)
+              .expiry(expiresInSeconds, TimeUnit.SECONDS)
+              .build());
     } catch (Exception e) {
       throw new StorageException(
           "Erreur lors de la génération de l'URL de lecture : " + e.getMessage(), e);
