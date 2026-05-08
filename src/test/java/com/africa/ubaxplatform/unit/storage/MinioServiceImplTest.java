@@ -37,19 +37,19 @@ import org.springframework.test.util.ReflectionTestUtils;
 class MinioServiceImplTest {
 
   @Mock private MinioClient minioClient;
+  @Mock private MinioClient minioPresignClient;
 
   private MinioServiceImpl service;
 
-  private static final String ENDPOINT = "http://minio:9000";
+  private static final String PUBLIC_ENDPOINT = "http://localhost:9000";
   private static final String BUCKET = "test-bucket";
   private static final String OBJECT = "folder/file.pdf";
   private static final String SLUG = "acme-sarl";
 
   @BeforeEach
   void setUp() {
-    service = new MinioServiceImpl(minioClient);
-    ReflectionTestUtils.setField(service, "endpoint", ENDPOINT);
-    ReflectionTestUtils.setField(service, "publicEndpoint", ENDPOINT);
+    service = new MinioServiceImpl(minioClient, minioPresignClient);
+    ReflectionTestUtils.setField(service, "publicEndpoint", PUBLIC_ENDPOINT);
     ReflectionTestUtils.setField(service, "buckets", java.util.List.of(BUCKET));
   }
 
@@ -101,7 +101,7 @@ class MinioServiceImplTest {
 
       String url = service.uploadFile(BUCKET, OBJECT, stream, 10, "application/pdf");
 
-      assertThat(url).isEqualTo(ENDPOINT + "/" + BUCKET + "/" + OBJECT);
+      assertThat(url).isEqualTo(PUBLIC_ENDPOINT + "/" + BUCKET + "/" + OBJECT);
       verify(minioClient).putObject(any(PutObjectArgs.class));
     }
 
@@ -152,7 +152,7 @@ class MinioServiceImplTest {
     void getPublicUrl_returnsExpectedUrl() {
       String url = service.getPublicUrl(BUCKET, OBJECT);
 
-      assertThat(url).isEqualTo(ENDPOINT + "/" + BUCKET + "/" + OBJECT);
+      assertThat(url).isEqualTo(PUBLIC_ENDPOINT + "/" + BUCKET + "/" + OBJECT);
     }
   }
 
@@ -163,14 +163,14 @@ class MinioServiceImplTest {
     @Test
     @DisplayName("Succès – retourne PresignedUrlResponse avec uploadUrl et publicUrl")
     void generatePresignedUrl_success_returnsResponse() throws Exception {
-      String presignedUrl = "http://minio:9000/presigned/upload-token-xyz";
-      when(minioClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
+      String presignedUrl = "http://localhost:9000/presigned/upload-token-xyz";
+      when(minioPresignClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
           .thenReturn(presignedUrl);
 
       PresignedUrlResponse response = service.generatePresignedUrl(BUCKET, OBJECT, 3600);
 
       assertThat(response.getUploadUrl()).isEqualTo(presignedUrl);
-      assertThat(response.getPublicUrl()).isEqualTo(ENDPOINT + "/" + BUCKET + "/" + OBJECT);
+      assertThat(response.getPublicUrl()).isEqualTo(PUBLIC_ENDPOINT + "/" + BUCKET + "/" + OBJECT);
       assertThat(response.getObjectName()).isEqualTo(OBJECT);
       assertThat(response.getBucket()).isEqualTo(BUCKET);
       assertThat(response.getExpiresInSeconds()).isEqualTo(3600);
@@ -179,7 +179,7 @@ class MinioServiceImplTest {
     @Test
     @DisplayName("Échec – exception MinIO → StorageException")
     void generatePresignedUrl_minioThrows_throwsStorageException() throws Exception {
-      when(minioClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
+      when(minioPresignClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
           .thenThrow(new RuntimeException("Erreur présignée"));
 
       assertThatThrownBy(() -> service.generatePresignedUrl(BUCKET, OBJECT, 3600))
