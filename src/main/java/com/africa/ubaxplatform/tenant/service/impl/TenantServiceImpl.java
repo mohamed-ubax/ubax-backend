@@ -7,6 +7,7 @@ import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.ConflictException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import com.africa.ubaxplatform.tenant.dto.TenantCreateRequest;
 import com.africa.ubaxplatform.tenant.dto.TenantResponse;
@@ -145,17 +146,41 @@ public class TenantServiceImpl implements TenantService {
 
   @Override
   @Transactional(readOnly = true)
-  public TenantResponse getById(UUID id) throws CustomException {
+  public TenantResponse getById(String keycloakId, UUID id) throws CustomException {
+    User caller = resolveUser(keycloakId);
+    if (caller.getHotel() != null && caller.getAgency() == null) {
+      throw new UnAuthorizedException(
+          "Les partenaires hôteliers n'ont pas accès aux dossiers locataires");
+    }
     return toResponse(resolveTenant(id));
   }
 
   @Override
   @Transactional(readOnly = true)
-  public Page<TenantResponse> list(TenantStatus status, Pageable pageable) {
-    if (status != null) {
-      return tenantRepo.findByStatus(status, pageable).map(this::toResponse);
+  public Page<TenantResponse> list(String keycloakId, TenantStatus status, Pageable pageable)
+      throws CustomException {
+    User caller = resolveUser(keycloakId);
+
+    // Partenaire hôtel → accès refusé (pas de dossiers KYC pour les hôtels)
+    if (caller.getHotel() != null && caller.getAgency() == null) {
+      throw new UnAuthorizedException(
+          "Les partenaires hôteliers n'ont pas accès aux dossiers locataires");
     }
-    return tenantRepo.findAll(pageable).map(this::toResponse);
+
+    // Partenaire agence → uniquement les locataires liés à leurs contrats
+    if (caller.getAgency() != null) {
+      UUID agencyId = caller.getAgency().getId();
+      if (status != null) {
+        return tenantRepo.findByAgencyIdAndStatus(agencyId, status, pageable).map(this::toResponse);
+      }
+      return tenantRepo.findByAgencyId(agencyId, pageable).map(this::toResponse);
+    }
+
+    // Admin / Super Admin → tous les dossiers non archivés
+    if (status != null) {
+      return tenantRepo.findByStatusAndDeletedAtIsNull(status, pageable).map(this::toResponse);
+    }
+    return tenantRepo.findByDeletedAtIsNull(pageable).map(this::toResponse);
   }
 
   @Override

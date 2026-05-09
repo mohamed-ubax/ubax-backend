@@ -168,6 +168,21 @@ public class ResponseMessageConstants {
   public static final String BAILLEUR_AGENCY_NOT_FOUND = "BAILLEUR_AGENCY_NOT_FOUND";
   public static final String BAILLEUR_GET_LIST_SUCCESS = "BAILLEUR_GET_LIST_SUCCESS";
 
+  // ── RESERVATION ─────────────────────────────────────────────────
+  public static final String RESERVATION_GET_SUCCESS = "RESERVATION_GET_SUCCESS";
+  public static final String RESERVATION_GET_LIST_SUCCESS = "RESERVATION_GET_LIST_SUCCESS";
+  public static final String RESERVATION_CREATE_SUCCESS = "RESERVATION_CREATE_SUCCESS";
+  public static final String RESERVATION_UPDATE_SUCCESS = "RESERVATION_UPDATE_SUCCESS";
+  public static final String RESERVATION_DELETE_SUCCESS = "RESERVATION_DELETE_SUCCESS";
+  public static final String RESERVATION_GET_FAILURE_NOT_FOUND =
+      "RESERVATION_GET_FAILURE_NOT_FOUND";
+  public static final String RESERVATION_CREATE_FAILURE_BAD_REQUEST =
+      "RESERVATION_CREATE_FAILURE_BAD_REQUEST";
+  public static final String RESERVATION_CREATE_FAILURE_UNAVAILABLE =
+      "RESERVATION_CREATE_FAILURE_UNAVAILABLE";
+  public static final String RESERVATION_UPDATE_FAILURE_INVALID_TRANSITION =
+      "RESERVATION_UPDATE_FAILURE_INVALID_TRANSITION";
+
   // ── DASHBOARD ───────────────────────────────────────────────────
   public static final String DASHBOARD_GET_SUCCESS = "DASHBOARD_GET_SUCCESS";
   public static final String DASHBOARD_GET_FAILURE = "DASHBOARD_GET_FAILURE";

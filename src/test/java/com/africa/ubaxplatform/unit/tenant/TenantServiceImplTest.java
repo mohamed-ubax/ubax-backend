@@ -208,7 +208,6 @@ class TenantServiceImplTest {
       assertThat(response.employmentStatus()).isEqualTo("SELF_EMPLOYED");
       assertThat(response.employerName()).isEqualTo("Mon Entreprise");
       assertThat(response.monthlyIncome()).isEqualByComparingTo(BigDecimal.valueOf(750_000));
-      // Statut reste INCOMPLETE — dossier KYC pas encore complet
       assertThat(response.status()).isEqualTo(TenantStatus.INCOMPLETE);
     }
 
@@ -227,7 +226,6 @@ class TenantServiceImplTest {
 
       TenantResponse response = service.updateMyProfile(TenantTestFixtures.KEYCLOAK_ID, req);
 
-      // isDossierComplete() → true → statut promu à PENDING_REVIEW
       assertThat(response.status()).isEqualTo(TenantStatus.PENDING_REVIEW);
       assertThat(response.idDocumentUrl()).isEqualTo("https://minio/tenant-documents/id-card.pdf");
     }
@@ -247,7 +245,6 @@ class TenantServiceImplTest {
 
       TenantResponse response = service.updateMyProfile(TenantTestFixtures.KEYCLOAK_ID, req);
 
-      // Déjà PENDING_REVIEW → la condition INCOMPLETE n'est pas vérifiée → inchangé
       assertThat(response.status()).isEqualTo(TenantStatus.PENDING_REVIEW);
     }
 
@@ -278,14 +275,19 @@ class TenantServiceImplTest {
     @Test
     @DisplayName("Succès – retourne le dossier par ID")
     void getById_found_returnsTenantResponse() throws CustomException {
-      User user = TenantTestFixtures.buildUser();
+      User caller = TenantTestFixtures.buildUser();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
       Tenant tenant =
           TenantTestFixtures.buildTenant(
-              TenantTestFixtures.TENANT_ID, TenantStatus.QUALIFIED, user);
+              TenantTestFixtures.TENANT_ID, TenantStatus.QUALIFIED, tenantUser);
 
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
       when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
 
-      TenantResponse response = service.getById(TenantTestFixtures.TENANT_ID);
+      TenantResponse response =
+          service.getById(TenantTestFixtures.KEYCLOAK_ID, TenantTestFixtures.TENANT_ID);
 
       assertThat(response.status()).isEqualTo(TenantStatus.QUALIFIED);
       assertThat(response.id()).isEqualTo(TenantTestFixtures.TENANT_ID);
@@ -294,9 +296,14 @@ class TenantServiceImplTest {
     @Test
     @DisplayName("Échec – ID inexistant → CustomException TENANT_GET_FAILURE_NOT_FOUND")
     void getById_notFound_throwsCustomException() {
+      User caller = TenantTestFixtures.buildUser();
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
       when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.empty());
 
-      assertThatThrownBy(() -> service.getById(TenantTestFixtures.TENANT_ID))
+      assertThatThrownBy(
+              () -> service.getById(TenantTestFixtures.KEYCLOAK_ID, TenantTestFixtures.TENANT_ID))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND);
     }
@@ -304,15 +311,20 @@ class TenantServiceImplTest {
     @Test
     @DisplayName("Échec – dossier soft-deleted → CustomException")
     void getById_softDeleted_throwsCustomException() {
-      User user = TenantTestFixtures.buildUser();
+      User caller = TenantTestFixtures.buildUser();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
       Tenant tenant =
           TenantTestFixtures.buildTenant(
-              TenantTestFixtures.TENANT_ID, TenantStatus.INCOMPLETE, user);
+              TenantTestFixtures.TENANT_ID, TenantStatus.INCOMPLETE, tenantUser);
       tenant.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
 
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
       when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
 
-      assertThatThrownBy(() -> service.getById(TenantTestFixtures.TENANT_ID))
+      assertThatThrownBy(
+              () -> service.getById(TenantTestFixtures.KEYCLOAK_ID, TenantTestFixtures.TENANT_ID))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND);
     }
@@ -324,42 +336,52 @@ class TenantServiceImplTest {
 
     @Test
     @DisplayName("Succès – avec filtre de statut")
-    void list_withStatus_returnsFilteredPage() {
-      User user = TenantTestFixtures.buildUser();
+    void list_withStatus_returnsFilteredPage() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
       Tenant tenant =
           TenantTestFixtures.buildTenant(
-              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, user);
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
       Pageable pageable = PageRequest.of(0, 10);
       Page<Tenant> page = new PageImpl<>(List.of(tenant));
 
-      when(tenantRepo.findByStatus(TenantStatus.PENDING_REVIEW, pageable)).thenReturn(page);
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByStatusAndDeletedAtIsNull(TenantStatus.PENDING_REVIEW, pageable))
+          .thenReturn(page);
 
-      Page<TenantResponse> result = service.list(TenantStatus.PENDING_REVIEW, pageable);
+      Page<TenantResponse> result =
+          service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, pageable);
 
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().getFirst().status()).isEqualTo(TenantStatus.PENDING_REVIEW);
-      verify(tenantRepo).findByStatus(TenantStatus.PENDING_REVIEW, pageable);
-      verify(tenantRepo, never()).findAll(any(Pageable.class));
+      verify(tenantRepo).findByStatusAndDeletedAtIsNull(TenantStatus.PENDING_REVIEW, pageable);
+      verify(tenantRepo, never()).findByDeletedAtIsNull(any());
     }
 
     @Test
-    @DisplayName("Succès – sans filtre, retourne tous les dossiers")
-    void list_withoutStatus_returnsAll() {
-      User user = TenantTestFixtures.buildUser();
+    @DisplayName("Succès – sans filtre, retourne tous les dossiers non archivés")
+    void list_withoutStatus_returnsAll() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
       Pageable pag = PageRequest.of(0, 10);
+      User u1 = TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
+      User u2 = TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
       Page<Tenant> page =
           new PageImpl<>(
               List.of(
-                  TenantTestFixtures.buildTenant(UUID.randomUUID(), TenantStatus.INCOMPLETE, user),
-                  TenantTestFixtures.buildTenant(UUID.randomUUID(), TenantStatus.QUALIFIED, user)));
+                  TenantTestFixtures.buildTenant(UUID.randomUUID(), TenantStatus.INCOMPLETE, u1),
+                  TenantTestFixtures.buildTenant(UUID.randomUUID(), TenantStatus.QUALIFIED, u2)));
 
-      when(tenantRepo.findAll(pag)).thenReturn(page);
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByDeletedAtIsNull(pag)).thenReturn(page);
 
-      Page<TenantResponse> result = service.list(null, pag);
+      Page<TenantResponse> result = service.list(TenantTestFixtures.KEYCLOAK_ID, null, pag);
 
       assertThat(result.getContent()).hasSize(2);
-      verify(tenantRepo).findAll(pag);
-      verify(tenantRepo, never()).findByStatus(any(), any());
+      verify(tenantRepo).findByDeletedAtIsNull(pag);
+      verify(tenantRepo, never()).findByStatusAndDeletedAtIsNull(any(), any());
     }
   }
 
