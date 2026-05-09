@@ -218,9 +218,14 @@ public class TenantController {
           Pageable pageable,
       HttpServletRequest httpRequest)
       throws CustomException {
-    RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
-    Page<TenantResponse> page = tenantService.list(status, pageable);
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN,
+            UserRole.PARTNER);
+    Page<TenantResponse> page = tenantService.list(caller.getSub(), status, pageable);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
@@ -246,9 +251,14 @@ public class TenantController {
   })
   public ResponseEntity<CustomResponse> getById(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
-    RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
-    TenantResponse response = tenantService.getById(id);
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN,
+            UserRole.PARTNER);
+    TenantResponse response = tenantService.getById(caller.getSub(), id);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,

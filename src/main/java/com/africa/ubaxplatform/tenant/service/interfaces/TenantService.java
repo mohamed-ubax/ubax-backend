@@ -45,16 +45,24 @@ public interface TenantService {
    * @param id identifiant du dossier
    * @return le dossier locataire
    */
-  TenantResponse getById(UUID id) throws CustomException;
+  TenantResponse getById(String keycloakId, UUID id) throws CustomException;
 
   /**
    * Retourne une page de dossiers locataires, filtrable par statut.
    *
+   * <ul>
+   *   <li>ADMIN / SUPER_ADMIN : tous les dossiers non archivés.
+   *   <li>PARTNER agence : uniquement les dossiers liés à leurs contrats.
+   *   <li>PARTNER hôtel : accès refusé (les hôtels gèrent des réservations, pas des dossiers KYC).
+   * </ul>
+   *
+   * @param keycloakId identifiant Keycloak de l'appelant
    * @param status filtre optionnel ; null = tous les statuts
    * @param pageable pagination
    * @return page de dossiers
    */
-  Page<TenantResponse> list(TenantStatus status, Pageable pageable);
+  Page<TenantResponse> list(String keycloakId, TenantStatus status, Pageable pageable)
+      throws CustomException;
 
   /**
    * Qualifie un dossier locataire (passe son statut en {@code QUALIFIED}).
