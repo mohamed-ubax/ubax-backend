@@ -235,6 +235,78 @@
                 </configuration>
             </plugin>
 
+            <!-- JaCoCo – mesure de couverture de code -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.70</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <!-- Infrastructure / config -->
+                        <exclude>**/config/**</exclude>
+                        <exclude>**/UbaxPlatformApplication.class</exclude>
+                        <exclude>**/scheduler/**</exclude>
+
+                        <!-- Boilerplate de données -->
+                        <exclude>**/dto/**</exclude>
+                        <exclude>**/entity/**</exclude>
+                        <exclude>**/base/**</exclude>
+                        <exclude>**/mapper/**</exclude>
+                        <exclude>**/response/**</exclude>
+                        <exclude>**/constants/**</exclude>
+
+                        <!-- Enums / code lists -->
+                        <exclude>**/codeList/**</exclude>
+
+                        <!-- Controllers : couverts par les tests d'intégration -->
+                        <exclude>**/controller/**</exclude>
+
+                        <!-- Exceptions : boilerplate sans logique métier -->
+                        <exclude>**/exception/**</exclude>
+
+                        <!-- Utilitaires : testés indirectement via les services -->
+                        <exclude>**/util/**</exclude>
+
+                        <!-- Services externes : nécessitent une infra réelle -->
+                        <exclude>**/notification/**</exclude>
+                        <exclude>**/generator/**</exclude>
+
+                        <!-- Repositories Spring Data : interfaces sans bytecode mesurable -->
+                        <exclude>**/repository/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
     <dependencyManagement>
