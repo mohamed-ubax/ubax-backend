@@ -64,6 +64,14 @@ src/main/java/com/africa/ubaxplatform/
 │   ├── repository/     BailleurApplicationRepository, BailleurApplicationPropertyRepository,
 │   │                   BailleurAgencyLinkRepository
 │   └── service/
+├── reservation/    ✅ Réservations hôtelières (client + hôtel + admin)
+│   ├── codeList/       ReservationStatus (PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW)
+│   ├── controller/     ReservationController
+│   ├── dto/            CreateReservationRequest, CancelReservationRequest, ReservationResponse
+│   ├── entity/         Reservation
+│   ├── mapper/         ReservationMapper
+│   ├── repository/     ReservationRepository
+│   └── service/
 ├── ticketing/      ✅ Entités + enums — controller/service à créer
 │   ├── codeList/       TicketStatus (enum), MessageType (enum)
 │   ├── entity/         Ticket, TicketAttachment, TicketMessage
@@ -251,8 +259,9 @@ public class ModuleController {
 | V036 | `seed_property_amenity_code_lists.sql` | Seed `la_code_list` (PROPERTY_AMENITY : POOL, GENERATOR, WATER_TANK, AC, SECURITY, PARKING, ELEVATOR, GARDEN, FURNISHED, PETS) |
 | V037 | `add_updated_at_to_property_amenities.sql` | Colonne `updated_at` manquante sur `property_amenities` (BaseEntity) |
 | V038 | `add_verified_by_id_to_property_documents.sql` | Colonne `verified_by_id` manquante sur `property_documents` (serveurs déployés avant correction V013) |
+| V039 | `create_reservations.sql` | Table `reservations` (statuts PENDING → CONFIRMED → COMPLETED \| CANCELLED \| NO_SHOW) |
 
-Prochaine version disponible : **V039**
+Prochaine version disponible : **V040**
 
 ---
 
@@ -371,6 +380,21 @@ Prochaine version disponible : **V039**
 | `GET` | `/v1/bailleur/agency/applications/{id}` | `PARTNER` + `DIRECTEUR_AGENCE` | Détail d'une demande |
 | `PATCH` | `/v1/bailleur/agency/applications/{id}/decision` | `PARTNER` + `DIRECTEUR_AGENCE` | Approuver / rejeter |
 | `GET` | `/v1/bailleur/admin/applications` | `ADMIN` · `SUPER_ADMIN` | Vue globale toutes agences |
+
+### Reservation
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/reservations` | `CLIENT` | Soumettre une réservation |
+| `GET` | `/v1/reservations/mine` | `CLIENT` | Mes réservations |
+| `GET` | `/v1/reservations/{id}` | `CLIENT/PARTNER` | Détail |
+| `DELETE` | `/v1/reservations/{id}` | `CLIENT` | Annuler (PENDING uniquement) |
+| `GET` | `/v1/reservations/hotel` | `PARTNER` (hôtel) | Réservations de mon hôtel |
+| `PATCH` | `/v1/reservations/{id}/confirm` | `PARTNER` (hôtel) | Confirmer |
+| `PATCH` | `/v1/reservations/{id}/cancel` | `PARTNER` (hôtel) | Annuler côté hôtel |
+| `PATCH` | `/v1/reservations/{id}/complete` | `PARTNER` (hôtel) | Marquer séjour terminé |
+| `PATCH` | `/v1/reservations/{id}/no-show` | `PARTNER` (hôtel) | Marquer no-show |
+| `GET` | `/v1/reservations` | `ADMIN/SUPER_ADMIN` | Toutes les réservations |
 
 ### Dashboard & Storage
 
