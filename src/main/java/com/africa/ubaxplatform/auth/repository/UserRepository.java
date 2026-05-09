@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,4 +34,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   List<User> findByHotelIdAndDeletedAtIsNull(UUID hotelId);
 
   List<User> findByHotelIdAndDeletedAtIsNotNull(UUID hotelId);
+
+  @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r = :role AND u.deletedAt IS NULL")
+  Page<User> findByRoleAndDeletedAtIsNull(@Param("role") UserRole role, Pageable pageable);
+
+  @Query(
+      "SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r = :role AND u.deletedAt IS NULL")
+  long countByRoleAndDeletedAtIsNull(@Param("role") UserRole role);
 }

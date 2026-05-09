@@ -37,6 +37,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
   // ── Vérification de disponibilité (détection de chevauchement) ───────────
 
+  long countByStatusAndDeletedAtIsNull(ReservationStatus status);
+
   @Query(
       "SELECT COUNT(r) FROM Reservation r"
           + " WHERE r.property.id = :propertyId"

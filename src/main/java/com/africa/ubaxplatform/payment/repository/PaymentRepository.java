@@ -5,6 +5,7 @@ import com.africa.ubaxplatform.payment.codeList.PaymentType;
 import com.africa.ubaxplatform.payment.entity.Payment;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -93,4 +94,20 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
       """)
   List<Object[]> sumPaidByTypeAndPeriod(
       @Param("agencyId") UUID agencyId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+  /**
+   * Vérifie si un paiement existe déjà pour un contrat et une date d'échéance — anti-doublon
+   * scheduler.
+   */
+  boolean existsByContractIdAndDueDate(UUID contractId, LocalDate dueDate);
+
+  /** Paiements PENDING ou PARTIAL dont la date d'échéance est dépassée — passage en LATE. */
+  @Query(
+      """
+      SELECT p FROM Payment p
+      WHERE p.status IN :statuses
+        AND p.dueDate < :today
+      """)
+  List<Payment> findOverdueByStatuses(
+      @Param("statuses") Collection<PaymentStatus> statuses, @Param("today") LocalDate today);
 }

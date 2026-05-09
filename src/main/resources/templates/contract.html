@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="${contract.referenceNumber}">Contrat UBAX</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; margin: 0; padding: 0; }
+    .page { padding: 40px 50px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0f5c2e; padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { font-size: 22pt; font-weight: bold; color: #0f5c2e; letter-spacing: 2px; }
+    .brand-sub { font-size: 9pt; color: #555; margin-top: 2px; }
+    .doc-meta { text-align: right; font-size: 9pt; color: #555; }
+    .doc-meta .ref { font-size: 12pt; font-weight: bold; color: #0f5c2e; }
+    h1 { font-size: 16pt; text-align: center; color: #0f5c2e; margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 1px; }
+    h2 { font-size: 12pt; color: #0f5c2e; border-bottom: 1px solid #cce8d8; padding-bottom: 4px; margin-top: 24px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt; }
+    td { padding: 6px 8px; }
+    td.label { font-weight: bold; color: #444; width: 38%; }
+    .section { background: #f8fdf9; border-left: 4px solid #0f5c2e; padding: 10px 16px; margin-top: 12px; border-radius: 2px; font-size: 10pt; }
+    .amount { font-size: 13pt; font-weight: bold; color: #0f5c2e; }
+    .signatures { margin-top: 50px; display: flex; justify-content: space-between; }
+    .sig-box { width: 44%; border-top: 1px solid #333; padding-top: 8px; font-size: 9pt; color: #555; }
+    .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; color: #888; text-align: center; }
+    .badge { display: inline-block; background: #0f5c2e; color: #fff; padding: 2px 10px; border-radius: 3px; font-size: 9pt; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- En-tête -->
+  <div class="header">
+    <div>
+      <div class="brand">UBAX</div>
+      <div class="brand-sub">Plateforme Immobilière Africaine</div>
+    </div>
+    <div class="doc-meta">
+      <div class="ref" th:text="${contract.referenceNumber}">CTR-2025-LEASE-XXXXXX</div>
+      <div>Émis le <span th:text="${#dates.format(#dates.createNow(), 'dd/MM/yyyy')}">01/01/2025</span></div>
+      <div><span class="badge" th:text="${contract.status}">DRAFT</span></div>
+    </div>
+  </div>
+
+  <h1 th:text="'Contrat de ' + (contract.contractType == 'LEASE' ? 'Location' : contract.contractType == 'SALE' ? 'Vente' : contract.contractType == 'RESERVATION' ? 'Réservation' : 'Mandat')">Contrat</h1>
+
+  <!-- Parties -->
+  <h2>1. Parties</h2>
+  <table>
+    <tr th:if="${owner != null}">
+      <td class="label">Bailleur / Propriétaire :</td>
+      <td th:text="${owner.fullName}">—</td>
+    </tr>
+    <tr th:if="${tenant != null and tenant.user != null}">
+      <td class="label">Locataire :</td>
+      <td th:text="${tenant.user.fullName}">—</td>
+    </tr>
+    <tr th:if="${createdBy != null}">
+      <td class="label">Gestionnaire :</td>
+      <td th:text="${createdBy.fullName}">—</td>
+    </tr>
+  </table>
+
+  <!-- Bien -->
+  <h2>2. Bien Immobilier</h2>
+  <table th:if="${property != null}">
+    <tr>
+      <td class="label">Désignation :</td>
+      <td th:text="${property.title}">—</td>
+    </tr>
+    <tr>
+      <td class="label">Localisation :</td>
+      <td th:text="${property.city}">—</td>
+    </tr>
+    <tr>
+      <td class="label">Adresse :</td>
+      <td th:text="${property.address}">—</td>
+    </tr>
+  </table>
+
+  <!-- Durée -->
+  <h2>3. Durée du Contrat</h2>
+  <table>
+    <tr>
+      <td class="label">Date de début :</td>
+      <td th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">—</td>
+    </tr>
+    <tr th:if="${contract.endDate != null}">
+      <td class="label">Date de fin :</td>
+      <td th:text="${#temporals.format(contract.endDate, 'dd/MM/yyyy')}">—</td>
+    </tr>
+  </table>
+
+  <!-- Conditions financières -->
+  <h2>4. Conditions Financières</h2>
+  <table>
+    <tr th:if="${contract.monthlyRent != null}">
+      <td class="label">Loyer mensuel (HCC) :</td>
+      <td><span class="amount" th:text="${#numbers.formatDecimal(contract.monthlyRent, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</span></td>
+    </tr>
+    <tr th:if="${contract.monthlyCharges != null}">
+      <td class="label">Charges mensuelles :</td>
+      <td th:text="${#numbers.formatDecimal(contract.monthlyCharges, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</td>
+    </tr>
+    <tr th:if="${contract.getTotalMonthlyAmount() != null}">
+      <td class="label">Total mensuel :</td>
+      <td><strong th:text="${#numbers.formatDecimal(contract.getTotalMonthlyAmount(), 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</strong></td>
+    </tr>
+    <tr th:if="${contract.depositAmount != null}">
+      <td class="label">Caution :</td>
+      <td th:text="${#numbers.formatDecimal(contract.depositAmount, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</td>
+    </tr>
+    <tr th:if="${contract.salePrice != null}">
+      <td class="label">Prix de vente :</td>
+      <td><span class="amount" th:text="${#numbers.formatDecimal(contract.salePrice, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</span></td>
+    </tr>
+    <tr th:if="${contract.agencyCommissionRate != null}">
+      <td class="label">Commission agence :</td>
+      <td th:text="${contract.agencyCommissionRate} + ' %'">0 %</td>
+    </tr>
+    <tr>
+      <td class="label">Jour de règlement :</td>
+      <td th:text="'Le ' + ${contract.paymentDay} + ' de chaque mois'">Le 5 de chaque mois</td>
+    </tr>
+  </table>
+
+  <!-- Clauses particulières -->
+  <div th:if="${contract.specialClauses != null and !contract.specialClauses.isEmpty()}">
+    <h2>5. Clauses Particulières</h2>
+    <div class="section" th:text="${contract.specialClauses}">—</div>
+  </div>
+
+  <!-- Conditions de résiliation -->
+  <div th:if="${contract.terminationConditions != null and !contract.terminationConditions.isEmpty()}">
+    <h2>6. Conditions de Résiliation</h2>
+    <div class="section" th:text="${contract.terminationConditions}">—</div>
+  </div>
+
+  <!-- Signatures -->
+  <div class="signatures">
+    <div class="sig-box">
+      <strong>Le Bailleur / Propriétaire</strong><br/>
+      <span th:text="${owner != null ? owner.fullName : ''}">—</span><br/><br/>
+      Signature :
+    </div>
+    <div class="sig-box">
+      <strong>Le Locataire</strong><br/>
+      <span th:if="${tenant != null and tenant.user != null}" th:text="${tenant.user.fullName}">—</span><br/><br/>
+      Signature :
+    </div>
+  </div>
+
+  <!-- Pied de page -->
+  <div class="footer">
+    UBAX Platform – Document généré automatiquement – <span th:text="${contract.referenceNumber}">Référence</span><br/>
+    Ce document a valeur contractuelle après signature des deux parties.
+  </div>
+</div>
+</body>
+</html>
