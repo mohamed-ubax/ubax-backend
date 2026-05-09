@@ -34,7 +34,7 @@ public class TenantServiceImpl implements TenantService {
   private final TenantRepository tenantRepo;
   private final UserRepository userRepo;
 
-  // ── Helpers ────────────────────────────────────────────────────
+  // Helpers
 
   private User resolveUser(String keycloakId) throws CustomException {
     return userRepo
@@ -61,7 +61,7 @@ public class TenantServiceImpl implements TenantService {
     return TenantMapper.toResponse(t);
   }
 
-  // ── CRUD locataire ─────────────────────────────────────────────
+  // CRUD locataire
 
   @Override
   @Transactional
@@ -232,8 +232,7 @@ public class TenantServiceImpl implements TenantService {
     tenantRepo.save(tenant);
   }
 
-  // ── Vérification de complétude du dossier ─────────────────────
-
+  // Vérification de complétude du dossier
   private boolean isDossierComplete(Tenant t) {
     return t.getIdDocumentUrl() != null
         && t.getIdDocumentNumber() != null
