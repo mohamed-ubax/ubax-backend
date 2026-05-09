@@ -2,7 +2,7 @@
 -- Couvre : CONTRACT, INVOICE, RECEIPT, LEASE, REPORT, STATEMENT, INVENTORY, OTHER
 -- Fichiers physiques dans MinIO bucket : documents-generated
 
-CREATE TABLE administrative.documents
+CREATE TABLE IF NOT EXISTS administrative.documents
 (
     id               UUID         NOT NULL PRIMARY KEY,
     ref_id           UUID,
@@ -29,6 +29,6 @@ CREATE TABLE administrative.documents
         ('PAYMENT', 'CONTRACT', 'TICKET', 'PROPERTY', 'OFFER'))
 );
 
-CREATE INDEX idx_documents_ref ON administrative.documents (ref_id, ref_type);
-CREATE INDEX idx_documents_status ON administrative.documents (status);
-CREATE INDEX idx_documents_generated_by ON administrative.documents (generated_by);
+CREATE INDEX IF NOT EXISTS idx_documents_ref ON administrative.documents (ref_id, ref_type);
+CREATE INDEX IF NOT EXISTS idx_documents_status ON administrative.documents (status);
+CREATE INDEX IF NOT EXISTS idx_documents_generated_by ON administrative.documents (generated_by);
