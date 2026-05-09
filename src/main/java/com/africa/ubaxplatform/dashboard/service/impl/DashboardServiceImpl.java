@@ -1,7 +1,10 @@
 package com.africa.ubaxplatform.dashboard.service.impl;
 
+import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
+import com.africa.ubaxplatform.auth.repository.AgencyRepository;
+import com.africa.ubaxplatform.auth.repository.HotelRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
@@ -9,6 +12,7 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.contract.codeList.ContractStatus;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
+import com.africa.ubaxplatform.dashboard.dto.AdminDashboardResponse;
 import com.africa.ubaxplatform.dashboard.dto.AgencyDashboardResponse;
 import com.africa.ubaxplatform.dashboard.dto.ExpenseBreakdownItem;
 import com.africa.ubaxplatform.dashboard.dto.RevenueBreakdownItem;
@@ -18,6 +22,10 @@ import com.africa.ubaxplatform.payment.repository.ExpenseRepository;
 import com.africa.ubaxplatform.payment.repository.PaymentRepository;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
+import com.africa.ubaxplatform.reservation.codeList.ReservationStatus;
+import com.africa.ubaxplatform.reservation.repository.ReservationRepository;
+import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
+import com.africa.ubaxplatform.ticketing.repository.TicketRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -34,10 +42,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class DashboardServiceImpl implements DashboardService {
 
   private final UserRepository userRepo;
+  private final AgencyRepository agencyRepo;
+  private final HotelRepository hotelRepo;
   private final PaymentRepository paymentRepo;
   private final ExpenseRepository expenseRepo;
   private final PropertyRepository propertyRepo;
   private final ContractRepository contractRepo;
+  private final ReservationRepository reservationRepo;
+  private final TicketRepository ticketRepo;
 
   @Override
   public AgencyDashboardResponse getAgencyDashboard(
@@ -112,6 +124,34 @@ public class DashboardServiceImpl implements DashboardService {
         paidPaymentsCount,
         revenueByType,
         expensesByCategory);
+  }
+
+  @Override
+  public AdminDashboardResponse getAdminDashboard() {
+    long totalActiveAgencies = agencyRepo.countByActiveAndDeletedAtIsNull(true);
+    long totalActiveHotels = hotelRepo.countByActiveAndDeletedAtIsNull(true);
+    long totalClients = userRepo.countByRoleAndDeletedAtIsNull(UserRole.CLIENT);
+    long totalOwners = userRepo.countByRoleAndDeletedAtIsNull(UserRole.OWNER);
+    long pendingReservations =
+        reservationRepo.countByStatusAndDeletedAtIsNull(ReservationStatus.PENDING);
+    long confirmedReservations =
+        reservationRepo.countByStatusAndDeletedAtIsNull(ReservationStatus.CONFIRMED);
+    long propertiesPendingReview = propertyRepo.countByStatus(PropertyStatus.PENDING);
+    long publishedProperties = propertyRepo.countByStatus(PropertyStatus.PUBLISHED);
+    long openTickets =
+        ticketRepo.countByStatusIn(
+            List.of(TicketStatus.OPEN, TicketStatus.IN_ANALYSIS, TicketStatus.TECHNICIAN_SENT));
+
+    return new AdminDashboardResponse(
+        totalActiveAgencies,
+        totalActiveHotels,
+        totalClients,
+        totalOwners,
+        pendingReservations,
+        confirmedReservations,
+        propertiesPendingReview,
+        publishedProperties,
+        openTickets);
   }
 
   private BigDecimal computeRecoveryRate(BigDecimal revenue, BigDecimal overdue) {

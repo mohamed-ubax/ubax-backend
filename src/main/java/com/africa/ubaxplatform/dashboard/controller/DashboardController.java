@@ -8,6 +8,7 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
+import com.africa.ubaxplatform.dashboard.dto.AdminDashboardResponse;
 import com.africa.ubaxplatform.dashboard.dto.AgencyDashboardResponse;
 import com.africa.ubaxplatform.dashboard.service.interfaces.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -87,5 +88,38 @@ public class DashboardController {
             Constants.Status.OK,
             ResponseMessageConstants.DASHBOARD_GET_SUCCESS,
             dashboardService.getAgencyDashboard(caller.getSub(), from, to)));
+  }
+
+  @GetMapping("/admin")
+  @Operation(
+      summary = "Tableau de bord administrateur global",
+      description =
+          "👑 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne les KPIs globaux de la plateforme : agences actives, hôtels actifs, "
+              + "clients, réservations, biens en modération, tickets ouverts.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "KPIs globaux",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AdminDashboardResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> getAdminDashboard(HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.DASHBOARD_ADMIN_GET_SUCCESS,
+            dashboardService.getAdminDashboard()));
   }
 }

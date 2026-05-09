@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Facture – ' + ${payment.reference}">Facture UBAX</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; margin: 0; padding: 0; }
+    .page { padding: 40px 50px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0f5c2e; padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { font-size: 22pt; font-weight: bold; color: #0f5c2e; letter-spacing: 2px; }
+    .brand-sub { font-size: 9pt; color: #555; margin-top: 2px; }
+    .doc-meta { text-align: right; font-size: 9pt; color: #555; }
+    .doc-meta .ref { font-size: 13pt; font-weight: bold; color: #0f5c2e; }
+    h1 { font-size: 18pt; text-align: center; color: #0f5c2e; margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 2px; }
+    h2 { font-size: 11pt; color: #0f5c2e; border-bottom: 1px solid #cce8d8; padding-bottom: 4px; margin-top: 24px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt; }
+    td { padding: 7px 8px; }
+    td.label { font-weight: bold; color: #444; width: 40%; }
+    .amount-table { border: 1px solid #ddd; border-radius: 4px; }
+    .amount-table td { padding: 8px 12px; }
+    .amount-table tr:nth-child(even) { background: #f5faf7; }
+    .total-row td { font-weight: bold; background: #0f5c2e !important; color: #fff; font-size: 12pt; }
+    .badge { display: inline-block; background: #0f5c2e; color: #fff; padding: 2px 10px; border-radius: 3px; font-size: 9pt; }
+    .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; color: #888; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- En-tête -->
+  <div class="header">
+    <div>
+      <div class="brand">UBAX</div>
+      <div class="brand-sub" th:if="${agency != null}" th:text="${agency.name}">Agence</div>
+      <div class="brand-sub" th:if="${agency == null}">Plateforme Immobilière Africaine</div>
+    </div>
+    <div class="doc-meta">
+      <div class="ref" th:text="${payment.reference}">PAY-XXXX</div>
+      <div>Date : <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}">01/01/2025</span></div>
+      <div><span class="badge" th:text="${payment.status}">PAID</span></div>
+    </div>
+  </div>
+
+  <h1>Facture</h1>
+
+  <!-- Référence de la période -->
+  <table>
+    <tr th:if="${payment.periodLabel != null}">
+      <td class="label">Période :</td>
+      <td th:text="${payment.periodLabel}">—</td>
+    </tr>
+    <tr>
+      <td class="label">Type :</td>
+      <td th:text="${payment.paymentType}">—</td>
+    </tr>
+    <tr th:if="${payment.dueDate != null}">
+      <td class="label">Date d'échéance :</td>
+      <td th:text="${#temporals.format(payment.dueDate, 'dd/MM/yyyy')}">—</td>
+    </tr>
+    <tr th:if="${payment.paidDate != null}">
+      <td class="label">Date de règlement :</td>
+      <td th:text="${#temporals.format(payment.paidDate, 'dd/MM/yyyy')}">—</td>
+    </tr>
+  </table>
+
+  <!-- Locataire / Bien -->
+  <h2>Destinataire</h2>
+  <table>
+    <tr th:if="${tenant != null and tenant.user != null}">
+      <td class="label">Locataire :</td>
+      <td th:text="${tenant.user.fullName}">—</td>
+    </tr>
+    <tr th:if="${property != null}">
+      <td class="label">Bien :</td>
+      <td th:text="${property.title}">—</td>
+    </tr>
+    <tr th:if="${property != null}">
+      <td class="label">Localisation :</td>
+      <td th:text="${property.city}">—</td>
+    </tr>
+    <tr th:if="${contract != null}">
+      <td class="label">Réf. Contrat :</td>
+      <td th:text="${contract.referenceNumber}">—</td>
+    </tr>
+  </table>
+
+  <!-- Montants -->
+  <h2>Détail des Montants</h2>
+  <table class="amount-table">
+    <tr>
+      <td>Montant dû</td>
+      <td th:text="${#numbers.formatDecimal(payment.amount, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</td>
+    </tr>
+    <tr th:if="${payment.amountPaid != null and payment.amountPaid != payment.amount}">
+      <td>Montant réglé</td>
+      <td th:text="${#numbers.formatDecimal(payment.amountPaid, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</td>
+    </tr>
+    <tr th:if="${payment.paymentMethod != null}">
+      <td>Mode de paiement</td>
+      <td th:text="${payment.paymentMethod}">—</td>
+    </tr>
+    <tr class="total-row">
+      <td>TOTAL</td>
+      <td th:text="${#numbers.formatDecimal(payment.amountPaid != null ? payment.amountPaid : payment.amount, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</td>
+    </tr>
+  </table>
+
+  <div class="footer">
+    UBAX Platform – Facture <span th:text="${payment.reference}">—</span><br/>
+    Document généré automatiquement. Pour toute réclamation : support@ubax.io
+  </div>
+</div>
+</body>
+</html>

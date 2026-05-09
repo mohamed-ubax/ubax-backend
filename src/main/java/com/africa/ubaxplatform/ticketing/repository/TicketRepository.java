@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.ticketing.repository;
 
 import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import com.africa.ubaxplatform.ticketing.entity.Ticket;
+import java.util.Collection;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,4 +40,11 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
           + " AND t.status = :status")
   long countByAgencyIdAndStatus(
       @Param("agencyId") UUID agencyId, @Param("status") TicketStatus status);
+
+  @Query("SELECT COUNT(t) FROM Ticket t WHERE t.status IN :statuses")
+  long countByStatusIn(@Param("statuses") Collection<TicketStatus> statuses);
+
+  Page<Ticket> findByStatus(TicketStatus status, Pageable pageable);
+
+  Page<Ticket> findByReporterKeycloakId(String keycloakId, Pageable pageable);
 }

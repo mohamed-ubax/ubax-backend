@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Reçu – ' + ${payment.reference}">Reçu UBAX</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; margin: 0; padding: 0; }
+    .page { padding: 40px 50px; max-width: 550px; margin: 0 auto; }
+    .header { text-align: center; border-bottom: 3px solid #0f5c2e; padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { font-size: 24pt; font-weight: bold; color: #0f5c2e; letter-spacing: 3px; }
+    .doc-type { font-size: 16pt; text-transform: uppercase; color: #333; letter-spacing: 2px; margin: 12px 0 4px; }
+    .ref { font-size: 10pt; color: #777; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 10pt; }
+    td { padding: 7px 4px; border-bottom: 1px solid #eee; }
+    td.label { font-weight: bold; color: #555; width: 50%; }
+    .amount-box { text-align: center; background: #0f5c2e; color: #fff; border-radius: 6px; padding: 20px; margin: 24px 0; }
+    .amount-label { font-size: 10pt; opacity: 0.85; margin-bottom: 4px; }
+    .amount-value { font-size: 22pt; font-weight: bold; }
+    .paid-stamp { text-align: center; color: #0f5c2e; border: 3px solid #0f5c2e; border-radius: 6px; padding: 8px 20px; font-size: 14pt; font-weight: bold; letter-spacing: 3px; margin: 16px auto; width: fit-content; }
+    .footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 8pt; color: #888; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="brand">UBAX</div>
+    <div class="doc-type">Reçu de Paiement</div>
+    <div class="ref" th:text="${payment.reference}">PAY-XXXX</div>
+  </div>
+
+  <div class="paid-stamp">PAYÉ</div>
+
+  <div class="amount-box">
+    <div class="amount-label">Montant encaissé</div>
+    <div class="amount-value" th:text="${#numbers.formatDecimal(payment.amountPaid != null ? payment.amountPaid : payment.amount, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</div>
+  </div>
+
+  <table>
+    <tr th:if="${payment.periodLabel != null}">
+      <td class="label">Période :</td>
+      <td th:text="${payment.periodLabel}">—</td>
+    </tr>
+    <tr>
+      <td class="label">Type :</td>
+      <td th:text="${payment.paymentType}">—</td>
+    </tr>
+    <tr th:if="${payment.paymentMethod != null}">
+      <td class="label">Mode de paiement :</td>
+      <td th:text="${payment.paymentMethod}">—</td>
+    </tr>
+    <tr th:if="${payment.paidDate != null}">
+      <td class="label">Date de paiement :</td>
+      <td th:text="${#temporals.format(payment.paidDate, 'dd/MM/yyyy')}">—</td>
+    </tr>
+    <tr th:if="${tenant != null and tenant.user != null}">
+      <td class="label">Payeur :</td>
+      <td th:text="${tenant.user.fullName}">—</td>
+    </tr>
+    <tr th:if="${property != null}">
+      <td class="label">Bien :</td>
+      <td th:text="${property.title + ' – ' + property.city}">—</td>
+    </tr>
+    <tr th:if="${contract != null}">
+      <td class="label">Réf. Contrat :</td>
+      <td th:text="${contract.referenceNumber}">—</td>
+    </tr>
+    <tr th:if="${payment.note != null}">
+      <td class="label">Note :</td>
+      <td th:text="${payment.note}">—</td>
+    </tr>
+  </table>
+
+  <div class="footer">
+    UBAX Platform – Reçu <span th:text="${payment.reference}">—</span> – Conservez ce document.<br/>
+    support@ubax.io · ubax.io
+  </div>
+</div>
+</body>
+</html>

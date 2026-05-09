@@ -117,6 +117,8 @@ public class ResponseMessageConstants {
   public static final String CONTRACT_UPDATE_FAILURE = "CONTRACT_UPDATE_FAILURE";
   public static final String CONTRACT_UPDATE_FAILURE_NOT_FOUND =
       "CONTRACT_UPDATE_FAILURE_NOT_FOUND";
+  public static final String CONTRACT_UPDATE_FAILURE_INVALID_TRANSITION =
+      "CONTRACT_UPDATE_FAILURE_INVALID_TRANSITION";
 
   // ── PAYMENT ─────────────────────────────────────────────────────
   public static final String PAYMENT_GET_SUCCESS = "PAYMENT_GET_SUCCESS";
@@ -148,6 +150,10 @@ public class ResponseMessageConstants {
   public static final String TICKET_GET_FAILURE_NOT_FOUND = "TICKET_GET_FAILURE_NOT_FOUND";
   public static final String TICKET_CREATE_FAILURE = "TICKET_CREATE_FAILURE";
   public static final String TICKET_UPDATE_FAILURE_NOT_FOUND = "TICKET_UPDATE_FAILURE_NOT_FOUND";
+  public static final String TICKET_UPDATE_FAILURE_INVALID_TRANSITION =
+      "TICKET_UPDATE_FAILURE_INVALID_TRANSITION";
+  public static final String TICKET_UPDATE_FAILURE_INVALID_STATUS =
+      "TICKET_UPDATE_FAILURE_INVALID_STATUS";
   public static final String TICKET_MESSAGE_CREATE_SUCCESS = "TICKET_MESSAGE_CREATE_SUCCESS";
   public static final String TICKET_MESSAGE_GET_LIST_SUCCESS = "TICKET_MESSAGE_GET_LIST_SUCCESS";
   public static final String TICKET_ATTACHMENT_GET_LIST_SUCCESS =
@@ -183,9 +189,22 @@ public class ResponseMessageConstants {
   public static final String RESERVATION_UPDATE_FAILURE_INVALID_TRANSITION =
       "RESERVATION_UPDATE_FAILURE_INVALID_TRANSITION";
 
+  // ── ADMIN PARTNER ────────────────────────────────────────────────
+  public static final String PARTNER_GET_LIST_SUCCESS = "PARTNER_GET_LIST_SUCCESS";
+  public static final String PARTNER_GET_SUCCESS = "PARTNER_GET_SUCCESS";
+  public static final String PARTNER_NOT_FOUND = "PARTNER_NOT_FOUND";
+  public static final String PARTNER_SUSPEND_SUCCESS = "PARTNER_SUSPEND_SUCCESS";
+  public static final String PARTNER_ACTIVATE_SUCCESS = "PARTNER_ACTIVATE_SUCCESS";
+  public static final String PARTNER_ALREADY_SUSPENDED = "PARTNER_ALREADY_SUSPENDED";
+  public static final String PARTNER_ALREADY_ACTIVE = "PARTNER_ALREADY_ACTIVE";
+  public static final String PARTNER_SUBSCRIPTION_UPDATE_SUCCESS =
+      "PARTNER_SUBSCRIPTION_UPDATE_SUCCESS";
+  public static final String CLIENT_GET_LIST_SUCCESS = "CLIENT_GET_LIST_SUCCESS";
+
   // ── DASHBOARD ───────────────────────────────────────────────────
   public static final String DASHBOARD_GET_SUCCESS = "DASHBOARD_GET_SUCCESS";
   public static final String DASHBOARD_GET_FAILURE = "DASHBOARD_GET_FAILURE";
+  public static final String DASHBOARD_ADMIN_GET_SUCCESS = "DASHBOARD_ADMIN_GET_SUCCESS";
 
   // ── CODE LIST ───────────────────────────────────────────────────
   public static final String CODELIST_GET_SUCCESS = "CODELIST_GET_SUCCESS";

@@ -1,6 +1,7 @@
 package com.africa.ubaxplatform.dashboard.service.interfaces;
 
 import com.africa.ubaxplatform.common.exception.CustomException;
+import com.africa.ubaxplatform.dashboard.dto.AdminDashboardResponse;
 import com.africa.ubaxplatform.dashboard.dto.AgencyDashboardResponse;
 import java.time.LocalDate;
 
@@ -17,4 +18,7 @@ public interface DashboardService {
    */
   AgencyDashboardResponse getAgencyDashboard(String callerKeycloakId, LocalDate from, LocalDate to)
       throws CustomException;
+
+  /** Retourne les KPIs globaux de la plateforme pour les administrateurs UBAX. */
+  AdminDashboardResponse getAdminDashboard();
 }

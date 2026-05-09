@@ -10,6 +10,7 @@ import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
+import com.africa.ubaxplatform.document.service.interfaces.DocumentService;
 import com.africa.ubaxplatform.payment.codeList.PaymentStatus;
 import com.africa.ubaxplatform.payment.codeList.PaymentType;
 import com.africa.ubaxplatform.payment.dto.PaymentCreateRequest;
@@ -44,6 +45,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final PropertyRepository propertyRepo;
   private final TenantRepository tenantRepo;
   private final ContractRepository contractRepo;
+  private final DocumentService documentService;
 
   // ── Helpers ────────────────────────────────────────────────────
 
@@ -244,7 +246,17 @@ public class PaymentServiceImpl implements PaymentService {
       payment.setStatus(PaymentStatus.PAID);
     }
 
-    return PaymentMapper.toResponse(paymentRepo.save(payment));
+    Payment saved = paymentRepo.save(payment);
+
+    if (saved.getStatus() == PaymentStatus.PAID) {
+      try {
+        documentService.generateReceipt(saved.getId(), caller);
+      } catch (Exception e) {
+        log.error("Échec génération reçu paymentId={} : {}", saved.getId(), e.getMessage());
+      }
+    }
+
+    return PaymentMapper.toResponse(saved);
   }
 
   @Override

@@ -43,6 +43,8 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
 
   long countByAgencyId(UUID agencyId);
 
+  long countByStatus(PropertyStatus status);
+
   /** Vérifie si un bien appartenant à ce bailleur est déjà géré par une autre agence. */
   boolean existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(UUID ownerId, UUID agencyId);
 

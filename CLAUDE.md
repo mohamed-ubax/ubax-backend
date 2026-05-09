@@ -41,11 +41,12 @@ src/main/java/com/africa/ubaxplatform/
 │   ├── entity/         Property, PropertyMedia, PropertyDocument
 │   ├── scheduler/      PropertySchedulerJob
 │   └── service/
-├── payment/        ✅ Paiements et dépenses agence
+├── payment/        ✅ Paiements, dépenses agence + scheduler loyers automatiques
 │   ├── codeList/       PaymentStatus, PaymentType, PaymentMethod,
 │   │                   ExpenseCategory, CostCenter
 │   ├── controller/     PaymentController, ExpenseController
 │   ├── entity/         Payment, Expense
+│   ├── scheduler/      PaymentSchedulerJob (markOverduePayments 01h00, generateUpcomingRentPayments 06h00)
 │   └── service/
 ├── dashboard/      ✅ Analytics & KPIs par rôle (DG, Commercial, Comptable, SAV)
 │   ├── controller/     DashboardController
@@ -72,18 +73,35 @@ src/main/java/com/africa/ubaxplatform/
 │   ├── mapper/         ReservationMapper
 │   ├── repository/     ReservationRepository
 │   └── service/
-├── ticketing/      ✅ Entités + enums — controller/service à créer
+├── ticketing/      ✅ Tickets SAV complets — entités, controller, service, repos, DTOs
 │   ├── codeList/       TicketStatus (enum), MessageType (enum)
+│   ├── controller/     TicketController
+│   ├── dto/            CreateTicketRequest, AddTicketMessageRequest, AssignTicketRequest,
+│   │                   ScheduleInterventionRequest, UpdateRepairCostRequest,
+│   │                   UpdateTicketStatusRequest, TicketResponse, TicketMessageResponse,
+│   │                   TicketAttachmentResponse
 │   ├── entity/         Ticket, TicketAttachment, TicketMessage
-│   └── mapper/         TicketMapper
-├── contract/       ⏳ Entité présente — controller/service à créer
-│   ├── codeList/       ContractStatus
-│   └── entity/         Contract
-├── document/       ⏳ Génération PDF Thymeleaf — pas d'API REST
+│   ├── mapper/         TicketMapper
+│   ├── repository/     TicketRepository, TicketMessageRepository, TicketAttachmentRepository
+│   └── service/        TicketService (interface) + TicketServiceImpl
+├── contract/       ✅ Baux et contrats — cycle de vie complet + génération premier loyer
+│   ├── codeList/       ContractStatus (DRAFT→PENDING_SIGNATURE→ACTIVE→TERMINATED|CANCELLED)
+│   ├── controller/     ContractController (8 endpoints /v1/contracts)
+│   ├── dto/            CreateContractRequest, TerminateContractRequest, ContractResponse
+│   ├── entity/         Contract
+│   ├── mapper/         ContractMapper
+│   ├── repository/     ContractRepository
+│   └── service/        ContractService (interface) + ContractServiceImpl
+│                       → crée le 1er loyer à activate(), génère PDF à submit()
+├── document/       ✅ Génération PDF Thymeleaf → MinIO — pas d'API REST
 │   ├── codeList/       DocumentStatus, DocumentType, RefType
 │   ├── entity/         Document
-│   └── generator/      ContractGenerator, InvoiceGenerator, ReceiptGenerator
-├── notification/   ⏳ Email (JavaMail) et SMS (LAfricaMobile) — pas d'entité in-app
+│   ├── generator/      ContractGenerator, InvoiceGenerator, ReceiptGenerator (@Service)
+│   ├── repository/     DocumentRepository
+│   └── service/        DocumentService (interface) + DocumentServiceImpl
+│                       → pipeline : entité → Thymeleaf → PDF → MinIO bucket documents-generated
+├── notification/   ✅ Email (JavaMail) et SMS (LAfricaMobile) — pas d'entité in-app
+│   ├── config/         NotificationConfig
 │   └── service/        EmailService, SmsService
 ├── common/         BaseEntity, exceptions, CustomResponse, RoleGuard, utils
 │   ├── base/           BaseEntity (id UUID, createdAt, updatedAt)
@@ -260,8 +278,10 @@ public class ModuleController {
 | V037 | `add_updated_at_to_property_amenities.sql` | Colonne `updated_at` manquante sur `property_amenities` (BaseEntity) |
 | V038 | `add_verified_by_id_to_property_documents.sql` | Colonne `verified_by_id` manquante sur `property_documents` (serveurs déployés avant correction V013) |
 | V039 | `create_reservations.sql` | Table `reservations` (statuts PENDING → CONFIRMED → COMPLETED \| CANCELLED \| NO_SHOW) |
+| V040 | `create_documents.sql` | Table `documents` (ref_id, ref_type, doc_type, status PENDING\|GENERATED\|SENT\|FAILED, file_url, generated_by FK users) |
+| V041 | `make_payment_recorded_by_nullable.sql` | `recorded_by` nullable sur `payments` (paiements système sans acteur humain) |
 
-Prochaine version disponible : **V040**
+Prochaine version disponible : **V042**
 
 ---
 
@@ -370,6 +390,33 @@ Prochaine version disponible : **V040**
 | `GET` | `/v1/expenses/{id}` | `PARTNER/ADMIN` | Détail |
 | `POST` | `/v1/expenses` | `PARTNER/ADMIN` | Enregistrer dépense |
 | `DELETE` | `/v1/expenses/{id}` | `PARTNER/ADMIN` | Supprimer |
+
+### Contract
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/contracts` | `PARTNER/OWNER/ADMIN` | Créer contrat (DRAFT) |
+| `GET` | `/v1/contracts` | `PARTNER/OWNER/ADMIN` | Liste paginée (filtrable par statut) |
+| `GET` | `/v1/contracts/{id}` | `PARTNER/OWNER/ADMIN` | Détail |
+| `PUT` | `/v1/contracts/{id}` | `PARTNER/OWNER/ADMIN` | Modifier (DRAFT uniquement) |
+| `PATCH` | `/v1/contracts/{id}/submit` | `PARTNER/OWNER/ADMIN` | Soumettre → PENDING_SIGNATURE + PDF |
+| `PATCH` | `/v1/contracts/{id}/activate` | `ADMIN` | Activer → ACTIVE + 1er loyer LEASE |
+| `PATCH` | `/v1/contracts/{id}/terminate` | `PARTNER/OWNER/ADMIN` | Résilier → TERMINATED |
+| `PATCH` | `/v1/contracts/{id}/cancel` | `PARTNER/OWNER/ADMIN` | Annuler → CANCELLED |
+
+### Ticketing
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/tickets` | Authentifié | Créer un ticket |
+| `GET` | `/v1/tickets` | `PARTNER/ADMIN` | Liste paginée + filtres |
+| `GET` | `/v1/tickets/{id}` | Authentifié | Détail |
+| `PATCH` | `/v1/tickets/{id}/status` | `PARTNER/ADMIN` | Mettre à jour le statut |
+| `PATCH` | `/v1/tickets/{id}/assign` | `PARTNER/ADMIN` | Assigner à un agent |
+| `PATCH` | `/v1/tickets/{id}/schedule` | `PARTNER/ADMIN` | Programmer une intervention |
+| `PATCH` | `/v1/tickets/{id}/repair-cost` | `PARTNER/ADMIN` | Renseigner le coût de réparation |
+| `POST` | `/v1/tickets/{id}/messages` | Authentifié | Ajouter un message |
+| `GET` | `/v1/tickets/{id}/messages` | Authentifié | Lister les messages |
 
 ### Bailleur
 
