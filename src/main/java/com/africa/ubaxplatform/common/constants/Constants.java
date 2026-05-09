@@ -17,6 +17,7 @@ public class Constants {
     public static final String SUCCESS_BODY = "SUCCESS";
     public static final String SERVER_ERROR_BODY = "INTERNAL_SERVER_ERROR";
     public static final String UNAUTHORIZED_BODY = "UNAUTHORIZED";
+    public static final String FORBIDDEN_BODY = "FORBIDDEN";
     public static final String CONFLICT_BODY = "CONFLICT";
     public static final String BAD_REQUEST_BODY = "BAD_REQUEST";
     public static final String NOT_FOUND_BODY = "NOT_FOUND";

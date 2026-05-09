@@ -196,20 +196,24 @@ public class ApiExceptionHandler {
   private HttpStatus determineHttpStatus(Exception e) {
     if (e == null) return HttpStatus.INTERNAL_SERVER_ERROR;
     log.error(e.getClass().getName(), e);
-    if (e instanceof EntityExistsException) return HttpStatus.CONFLICT;
-    if (e instanceof IllegalArgumentException || e instanceof DataIntegrityViolationException)
-      return HttpStatus.BAD_REQUEST;
-    if (e instanceof UnAuthorizedException) return HttpStatus.UNAUTHORIZED;
+    if (e instanceof ConflictException || e instanceof EntityExistsException)
+      return HttpStatus.CONFLICT;
+    if (e instanceof BadRequestException
+        || e instanceof IllegalArgumentException
+        || e instanceof DataIntegrityViolationException) return HttpStatus.BAD_REQUEST;
+    if (e instanceof UnAuthorizedException) return HttpStatus.FORBIDDEN;
     if (e instanceof EntityNotFoundException || e instanceof NotFoundException)
       return HttpStatus.NOT_FOUND;
     return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 
   private CustomResponse getResponse(CustomException e) {
-    if (e.getException() instanceof EntityExistsException)
+    if (e.getException() instanceof ConflictException
+        || e.getException() instanceof EntityExistsException)
       return new CustomResponse(
           Constants.Message.CONFLICT_BODY, Constants.Status.CONFLICT, e.getCodeMessage(), null);
-    if (e.getException() instanceof IllegalArgumentException
+    if (e.getException() instanceof BadRequestException
+        || e.getException() instanceof IllegalArgumentException
         || e.getException() instanceof DataIntegrityViolationException)
       return new CustomResponse(
           Constants.Message.BAD_REQUEST_BODY,
@@ -218,10 +222,7 @@ public class ApiExceptionHandler {
           null);
     if (e.getException() instanceof UnAuthorizedException)
       return new CustomResponse(
-          Constants.Message.UNAUTHORIZED_BODY,
-          Constants.Status.UNAUTHORIZED,
-          e.getCodeMessage(),
-          null);
+          Constants.Message.FORBIDDEN_BODY, Constants.Status.FORBIDDEN, e.getCodeMessage(), null);
     if (e.getException() instanceof EntityNotFoundException
         || e.getException() instanceof NotFoundException)
       return new CustomResponse(

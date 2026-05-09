@@ -10,7 +10,7 @@ import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserSubRoleRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
-import com.africa.ubaxplatform.common.exception.NotFoundException;
+import com.africa.ubaxplatform.common.exception.TokenRetrievalException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -182,8 +182,7 @@ public final class RoleGuard {
           "[AUTH] Token absent ou invalide | uri={} method={}",
           request.getRequestURI(),
           request.getMethod());
-      throw new CustomException(
-          new NotFoundException("Utilisateur inconnu"), "Utilisateur inconnu");
+      throw new TokenRetrievalException("Token JWT absent ou invalide – authentification requise");
     }
     log.debug("[AUTH] Token valide | sub={} | uri={}", user.getSub(), request.getRequestURI());
     return user;
