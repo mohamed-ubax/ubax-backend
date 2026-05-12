@@ -67,9 +67,12 @@ public class PropertyController {
 
   @GetMapping
   @Operation(
-      summary = "Lister les biens (public)",
+      summary = "Lister les biens",
       description =
-          "🌐 **Public** – Retourne les biens publiés avec filtres optionnels. Aucune authentification requise.")
+          "🌐 **Public** pour `status=PUBLISHED` (défaut). "
+              + "🛡 **ADMIN / SUPER_ADMIN** requis pour tout autre statut (`PENDING`, `DRAFT`, `REJECTED`, `ARCHIVED`).\n\n"
+              + "Retourne les biens avec filtres optionnels.",
+      security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -77,7 +80,15 @@ public class PropertyController {
         content =
             @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = PropertyResponse.class)))
+                schema = @Schema(implementation = PropertyResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent – requis pour les statuts non publiés",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – ADMIN requis pour les statuts non publiés",
+        content = @Content)
   })
   public ResponseEntity<CustomResponse> list(
       @RequestParam(required = false, defaultValue = "PUBLISHED") PropertyStatus status,
@@ -93,7 +104,13 @@ public class PropertyController {
             @SortDefault(sort = "boosted", direction = Sort.Direction.DESC),
             @SortDefault(sort = "publishedAt", direction = Sort.Direction.DESC)
           })
-          Pageable pageable) {
+          Pageable pageable,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    if (status != PropertyStatus.PUBLISHED) {
+      RoleGuard.requireAnyRole(
+          requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    }
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
