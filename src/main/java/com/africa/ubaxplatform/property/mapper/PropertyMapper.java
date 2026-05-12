@@ -40,6 +40,10 @@ public class PropertyMapper {
    * @return DTO de réponse complet
    */
   public static PropertyResponse toResponse(Property p) {
+    return toResponse(p, null);
+  }
+
+  public static PropertyResponse toResponse(Property p, String coverPhotoUrl) {
     User owner = p.getOwner();
     Agency agency = p.getAgency();
     List<PropertyAmenityResponse> amenities =
@@ -81,6 +85,7 @@ public class PropertyMapper {
         p.getMaxOccupancy(),
         p.getMealPlan(),
         p.getPaymentFrequency(),
+        coverPhotoUrl,
         p.getCreatedAt(),
         p.getUpdatedAt());
   }
