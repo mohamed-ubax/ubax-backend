@@ -77,5 +77,9 @@ public record PropertyResponse(
             description = "Fréquence de facturation (hôtel) : NIGHTLY, WEEKLY, MONTHLY",
             nullable = true)
         String paymentFrequency,
+    @Schema(
+            description = "URL de la photo de couverture (null si aucun média uploadé)",
+            nullable = true)
+        String coverPhotoUrl,
     @Schema(description = "Date de création") LocalDateTime createdAt,
     @Schema(description = "Date de dernière modification") LocalDateTime updatedAt) {}
