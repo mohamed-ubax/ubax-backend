@@ -84,6 +84,13 @@ public class PropertyServiceImpl implements PropertyService {
                     ResponseMessageConstants.PROPERTY_GET_FAILURE_NOT_FOUND));
   }
 
+  private String resolveCoverPhotoUrl(UUID propertyId) {
+    return mediaRepo
+        .findByPropertyIdAndCoverTrue(propertyId)
+        .map(PropertyMedia::getFileUrl)
+        .orElse(null);
+  }
+
   private List<PropertyAmenity> buildAmenities(
       List<PropertyAmenityRequest> requests, Property property) {
     List<PropertyAmenity> result = new ArrayList<>();
@@ -220,7 +227,14 @@ public class PropertyServiceImpl implements PropertyService {
         docRepo.findByPropertyIdOrderByCreatedAtDesc(id).stream()
             .map(PropertyMapper::toDocumentResponse)
             .toList();
-    return new PropertyDetailResponse(PropertyMapper.toResponse(property), media, documents);
+    String coverPhotoUrl =
+        media.stream()
+            .filter(PropertyMediaResponse::cover)
+            .map(PropertyMediaResponse::fileUrl)
+            .findFirst()
+            .orElse(null);
+    return new PropertyDetailResponse(
+        PropertyMapper.toResponse(property, coverPhotoUrl), media, documents);
   }
 
   @Override
@@ -256,7 +270,7 @@ public class PropertyServiceImpl implements PropertyService {
             agencyId,
             ownerId,
             pageable)
-        .map(PropertyMapper::toResponse);
+        .map(p -> PropertyMapper.toResponse(p, resolveCoverPhotoUrl(p.getId())));
   }
 
   @Override
@@ -268,7 +282,7 @@ public class PropertyServiceImpl implements PropertyService {
     UUID ownerId = agencyId == null ? caller.getId() : null;
     return propertyRepo
         .findWithFilters(status, null, null, null, null, null, agencyId, ownerId, pageable)
-        .map(PropertyMapper::toResponse);
+        .map(p -> PropertyMapper.toResponse(p, resolveCoverPhotoUrl(p.getId())));
   }
 
   @Override
