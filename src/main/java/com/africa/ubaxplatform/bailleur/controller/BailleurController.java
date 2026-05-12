@@ -5,6 +5,8 @@ import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.RequestUser;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.repository.UserSubRoleRepository;
+import com.africa.ubaxplatform.bailleur.codeList.BailleurApplicationStatus;
+import com.africa.ubaxplatform.bailleur.dto.BailleurAgencyResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplicationResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplyRequest;
 import com.africa.ubaxplatform.bailleur.dto.BailleurDecisionRequest;
@@ -26,6 +28,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +44,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -290,6 +294,97 @@ public class BailleurController {
             Constants.Status.OK,
             ResponseMessageConstants.BAILLEUR_APPLICATION_DECISION_SUCCESS,
             response));
+  }
+
+  // ── Espace bailleur (OWNER) ────────────────────────────────────
+
+  /** Mes demandes d'adhésion soumises (vue OWNER). */
+  @GetMapping("/my-applications")
+  @Operation(
+      summary = "Mes demandes d'adhésion bailleur",
+      description =
+          "🛡 **Rôle requis :** `OWNER`\n\n"
+              + "Retourne la liste paginée des demandes soumises par le bailleur connecté (filtrage par email du JWT).\n\n"
+              + "Filtrable par `status` : `PENDING` | `APPROVED` | `REJECTED` | `CANCELLED`.",
+      tags = {"Bailleur"},
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Liste paginée des demandes",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BailleurApplicationResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – OWNER requis",
+        content = @Content)
+  })
+  public ResponseEntity<CustomResponse> getMyApplications(
+      @Parameter(description = "Filtrer par statut (optionnel)") @RequestParam(required = false)
+          BailleurApplicationStatus status,
+      @ParameterObject
+          @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+
+    RequestUser caller = RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.OWNER);
+
+    var result = bailleurService.getMyApplications(caller.getEmail(), status, pageable);
+
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.BAILLEUR_MY_APPLICATIONS_SUCCESS,
+            result));
+  }
+
+  /** Mes agences partenaires approuvées (vue OWNER). */
+  @GetMapping("/my-agencies")
+  @Operation(
+      summary = "Mes agences partenaires",
+      description =
+          "🛡 **Rôle requis :** `OWNER`\n\n"
+              + "Retourne la liste des agences auxquelles le bailleur connecté est lié (demandes approuvées).",
+      tags = {"Bailleur"},
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Liste des agences partenaires",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = BailleurAgencyResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – OWNER requis",
+        content = @Content)
+  })
+  public ResponseEntity<CustomResponse> getMyAgencies(HttpServletRequest httpRequest)
+      throws CustomException {
+
+    RequestUser caller = RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.OWNER);
+
+    List<BailleurAgencyResponse> result = bailleurService.getMyAgencies(caller.getSub());
+
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.BAILLEUR_MY_AGENCIES_SUCCESS,
+            result));
   }
 
   // ── Espace admin ──────────────────────────────────────────────

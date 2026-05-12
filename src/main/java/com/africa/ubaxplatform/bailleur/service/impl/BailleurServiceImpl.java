@@ -7,6 +7,7 @@ import com.africa.ubaxplatform.auth.repository.AgencyRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.bailleur.codeList.BailleurApplicationStatus;
+import com.africa.ubaxplatform.bailleur.dto.BailleurAgencyResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplicationResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplyRequest;
 import com.africa.ubaxplatform.bailleur.dto.BailleurDecisionRequest;
@@ -248,6 +249,51 @@ public class BailleurServiceImpl implements BailleurService {
                   propertyRepo.findByApplicationId(app.getId());
               return toResponse(app, agencyName, props);
             });
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<BailleurApplicationResponse> getMyApplications(
+      String callerEmail, BailleurApplicationStatus status, Pageable pageable) {
+    Page<BailleurApplication> page =
+        status != null
+            ? applicationRepo.findByEmailAndStatus(callerEmail, status, pageable)
+            : applicationRepo.findByEmail(callerEmail, pageable);
+    return page.map(
+        app -> {
+          String agencyName =
+              agencyRepo.findById(app.getAgencyId()).map(Agency::getName).orElse(null);
+          List<BailleurApplicationProperty> props = propertyRepo.findByApplicationId(app.getId());
+          return toResponse(app, agencyName, props);
+        });
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<BailleurAgencyResponse> getMyAgencies(String callerKeycloakId)
+      throws CustomException {
+    User user =
+        userRepo
+            .findByKeycloakId(callerKeycloakId)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND),
+                        ResponseMessageConstants.USER_NOT_FOUND));
+    return linkRepo.findByBailleurUserId(user.getId()).stream()
+        .map(
+            link -> {
+              Agency agency = agencyRepo.findById(link.getAgencyId()).orElse(null);
+              return BailleurAgencyResponse.builder()
+                  .agencyId(link.getAgencyId())
+                  .agencyName(agency != null ? agency.getName() : null)
+                  .agencyLogo(agency != null ? agency.getLogoUrl() : null)
+                  .agencyPhone(agency != null ? agency.getPhone() : null)
+                  .agencyEmail(agency != null ? agency.getEmail() : null)
+                  .linkedAt(link.getJoinedAt())
+                  .build();
+            })
+        .toList();
   }
 
   // ── Helpers privés ─────────────────────────────────────────────

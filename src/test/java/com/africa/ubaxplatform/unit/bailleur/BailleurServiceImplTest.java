@@ -12,6 +12,7 @@ import com.africa.ubaxplatform.auth.repository.AgencyRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.bailleur.codeList.BailleurApplicationStatus;
+import com.africa.ubaxplatform.bailleur.dto.BailleurAgencyResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplicationResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplyRequest;
 import com.africa.ubaxplatform.bailleur.dto.BailleurDecisionRequest;
@@ -30,6 +31,7 @@ import com.africa.ubaxplatform.notification.service.SmsService;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import com.africa.ubaxplatform.testHelper.SharedTestFixtures;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -402,6 +404,230 @@ class BailleurServiceImplTest {
       var result = service.listAll(Pageable.unpaged());
 
       assertThat(result.getContent()).hasSize(1);
+    }
+  }
+
+  // ── getMyApplications ──────────────────────────────────────────────────────
+
+  @Nested
+  @DisplayName("getMyApplications()")
+  class GetMyApplications {
+
+    private static final String CALLER_EMAIL = "mamadou@example.ci";
+
+    @Test
+    @DisplayName("Sans filtre statut – appelle findByEmail et retourne la page")
+    void getMyApplications_withoutStatus_returnsAll() {
+      when(applicationRepo.findByEmail(CALLER_EMAIL, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of(pendingApp)));
+      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
+      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of(savedProp));
+
+      var result = service.getMyApplications(CALLER_EMAIL, null, Pageable.unpaged());
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().getEmail()).isEqualTo(CALLER_EMAIL);
+      verify(applicationRepo).findByEmail(CALLER_EMAIL, Pageable.unpaged());
+      verify(applicationRepo, never()).findByEmailAndStatus(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Avec filtre statut PENDING – appelle findByEmailAndStatus")
+    void getMyApplications_withStatus_filtersResults() {
+      when(applicationRepo.findByEmailAndStatus(
+              CALLER_EMAIL, BailleurApplicationStatus.PENDING, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of(pendingApp)));
+      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
+      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
+
+      var result =
+          service.getMyApplications(
+              CALLER_EMAIL, BailleurApplicationStatus.PENDING, Pageable.unpaged());
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().getStatus())
+          .isEqualTo(BailleurApplicationStatus.PENDING);
+      verify(applicationRepo)
+          .findByEmailAndStatus(
+              CALLER_EMAIL, BailleurApplicationStatus.PENDING, Pageable.unpaged());
+      verify(applicationRepo, never()).findByEmail(any(), any());
+    }
+
+    @Test
+    @DisplayName("Aucune demande trouvée – retourne page vide sans exception")
+    void getMyApplications_emptyResults_returnsEmptyPage() {
+      when(applicationRepo.findByEmail(CALLER_EMAIL, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of()));
+
+      var result = service.getMyApplications(CALLER_EMAIL, null, Pageable.unpaged());
+
+      assertThat(result.getContent()).isEmpty();
+      assertThat(result.getTotalElements()).isZero();
+    }
+
+    @Test
+    @DisplayName("Avec filtre statut APPROVED – retourne les demandes approuvées")
+    void getMyApplications_withApprovedStatus_returnsFilteredList() {
+      BailleurApplication approvedApp =
+          BailleurApplication.builder()
+              .agencyId(SharedTestFixtures.AGENCY_ID)
+              .firstName("Mamadou")
+              .lastName("Coulibaly")
+              .phone("+2250700000099")
+              .email(CALLER_EMAIL)
+              .idType("CNI")
+              .idNumber("CI-9999")
+              .status(BailleurApplicationStatus.APPROVED)
+              .conflictDetected(false)
+              .build();
+      SharedTestFixtures.injectId(approvedApp, UUID.randomUUID());
+
+      when(applicationRepo.findByEmailAndStatus(
+              CALLER_EMAIL, BailleurApplicationStatus.APPROVED, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of(approvedApp)));
+      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
+      when(bailleurPropRepo.findByApplicationId(approvedApp.getId())).thenReturn(List.of());
+
+      var result =
+          service.getMyApplications(
+              CALLER_EMAIL, BailleurApplicationStatus.APPROVED, Pageable.unpaged());
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().getStatus())
+          .isEqualTo(BailleurApplicationStatus.APPROVED);
+    }
+  }
+
+  // ── getMyAgencies ──────────────────────────────────────────────────────────
+
+  @Nested
+  @DisplayName("getMyAgencies()")
+  class GetMyAgencies {
+
+    private static final String OWNER_KC_ID = "kc-owner-bailleur";
+    private User ownerUser;
+
+    @BeforeEach
+    void setUpOwner() {
+      ownerUser = SharedTestFixtures.buildUserWithoutAgency(OWNER_KC_ID, UUID.randomUUID());
+    }
+
+    @Test
+    @DisplayName("Echec – utilisateur introuvable → USER_NOT_FOUND")
+    void getMyAgencies_userNotFound_throws() {
+      when(userRepo.findByKeycloakId(OWNER_KC_ID)).thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> service.getMyAgencies(OWNER_KC_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Succès – retourne les agences liées avec toutes leurs informations")
+    void getMyAgencies_success_returnsLinkedAgencies() throws CustomException {
+      Agency linkedAgency =
+          Agency.builder()
+              .name("Immobilier Dakar")
+              .phone("+221771234567")
+              .email("contact@immo-dakar.sn")
+              .logoUrl("https://minio/agencies-logos/agency1.webp")
+              .build();
+      SharedTestFixtures.injectId(linkedAgency, SharedTestFixtures.AGENCY_ID);
+
+      BailleurAgencyLink link =
+          BailleurAgencyLink.builder()
+              .bailleurUserId(ownerUser.getId())
+              .agencyId(SharedTestFixtures.AGENCY_ID)
+              .joinedAt(LocalDateTime.of(2025, 4, 15, 9, 0))
+              .build();
+      SharedTestFixtures.injectId(link, UUID.randomUUID());
+
+      when(userRepo.findByKeycloakId(OWNER_KC_ID)).thenReturn(Optional.of(ownerUser));
+      when(linkRepo.findByBailleurUserId(ownerUser.getId())).thenReturn(List.of(link));
+      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(linkedAgency));
+
+      List<BailleurAgencyResponse> result = service.getMyAgencies(OWNER_KC_ID);
+
+      assertThat(result).hasSize(1);
+      BailleurAgencyResponse response = result.getFirst();
+      assertThat(response.getAgencyId()).isEqualTo(SharedTestFixtures.AGENCY_ID);
+      assertThat(response.getAgencyName()).isEqualTo("Immobilier Dakar");
+      assertThat(response.getAgencyPhone()).isEqualTo("+221771234567");
+      assertThat(response.getAgencyEmail()).isEqualTo("contact@immo-dakar.sn");
+      assertThat(response.getAgencyLogo()).isEqualTo("https://minio/agencies-logos/agency1.webp");
+      assertThat(response.getLinkedAt()).isEqualTo(LocalDateTime.of(2025, 4, 15, 9, 0));
+    }
+
+    @Test
+    @DisplayName("Succès – aucun lien agence → retourne liste vide sans exception")
+    void getMyAgencies_noLinks_returnsEmptyList() throws CustomException {
+      when(userRepo.findByKeycloakId(OWNER_KC_ID)).thenReturn(Optional.of(ownerUser));
+      when(linkRepo.findByBailleurUserId(ownerUser.getId())).thenReturn(List.of());
+
+      List<BailleurAgencyResponse> result = service.getMyAgencies(OWNER_KC_ID);
+
+      assertThat(result).isEmpty();
+      verify(agencyRepo, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("Succès – agence introuvable en base → champs agency null dans la réponse")
+    void getMyAgencies_agencyDeleted_returnsNullAgencyFields() throws CustomException {
+      UUID missingAgencyId = UUID.randomUUID();
+      BailleurAgencyLink link =
+          BailleurAgencyLink.builder()
+              .bailleurUserId(ownerUser.getId())
+              .agencyId(missingAgencyId)
+              .joinedAt(LocalDateTime.now())
+              .build();
+      SharedTestFixtures.injectId(link, UUID.randomUUID());
+
+      when(userRepo.findByKeycloakId(OWNER_KC_ID)).thenReturn(Optional.of(ownerUser));
+      when(linkRepo.findByBailleurUserId(ownerUser.getId())).thenReturn(List.of(link));
+      when(agencyRepo.findById(missingAgencyId)).thenReturn(Optional.empty());
+
+      List<BailleurAgencyResponse> result = service.getMyAgencies(OWNER_KC_ID);
+
+      assertThat(result).hasSize(1);
+      assertThat(result.getFirst().getAgencyName()).isNull();
+      assertThat(result.getFirst().getAgencyPhone()).isNull();
+      assertThat(result.getFirst().getAgencyEmail()).isNull();
+    }
+
+    @Test
+    @DisplayName("Succès – plusieurs liens agences → retourne toutes les agences")
+    void getMyAgencies_multipleLinks_returnsAll() throws CustomException {
+      UUID agencyId2 = UUID.randomUUID();
+      Agency agency2 = Agency.builder().name("Agence Lomé").build();
+      SharedTestFixtures.injectId(agency2, agencyId2);
+
+      BailleurAgencyLink link1 =
+          BailleurAgencyLink.builder()
+              .bailleurUserId(ownerUser.getId())
+              .agencyId(SharedTestFixtures.AGENCY_ID)
+              .joinedAt(LocalDateTime.now().minusDays(30))
+              .build();
+      SharedTestFixtures.injectId(link1, UUID.randomUUID());
+
+      BailleurAgencyLink link2 =
+          BailleurAgencyLink.builder()
+              .bailleurUserId(ownerUser.getId())
+              .agencyId(agencyId2)
+              .joinedAt(LocalDateTime.now().minusDays(10))
+              .build();
+      SharedTestFixtures.injectId(link2, UUID.randomUUID());
+
+      when(userRepo.findByKeycloakId(OWNER_KC_ID)).thenReturn(Optional.of(ownerUser));
+      when(linkRepo.findByBailleurUserId(ownerUser.getId())).thenReturn(List.of(link1, link2));
+      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
+      when(agencyRepo.findById(agencyId2)).thenReturn(Optional.of(agency2));
+
+      List<BailleurAgencyResponse> result = service.getMyAgencies(OWNER_KC_ID);
+
+      assertThat(result).hasSize(2);
+      assertThat(result)
+          .extracting(BailleurAgencyResponse::getAgencyName)
+          .containsExactlyInAnyOrder("Agence Test CI", "Agence Lomé");
     }
   }
 }

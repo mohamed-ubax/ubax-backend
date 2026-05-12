@@ -173,6 +173,8 @@ public class ResponseMessageConstants {
       "BAILLEUR_APPLICATION_INVALID_STATUS";
   public static final String BAILLEUR_AGENCY_NOT_FOUND = "BAILLEUR_AGENCY_NOT_FOUND";
   public static final String BAILLEUR_GET_LIST_SUCCESS = "BAILLEUR_GET_LIST_SUCCESS";
+  public static final String BAILLEUR_MY_APPLICATIONS_SUCCESS = "BAILLEUR_MY_APPLICATIONS_SUCCESS";
+  public static final String BAILLEUR_MY_AGENCIES_SUCCESS = "BAILLEUR_MY_AGENCIES_SUCCESS";
 
   // ── RESERVATION ─────────────────────────────────────────────────
   public static final String RESERVATION_GET_SUCCESS = "RESERVATION_GET_SUCCESS";
