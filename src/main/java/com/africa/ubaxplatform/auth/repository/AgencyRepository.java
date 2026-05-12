@@ -21,5 +21,9 @@ public interface AgencyRepository extends JpaRepository<Agency, UUID> {
 
   Page<Agency> findByActiveAndDeletedAtIsNull(boolean active, Pageable pageable);
 
+  Page<Agency> findByActiveTrueAndDeletedAtIsNull(Pageable pageable);
+
+  Page<Agency> findByActiveTrueAndDeletedAtIsNullAndCityIgnoreCase(String city, Pageable pageable);
+
   long countByActiveAndDeletedAtIsNull(boolean active);
 }

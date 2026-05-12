@@ -23,14 +23,10 @@ import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
-import com.africa.ubaxplatform.common.util.OtpUtils;
-import com.africa.ubaxplatform.notification.service.SmsService;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,13 +51,22 @@ public class BailleurServiceImpl implements BailleurService {
   private final PropertyRepository propertyRepository;
   private final LaCodeListRepository codeListRepo;
   private final KeycloakAdminService keycloakAdminService;
-  private final SmsService smsService;
 
-  // ── Soumission publique ────────────────────────────────────────
+  // ── Soumission (CLIENT authentifié) ───────────────────────────
 
   @Override
   @Transactional
-  public BailleurApplicationResponse apply(BailleurApplyRequest request) throws CustomException {
+  public BailleurApplicationResponse apply(String callerKeycloakId, BailleurApplyRequest request)
+      throws CustomException {
+
+    User caller =
+        userRepo
+            .findByKeycloakId(callerKeycloakId)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND),
+                        ResponseMessageConstants.USER_NOT_FOUND));
 
     Agency agency =
         agencyRepo
@@ -76,52 +81,47 @@ public class BailleurServiceImpl implements BailleurService {
     boolean conflictDetected = false;
     StringBuilder conflictNote = new StringBuilder();
 
-    Optional<User> existingBailleur = userRepo.findByPhone(request.getPhone());
+    if (propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
+        caller.getId(), request.getAgencyId())) {
+      throw new CustomException(
+          new IllegalArgumentException("Un bien de ce bailleur est déjà géré par une autre agence"),
+          ResponseMessageConstants.BAILLEUR_APPLICATION_CONFLICT);
+    }
 
-    if (existingBailleur.isPresent()) {
-      User bailleur = existingBailleur.get();
-      if (propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
-          bailleur.getId(), request.getAgencyId())) {
-        throw new CustomException(
-            new IllegalArgumentException(
-                "Un bien de ce bailleur est déjà géré par une autre agence"),
-            ResponseMessageConstants.BAILLEUR_APPLICATION_CONFLICT);
-      }
-    } else {
-      for (var prop : request.getProperties()) {
-        if (prop.getLatitude() != null && prop.getLongitude() != null) {
-          boolean conflict =
-              propertyRepository.existsNearLocationForOtherAgency(
-                  prop.getLatitude().doubleValue(),
-                  prop.getLongitude().doubleValue(),
-                  request.getAgencyId().toString(),
-                  radius);
-          if (conflict) {
-            conflictDetected = true;
-            if (!conflictNote.isEmpty()) conflictNote.append(" | ");
-            conflictNote
-                .append("Bien à proximité (")
-                .append(prop.getAddress())
-                .append(") déjà géré par une autre agence");
-          }
-        } else {
+    for (var prop : request.getProperties()) {
+      if (prop.getLatitude() != null && prop.getLongitude() != null) {
+        boolean conflict =
+            propertyRepository.existsNearLocationForOtherAgency(
+                prop.getLatitude().doubleValue(),
+                prop.getLongitude().doubleValue(),
+                request.getAgencyId().toString(),
+                radius);
+        if (conflict) {
           conflictDetected = true;
           if (!conflictNote.isEmpty()) conflictNote.append(" | ");
           conflictNote
-              .append("Coordonnées manquantes pour \"")
+              .append("Bien à proximité (")
               .append(prop.getAddress())
-              .append("\" — vérification manuelle requise");
+              .append(") déjà géré par une autre agence");
         }
+      } else {
+        conflictDetected = true;
+        if (!conflictNote.isEmpty()) conflictNote.append(" | ");
+        conflictNote
+            .append("Coordonnées manquantes pour \"")
+            .append(prop.getAddress())
+            .append("\" — vérification manuelle requise");
       }
     }
 
     BailleurApplication application =
         BailleurApplication.builder()
+            .userId(caller.getId())
             .agencyId(request.getAgencyId())
-            .firstName(request.getFirstName())
-            .lastName(request.getLastName())
-            .phone(request.getPhone())
-            .email(request.getEmail())
+            .firstName(caller.getFirstName())
+            .lastName(caller.getLastName())
+            .phone(caller.getPhone())
+            .email(caller.getEmail())
             .idType(request.getIdType())
             .idNumber(request.getIdNumber())
             .status(BailleurApplicationStatus.PENDING)
@@ -130,14 +130,13 @@ public class BailleurServiceImpl implements BailleurService {
             .build();
 
     application = applicationRepo.save(application);
-    List<BailleurApplicationProperty> savedProps =
-        saveProperties(application.getId(), request, existingBailleur.isPresent());
+    List<BailleurApplicationProperty> savedProps = saveProperties(application.getId(), request);
 
     log.info(
-        "Demande bailleur soumise : applicationId={}, agencyId={}, phone={}, conflictDetected={}",
+        "Demande bailleur soumise : applicationId={}, agencyId={}, userId={}, conflictDetected={}",
         application.getId(),
         request.getAgencyId(),
-        request.getPhone(),
+        caller.getId(),
         conflictDetected);
 
     return toResponse(application, agency.getName(), savedProps);
@@ -254,11 +253,22 @@ public class BailleurServiceImpl implements BailleurService {
   @Override
   @Transactional(readOnly = true)
   public Page<BailleurApplicationResponse> getMyApplications(
-      String callerEmail, BailleurApplicationStatus status, Pageable pageable) {
+      String callerKeycloakId, BailleurApplicationStatus status, Pageable pageable)
+      throws CustomException {
+    User caller =
+        userRepo
+            .findByKeycloakId(callerKeycloakId)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND),
+                        ResponseMessageConstants.USER_NOT_FOUND));
+
     Page<BailleurApplication> page =
         status != null
-            ? applicationRepo.findByEmailAndStatus(callerEmail, status, pageable)
-            : applicationRepo.findByEmail(callerEmail, pageable);
+            ? applicationRepo.findByUserIdAndStatus(caller.getId(), status, pageable)
+            : applicationRepo.findByUserId(caller.getId(), pageable);
+
     return page.map(
         app -> {
           String agencyName =
@@ -301,45 +311,38 @@ public class BailleurServiceImpl implements BailleurService {
   private void approveApplication(BailleurApplication application, Agency agency, User reviewer)
       throws CustomException {
 
-    Optional<User> existingUser = userRepo.findByPhone(application.getPhone());
     User bailleur;
 
-    if (existingUser.isEmpty()) {
-      String tempPassword = OtpUtils.generateTempPassword();
-      String keycloakId =
-          keycloakAdminService.createBailleurAccount(
-              application.getFirstName(),
-              application.getLastName(),
-              application.getPhone(),
-              application.getEmail(),
-              tempPassword);
-
-      keycloakAdminService.assignRole(keycloakId, UserRole.OWNER);
-
+    if (application.getUserId() != null) {
+      // Nouveau flux : bailleur authentifié (CLIENT → OWNER)
       bailleur =
-          User.builder()
-              .keycloakId(keycloakId)
-              .firstName(application.getFirstName())
-              .lastName(application.getLastName())
-              .phone(application.getPhone())
-              .email(application.getEmail())
-              .roles(new HashSet<>(Set.of(UserRole.OWNER)))
-              .phoneVerified(false)
-              .emailVerified(false)
-              .build();
-      bailleur = userRepo.save(bailleur);
-
-      smsService.sendSms(
-          application.getPhone(),
-          "Bienvenue sur UBAX ! Votre compte bailleur a été approuvé par "
-              + agency.getName()
-              + ". Connectez-vous sur l'app mobile Ubax avec votre numéro et le mot de passe : "
-              + tempPassword);
-
-      log.info("Compte bailleur créé : userId={}, keycloakId={}", bailleur.getId(), keycloakId);
+          userRepo
+              .findById(application.getUserId())
+              .orElseThrow(
+                  () ->
+                      new CustomException(
+                          new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND),
+                          ResponseMessageConstants.USER_NOT_FOUND));
     } else {
+      // Flux legacy : demande soumise via l'ancien formulaire public
+      Optional<User> existingUser = userRepo.findByPhone(application.getPhone());
+      if (existingUser.isEmpty()) {
+        throw new CustomException(
+            new NotFoundException(
+                "Aucun compte trouvé pour ce bailleur. Demandez-lui de créer un compte CLIENT sur l'application mobile."),
+            ResponseMessageConstants.USER_NOT_FOUND);
+      }
       bailleur = existingUser.get();
-      log.info("Bailleur existant rattaché à l'agence : userId={}", bailleur.getId());
+    }
+
+    if (!bailleur.getRoles().contains(UserRole.OWNER)) {
+      keycloakAdminService.assignRole(bailleur.getKeycloakId(), UserRole.OWNER);
+      bailleur.getRoles().add(UserRole.OWNER);
+      userRepo.save(bailleur);
+      log.info(
+          "Rôle OWNER ajouté : userId={}, keycloakId={}",
+          bailleur.getId(),
+          bailleur.getKeycloakId());
     }
 
     if (!linkRepo.existsByBailleurUserIdAndAgencyId(bailleur.getId(), application.getAgencyId())) {
@@ -364,11 +367,10 @@ public class BailleurServiceImpl implements BailleurService {
   }
 
   private List<BailleurApplicationProperty> saveProperties(
-      UUID applicationId, BailleurApplyRequest request, boolean bailleurKnown) {
+      UUID applicationId, BailleurApplyRequest request) {
     return request.getProperties().stream()
         .map(
             p -> {
-              boolean geoVerified = bailleurKnown || p.getLatitude() != null;
               BailleurApplicationProperty prop =
                   BailleurApplicationProperty.builder()
                       .applicationId(applicationId)
@@ -380,7 +382,7 @@ public class BailleurServiceImpl implements BailleurService {
                       .description(p.getDescription())
                       .latitude(p.getLatitude())
                       .longitude(p.getLongitude())
-                      .geoVerified(geoVerified)
+                      .geoVerified(p.getLatitude() != null)
                       .build();
               return propertyRepo.save(prop);
             })

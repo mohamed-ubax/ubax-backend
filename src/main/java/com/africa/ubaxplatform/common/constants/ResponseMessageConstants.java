@@ -191,6 +191,9 @@ public class ResponseMessageConstants {
   public static final String RESERVATION_UPDATE_FAILURE_INVALID_TRANSITION =
       "RESERVATION_UPDATE_FAILURE_INVALID_TRANSITION";
 
+  // ── AGENCY ──────────────────────────────────────────────────────
+  public static final String AGENCY_LIST_SUCCESS = "AGENCY_LIST_SUCCESS";
+
   // ── ADMIN PARTNER ────────────────────────────────────────────────
   public static final String PARTNER_GET_LIST_SUCCESS = "PARTNER_GET_LIST_SUCCESS";
   public static final String PARTNER_GET_SUCCESS = "PARTNER_GET_SUCCESS";

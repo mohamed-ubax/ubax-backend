@@ -280,8 +280,10 @@ public class ModuleController {
 | V039 | `create_reservations.sql` | Table `reservations` (statuts PENDING → CONFIRMED → COMPLETED \| CANCELLED \| NO_SHOW) |
 | V040 | `create_documents.sql` | Table `documents` (ref_id, ref_type, doc_type, status PENDING\|GENERATED\|SENT\|FAILED, file_url, generated_by FK users) |
 | V041 | `make_payment_recorded_by_nullable.sql` | `recorded_by` nullable sur `payments` (paiements système sans acteur humain) |
+| V042 | `drop_property_type_check_constraint.sql` | Suppression contrainte CHECK statique `properties_property_type_check` — bloquait HOTEL_SUITE et autres types hôteliers ajoutés en V034 |
+| V043 | `add_user_id_to_bailleur_applications.sql` | Colonne `user_id UUID` (nullable, FK → `users.id`) sur `bailleur_applications` — lie la demande au compte CLIENT authentifié |
 
-Prochaine version disponible : **V042**
+Prochaine version disponible : **V044**
 
 ---
 
@@ -319,6 +321,12 @@ Prochaine version disponible : **V042**
 | `GET` | `/v1/admin/users/{userId}/sub-roles` | `ADMIN` | Consulter les sous-rôles |
 | `DELETE` | `/v1/admin/users/{userId}/sub-roles/{role}` | `SUPER_ADMIN` | Révoquer un sous-rôle |
 
+### Agencies
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/agencies` | Authentifié 📱 | Liste paginée des agences actives (filtre optionnel `?city=`) — utilisé avant `POST /v1/bailleur/apply` |
+
 ### Agency Team
 
 | Méthode | Chemin | Rôle | Description |
@@ -352,11 +360,14 @@ Prochaine version disponible : **V042**
 
 ### Property
 
+> **Sécurité** : `GET /v1/properties` et `GET /v1/properties/**` sont publics (pas de JWT requis). Toutes les autres méthodes (POST, PUT, PATCH, DELETE) exigent un JWT Keycloak valide.
+> **`coverPhotoUrl`** : champ présent dans `PropertyResponse` — URL de la photo de couverture (null si aucun média uploadé).
+
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `GET` | `/v1/properties` | Public | Liste paginée + filtres |
-| `GET` | `/v1/properties/{id}` | Public | Détail |
-| `GET` | `/v1/properties/mine` | `PARTNER/OWNER` | Mes biens |
+| `GET` | `/v1/properties` | Public | Liste paginée + filtres (inclut `coverPhotoUrl`) |
+| `GET` | `/v1/properties/{id}` | Public | Détail (inclut `coverPhotoUrl`) |
+| `GET` | `/v1/properties/mine` | `PARTNER/OWNER` | Mes biens (inclut `coverPhotoUrl`) |
 | `POST` | `/v1/properties` | `PARTNER/OWNER` | Créer brouillon |
 | `PUT` | `/v1/properties/{id}` | `PARTNER/OWNER` | Mettre à jour |
 | `PATCH` | `/v1/properties/{id}/submit` | `PARTNER/OWNER` | Soumettre en modération |
@@ -420,9 +431,14 @@ Prochaine version disponible : **V042**
 
 ### Bailleur
 
+> **Flux mobile** : `CLIENT` connecté → choisit une agence (`GET /v1/agencies`) → soumet une demande (`POST /v1/bailleur/apply`) → agence approuve → rôle `UBAX_OWNER` ajouté automatiquement → token refreshé → formulaire de saisie de bien débloqué.
+> **`POST /v1/bailleur/apply`** : requiert JWT `CLIENT`. Les champs `firstName`, `lastName`, `phone`, `email` sont extraits automatiquement du compte — seuls `agencyId`, `idType`, `idNumber` et `properties` sont requis dans le body.
+
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `POST` | `/v1/bailleur/apply` | Public | Soumettre une demande d'adhésion bailleur |
+| `POST` | `/v1/bailleur/apply` | `CLIENT` 📱 | Soumettre une demande d'adhésion bailleur |
+| `GET` | `/v1/bailleur/my-applications` | `OWNER` 📱 | Mes demandes d'adhésion (filtrable par statut) |
+| `GET` | `/v1/bailleur/my-agencies` | `OWNER` 📱 | Agences auxquelles je suis lié |
 | `GET` | `/v1/bailleur/agency/applications` | `PARTNER` + `DIRECTEUR_AGENCE` | Liste paginée des demandes reçues |
 | `GET` | `/v1/bailleur/agency/applications/{id}` | `PARTNER` + `DIRECTEUR_AGENCE` | Détail d'une demande |
 | `PATCH` | `/v1/bailleur/agency/applications/{id}/decision` | `PARTNER` + `DIRECTEUR_AGENCE` | Approuver / rejeter |

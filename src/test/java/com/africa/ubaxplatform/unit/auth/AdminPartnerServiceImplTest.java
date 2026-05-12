@@ -61,7 +61,7 @@ class AdminPartnerServiceImplTest {
     SharedTestFixtures.injectId(hotel, HOTEL_ID);
   }
 
-  // ── Agences ──────────────────────────────────────────────────────────────
+  // Agences
 
   @Nested
   @DisplayName("listAgencies()")
@@ -171,7 +171,7 @@ class AdminPartnerServiceImplTest {
     }
   }
 
-  // ── Hôtels ───────────────────────────────────────────────────────────────
+  // Hôtels
 
   @Nested
   @DisplayName("listHotels()")
@@ -273,7 +273,7 @@ class AdminPartnerServiceImplTest {
     }
   }
 
-  // ── Clients ───────────────────────────────────────────────────────────────
+  // Clients
 
   @Nested
   @DisplayName("listClients()")

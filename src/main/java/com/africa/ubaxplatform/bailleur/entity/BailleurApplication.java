@@ -28,6 +28,9 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class BailleurApplication extends BaseEntity {
 
+  @Column(name = "user_id")
+  private UUID userId;
+
   @Column(name = "agency_id", nullable = false)
   private UUID agencyId;
 

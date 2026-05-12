@@ -1,8 +1,13 @@
 package com.africa.ubaxplatform.unit.property;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
@@ -86,7 +91,7 @@ class PropertyServiceImplTest {
     SharedTestFixtures.injectId(property, PROPERTY_ID);
   }
 
-  // ── create ─────────────────────────────────────────────────────────────────
+  // create
 
   @Nested
   @DisplayName("create()")
@@ -132,7 +137,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── getById ────────────────────────────────────────────────────────────────
+  // getById
 
   @Nested
   @DisplayName("getById()")
@@ -161,7 +166,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── list ───────────────────────────────────────────────────────────────────
+  // list
 
   @Nested
   @DisplayName("list()")
@@ -190,7 +195,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── listMine ───────────────────────────────────────────────────────────────
+  // listMine
 
   @Nested
   @DisplayName("listMine()")
@@ -225,7 +230,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── update ─────────────────────────────────────────────────────────────────
+  // update
 
   @Nested
   @DisplayName("update()")
@@ -273,7 +278,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── submit ─────────────────────────────────────────────────────────────────
+  // submit
 
   @Nested
   @DisplayName("submit()")
@@ -306,7 +311,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── archive ────────────────────────────────────────────────────────────────
+  // archive
 
   @Nested
   @DisplayName("archive()")
@@ -326,7 +331,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── updateStatus ───────────────────────────────────────────────────────────
+  // updateStatus
 
   @Nested
   @DisplayName("updateStatus()")
@@ -372,7 +377,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── boost / expiration ─────────────────────────────────────────────────────
+  // boost / expiration
 
   @Nested
   @DisplayName("Boost & Expiration (admin)")
@@ -422,7 +427,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── Médias ─────────────────────────────────────────────────────────────────
+  // ── Médias
 
   @Nested
   @DisplayName("Médias")
@@ -552,7 +557,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── Documents ──────────────────────────────────────────────────────────────
+  // Documents
 
   @Nested
   @DisplayName("Documents")
@@ -657,7 +662,7 @@ class PropertyServiceImplTest {
     }
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // Helpers
 
   private static PropertyCreateRequest minimalCreateRequest(UUID ownerId) {
     return new PropertyCreateRequest(

@@ -13,7 +13,8 @@ import org.springframework.data.domain.Pageable;
 
 public interface BailleurService {
 
-  BailleurApplicationResponse apply(BailleurApplyRequest request) throws CustomException;
+  BailleurApplicationResponse apply(String callerKeycloakId, BailleurApplyRequest request)
+      throws CustomException;
 
   BailleurApplicationResponse processDecision(
       UUID applicationId, BailleurDecisionRequest request, String reviewerKeycloakId)
@@ -26,7 +27,8 @@ public interface BailleurService {
   Page<BailleurApplicationResponse> listAll(Pageable pageable);
 
   Page<BailleurApplicationResponse> getMyApplications(
-      String callerEmail, BailleurApplicationStatus status, Pageable pageable);
+      String callerKeycloakId, BailleurApplicationStatus status, Pageable pageable)
+      throws CustomException;
 
   List<BailleurAgencyResponse> getMyAgencies(String callerKeycloakId) throws CustomException;
 }
