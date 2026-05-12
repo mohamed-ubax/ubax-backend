@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "ad64c28b-53cf-44ca-a9c4-8835388def14",
+    "_postman_id": "4831e5dd-c569-4dc3-a8ae-cb1c494fd8ec",
     "name": "UBAX Platform API",
-    "description": "Collection complète des APIs UBAX Platform\n\nBase URL: {{base_url}}\nAuthentification: Keycloak OAuth2 (JWT Bearer Token)\n\nVariables d'environnement requises:\n- base_url: http://localhost:9999/api\n- access_token: (auto-rempli par Login)\n- refresh_token: (auto-rempli par Login)\n- keycloak_user_id\n- admin_user_id\n- tenant_id\n- partner_application_id\n- property_id\n- media_id\n- document_id\n- payment_id\n- expense_id\n- bailleur_application_id",
+    "description": "Collection complète des APIs UBAX Platform\n\nBase URL: {{base_url}}\nAuthentification: Keycloak OAuth2 (JWT Bearer Token)\n\nVariables d'environnement requises:\n- base_url: http://localhost:9999/api\n- access_token: (auto-rempli par Login)\n- refresh_token: (auto-rempli par Login)\n- keycloak_user_id\n- admin_user_id\n- tenant_id\n- partner_application_id\n- property_id\n- media_id\n- document_id\n- payment_id\n- expense_id\n- bailleur_application_id\n- reservation_id\n- contract_id\n- ticket_id\n- hotel_id\n- owner_user_id\n- team_member_id\n- role",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "28441649",
-    "_collection_link": "https://go.postman.co/collection/28441649-ad64c28b-53cf-44ca-a9c4-8835388def14?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/28441649-4831e5dd-c569-4dc3-a8ae-cb1c494fd8ec?source=collection_link"
   },
   "item": [
     {
@@ -97,7 +97,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"email\": \"spirittechrevolution@gmail.com\",\n  \"password\": \"password123\"\n}"
+                  "raw": "{\n  \"email\": \"elhrm.sow@unchk.edu.sn\",\n  \"password\": \"password123\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/login",
@@ -908,37 +908,6 @@
           "response": []
         },
         {
-          "name": "Changer le rôle d'un membre",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"role\": \"COMPTABLE_AGENCE\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/agency/team/{{team_member_id}}/role",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v1",
-                "agency",
-                "team",
-                "{{team_member_id}}",
-                "role"
-              ]
-            },
-            "description": "PARTNER + DIRECTEUR_AGENCE : Modifier le rôle d'un membre."
-          },
-          "response": []
-        },
-        {
           "name": "Retirer un membre",
           "request": {
             "method": "DELETE",
@@ -956,6 +925,130 @@
               ]
             },
             "description": "PARTNER + DIRECTEUR_AGENCE : Retirer un membre de l'équipe agence."
+          },
+          "response": []
+        },
+        {
+          "name": "Membres inactifs equipe agence",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/agency/team/inactive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team",
+                "inactive"
+              ]
+            },
+            "description": "PARTNER agence - Lister les membres retires de l equipe agence."
+          },
+          "response": []
+        },
+        {
+          "name": "Assigner sous-roles agence",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  \"DIRECTEUR_AGENCE\",\n  \"COMMERCIAL\"\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/agency/team/{{team_member_id}}/sub-roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team",
+                "{{team_member_id}}",
+                "sub-roles"
+              ]
+            },
+            "description": "PARTNER agence - Assigner des sous-roles agence a un membre (additif)."
+          },
+          "response": []
+        },
+        {
+          "name": "Consulter sous-roles agence",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/agency/team/{{team_member_id}}/sub-roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team",
+                "{{team_member_id}}",
+                "sub-roles"
+              ]
+            },
+            "description": "PARTNER agence - Consulter les sous-roles d un membre de l equipe agence."
+          },
+          "response": []
+        },
+        {
+          "name": "Reactiver membre agence",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/agency/team/{{team_member_id}}/activate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team",
+                "{{team_member_id}}",
+                "activate"
+              ]
+            },
+            "description": "PARTNER agence (DIRECTEUR_AGENCE) - Reactiver un membre retire."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoquer sous-role agence",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/agency/team/{{team_member_id}}/sub-roles/{{role}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "team",
+                "{{team_member_id}}",
+                "sub-roles",
+                "{{role}}"
+              ]
+            },
+            "description": "PARTNER agence - Revoquer un sous-role agence d un membre (ex: {{role}} = COMMERCIAL)."
           },
           "response": []
         }
@@ -1564,7 +1657,7 @@
                       "key": "file",
                       "type": "file",
                       "description": "Photo/vidéo/plan (JPEG, PNG, MP4 — max 50 MB)",
-                      "src": "/C:/Users/snbam/Documents/img/photo_villa1.jpg"
+                      "src": "/C:/Users/snbam/Documents/img/photo_villa3.jpg"
                     },
                     {
                       "key": "type",
@@ -1635,7 +1728,7 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{base_url}}/v1/storage/presign/property-media?propertyId={{property_id}}&fileName=facade.jpeg&contentType=image/jpeg",
+                  "raw": "{{base_url}}/v1/storage/presign/property-media?propertyId={{property_id}}&fileName=facade.jpeg&expires=900&contentType=image/jpeg",
                   "host": [
                     "{{base_url}}"
                   ],
@@ -1656,8 +1749,7 @@
                     },
                     {
                       "key": "expires",
-                      "value": "900",
-                      "disabled": true
+                      "value": "900"
                     },
                     {
                       "key": "contentType",
@@ -1685,7 +1777,7 @@
                 "body": {
                   "mode": "file",
                   "file": {
-                    "src": "/C:/Users/snbam/Pictures/Screenshots/Capture d'écran 2026-02-17 140805.png"
+                    "src": "/C:/Users/snbam/Downloads/Receipt-2752-0456-8755.pdf"
                   }
                 },
                 "url": {
@@ -1886,7 +1978,11 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"docType\": \"TITLE_DEED\",\n  \"title\": \"Titre foncier\",\n  \"fileUrl\": \"{{file_url}}\",\n  \"fileName\": \"{{doc_file_name}}\",\n  \"mimeType\": \"{{doc_mime_type}}\",\n  \"visibleToPublic\": false\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/properties/{{property_id}}/documents",
@@ -2659,6 +2755,26 @@
               ]
             },
             "description": "PARTNER/ADMIN : Tableau de bord agence adapté au sous-rôle de l'appelant.\n\nSous-rôle DIRECTEUR_AGENCE → vue complète (revenus, dépenses, biens, locataires, tickets)\nSous-rôle COMMERCIAL → prospects, rendez-vous, biens actifs\nSous-rôle COMPTABLE_AGENCE → revenus et dépenses (solde masqué)\nSous-rôle AGENT_SAV → tickets ouverts et interventions"
+          },
+          "response": []
+        },
+        {
+          "name": "Dashboard Admin (KPIs globaux)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/dashboard/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "dashboard",
+                "admin"
+              ]
+            },
+            "description": "ADMIN/SUPER_ADMIN - KPIs globaux : agences actives, hotels, clients, reservations, biens, tickets."
           },
           "response": []
         }
@@ -3867,9 +3983,1597 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "Get code list par type (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/code-list/admin/type/{{type}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "code-list",
+                "admin",
+                "type",
+                "{{type}}"
+              ]
+            },
+            "description": "ADMIN/SUPER_ADMIN - Recuperer les valeurs d un type, y compris les types restreints (ex: ROLE_UBAX_INTERNAL)."
+          },
+          "response": []
         }
       ],
       "description": "Listes de codes référentiels métier"
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {
+          "name": "Client",
+          "item": [
+            {
+              "name": "Soumettre une reservation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"propertyId\": \"{{property_id}}\",\n  \"checkInDate\": \"2026-06-10\",\n  \"checkOutDate\": \"2026-06-15\",\n  \"guestCount\": 2,\n  \"notes\": \"Chambre avec vue si possible\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations"
+                  ]
+                },
+                "description": "CLIENT - Soumettre une demande de reservation hoteliere."
+              },
+              "response": []
+            },
+            {
+              "name": "Mes reservations",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/mine?page=0&size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "mine"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "CLIENT - Liste paginee des reservations du client connecte."
+              },
+              "response": []
+            },
+            {
+              "name": "Detail reservation",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}"
+                  ]
+                },
+                "description": "CLIENT ou PARTNER - Detail complet d une reservation."
+              },
+              "response": []
+            },
+            {
+              "name": "Annuler ma reservation",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}"
+                  ]
+                },
+                "description": "CLIENT - Annuler une reservation PENDING uniquement.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Changement de plans\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Hotel (PARTNER)",
+          "item": [
+            {
+              "name": "Reservations de mon hotel",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/hotel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "hotel"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "PARTNER hotelier - Liste paginee des reservations de l hotel."
+              },
+              "response": []
+            },
+            {
+              "name": "Confirmer reservation",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}/confirm",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}",
+                    "confirm"
+                  ]
+                },
+                "description": "PARTNER hotelier - Confirmer une reservation PENDING -> CONFIRMED."
+              },
+              "response": []
+            },
+            {
+              "name": "Annuler reservation (hotel)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "PARTNER hotelier - Annuler une reservation PENDING ou CONFIRMED.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Surreservation - impossibilite d honorer la demande\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Marquer sejour termine",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}/complete",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}",
+                    "complete"
+                  ]
+                },
+                "description": "PARTNER hotelier - Marquer le sejour CONFIRMED -> COMPLETED."
+              },
+              "response": []
+            },
+            {
+              "name": "Marquer no-show",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}/no-show",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}",
+                    "no-show"
+                  ]
+                },
+                "description": "PARTNER hotelier - Marquer le client no-show CONFIRMED -> NO_SHOW."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Admin",
+          "item": [
+            {
+              "name": "Toutes les reservations (admin)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Toutes les reservations de la plateforme."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Contracts",
+      "item": [
+        {
+          "name": "Creer contrat (DRAFT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"propertyId\": \"{{property_id}}\",\n  \"ownerId\": \"{{owner_user_id}}\",\n  \"tenantId\": \"{{tenant_id}}\",\n  \"contractType\": \"LEASE\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2027-06-30\",\n  \"monthlyRent\": 350000,\n  \"monthlyCharges\": 15000,\n  \"depositAmount\": 700000,\n  \"agencyCommissionRate\": 5,\n  \"paymentDay\": 5,\n  \"specialClauses\": \"Animaux interdits\",\n  \"terminationConditions\": \"Preavis de 3 mois\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/contracts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts"
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN - Creer un nouveau contrat en statut DRAFT."
+          },
+          "response": []
+        },
+        {
+          "name": "Lister contrats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN - Lister les contrats. Filtrable par statut."
+          },
+          "response": []
+        },
+        {
+          "name": "Detail contrat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/{{contract_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "{{contract_id}}"
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN/CLIENT - Detail complet d un contrat."
+          },
+          "response": []
+        },
+        {
+          "name": "Modifier contrat (DRAFT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monthlyRent\": 375000,\n  \"specialClauses\": \"Animaux autorises avec caution\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/{{contract_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "{{contract_id}}"
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN - Modifier un contrat en statut DRAFT uniquement."
+          },
+          "response": []
+        },
+        {
+          "name": "Soumettre contrat -> PENDING_SIGNATURE",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/{{contract_id}}/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "{{contract_id}}",
+                "submit"
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN - Soumettre le contrat pour signature. Declenche la generation PDF."
+          },
+          "response": []
+        },
+        {
+          "name": "Activer contrat -> ACTIVE (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/{{contract_id}}/activate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "{{contract_id}}",
+                "activate"
+              ]
+            },
+            "description": "ADMIN - Activer le contrat et creer le premier loyer LEASE."
+          },
+          "response": []
+        },
+        {
+          "name": "Resilier contrat -> TERMINATED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/{{contract_id}}/terminate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "{{contract_id}}",
+                "terminate"
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN - Resilier un contrat ACTIVE -> TERMINATED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"terminationReason\": \"Non-paiement de 2 mois de loyer consecutifs\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Annuler contrat -> CANCELLED",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/{{contract_id}}/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "{{contract_id}}",
+                "cancel"
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN - Annuler un contrat DRAFT ou PENDING_SIGNATURE."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ticketing",
+      "item": [
+        {
+          "name": "Tickets",
+          "item": [
+            {
+              "name": "Creer un ticket",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"contractId\": \"{{contract_id}}\",\n  \"category\": \"LEAK\",\n  \"title\": \"Fuite sous l evier de la cuisine\",\n  \"description\": \"Il y a une fuite d eau sous l evier depuis ce matin.\",\n  \"priority\": \"HIGH\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets"
+                  ]
+                },
+                "description": "Authentifie - Creer un ticket de maintenance/SAV dans le cadre d un contrat actif."
+              },
+              "response": []
+            },
+            {
+              "name": "Lister tickets",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "OPEN",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "PARTNER/ADMIN - Lister les tickets. Filtrable par statut et agent assigne."
+              },
+              "response": []
+            },
+            {
+              "name": "Detail ticket",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}"
+                  ]
+                },
+                "description": "PARTNER/ADMIN - Detail complet d un ticket."
+              },
+              "response": []
+            },
+            {
+              "name": "Mettre a jour statut",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}",
+                    "status"
+                  ]
+                },
+                "description": "PARTNER/ADMIN - Workflow: OPEN->IN_ANALYSIS->TECHNICIAN_SENT->RESOLVED->CLOSED.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"IN_ANALYSIS\",\n  \"note\": \"Technicien contacte, intervention prevue demain\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Assigner ticket",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/assign",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}",
+                    "assign"
+                  ]
+                },
+                "description": "PARTNER/ADMIN - Assigner un ticket a un agent SAV.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"assignedToId\": \"{{user_id}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Planifier intervention",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/schedule",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}",
+                    "schedule"
+                  ]
+                },
+                "description": "PARTNER/ADMIN - Planifier une intervention technique.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"technicianName\": \"Mamadou Diallo\",\n  \"technicianPhone\": \"+221771234567\",\n  \"scheduledAt\": \"2026-05-15T09:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Saisir cout reparation",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/repair-cost",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}",
+                    "repair-cost"
+                  ]
+                },
+                "description": "PARTNER/ADMIN - Enregistrer le cout de reparation et son imputation.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"repairCost\": 85000,\n  \"costImputedTo\": \"TENANT\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Messages & Pieces jointes",
+          "item": [
+            {
+              "name": "Ajouter message",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Le plombier a remplace le joint defectueux.\",\n  \"type\": \"PUBLIC\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}",
+                    "messages"
+                  ]
+                },
+                "description": "Authentifie - Ajouter un message dans le fil de discussion du ticket."
+              },
+              "response": []
+            },
+            {
+              "name": "Lister messages",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/messages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}",
+                    "messages"
+                  ]
+                },
+                "description": "Authentifie - Consulter le fil de discussion du ticket."
+              },
+              "response": []
+            },
+            {
+              "name": "Lister pieces jointes",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/attachments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "{{ticket_id}}",
+                    "attachments"
+                  ]
+                },
+                "description": "Authentifie - Lister les pieces jointes du ticket."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Partner Management (Admin)",
+      "item": [
+        {
+          "name": "Agences",
+          "item": [
+            {
+              "name": "Lister agences",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/agencies",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "agencies"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Lister toutes les agences partenaires."
+              },
+              "response": []
+            },
+            {
+              "name": "Suspendre agence",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/agencies/{{agency_id}}/suspend",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "agencies",
+                    "{{agency_id}}",
+                    "suspend"
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Suspendre une agence (is_active = false)."
+              },
+              "response": []
+            },
+            {
+              "name": "Reactiver agence",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/agencies/{{agency_id}}/activate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "agencies",
+                    "{{agency_id}}",
+                    "activate"
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Reactiver une agence suspendue."
+              },
+              "response": []
+            },
+            {
+              "name": "Abonnement agence",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/agencies/{{agency_id}}/subscription",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "agencies",
+                    "{{agency_id}}",
+                    "subscription"
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Mettre a jour le plan et la date d expiration de l abonnement agence.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptionPlan\": \"PRO\",\n  \"subscriptionExpiresAt\": \"2027-12-31T23:59:59\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Hotels",
+          "item": [
+            {
+              "name": "Lister hotels",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/hotels",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "hotels"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Lister tous les hotels partenaires."
+              },
+              "response": []
+            },
+            {
+              "name": "Suspendre hotel",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/hotels/{{hotel_id}}/suspend",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "hotels",
+                    "{{hotel_id}}",
+                    "suspend"
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Suspendre un hotel (is_active = false)."
+              },
+              "response": []
+            },
+            {
+              "name": "Reactiver hotel",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/hotels/{{hotel_id}}/activate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "hotels",
+                    "{{hotel_id}}",
+                    "activate"
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Reactiver un hotel suspendu."
+              },
+              "response": []
+            },
+            {
+              "name": "Abonnement hotel",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/hotels/{{hotel_id}}/subscription",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "hotels",
+                    "{{hotel_id}}",
+                    "subscription"
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Mettre a jour le plan et la date d expiration de l abonnement hotel.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptionPlan\": \"PREMIUM\",\n  \"subscriptionExpiresAt\": \"2027-12-31T23:59:59\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Clients",
+          "item": [
+            {
+              "name": "Lister clients",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/admin/partners/clients",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "admin",
+                    "partners",
+                    "clients"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN/SUPER_ADMIN - Lister les utilisateurs avec role CLIENT."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Back-office Members (Admin)",
+      "item": [
+        {
+          "name": "Membres actifs agence (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/admin/agencies/{{agency_id}}/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "agencies",
+                "{{agency_id}}",
+                "members"
+              ]
+            },
+            "description": "ADMIN/SUPER_ADMIN - Lister les membres actifs d une agence."
+          },
+          "response": []
+        },
+        {
+          "name": "Membres inactifs agence (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/admin/agencies/{{agency_id}}/members/inactive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "agencies",
+                "{{agency_id}}",
+                "members",
+                "inactive"
+              ]
+            },
+            "description": "ADMIN/SUPER_ADMIN - Lister les membres inactifs (soft-deleted) d une agence."
+          },
+          "response": []
+        },
+        {
+          "name": "Membres actifs hotel (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/admin/hotels/{{hotel_id}}/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "hotels",
+                "{{hotel_id}}",
+                "members"
+              ]
+            },
+            "description": "ADMIN/SUPER_ADMIN - Lister les membres actifs d un hotel."
+          },
+          "response": []
+        },
+        {
+          "name": "Membres inactifs hotel (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/admin/hotels/{{hotel_id}}/members/inactive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "hotels",
+                "{{hotel_id}}",
+                "members",
+                "inactive"
+              ]
+            },
+            "description": "ADMIN/SUPER_ADMIN - Lister les membres inactifs d un hotel."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hotel Team",
+      "item": [
+        {
+          "name": "Membres actifs equipe hotel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team"
+              ]
+            },
+            "description": "PARTNER hotelier - Lister les membres actifs de l equipe hotel."
+          },
+          "response": []
+        },
+        {
+          "name": "Inviter membre hotel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Kofi\",\n  \"lastName\": \"Mensah\",\n  \"email\": \"kofi.mensah@hotel.sn\",\n  \"phone\": \"+221771234567\",\n  \"subRoles\": [\n    \"RECEPTIONNISTE\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team"
+              ]
+            },
+            "description": "PARTNER hotelier - Inviter un nouveau membre dans l equipe hotel."
+          },
+          "response": []
+        },
+        {
+          "name": "Membres inactifs equipe hotel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team/inactive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team",
+                "inactive"
+              ]
+            },
+            "description": "PARTNER hotelier - Lister les membres retires de l equipe hotel."
+          },
+          "response": []
+        },
+        {
+          "name": "Assigner sous-roles hotel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  \"RECEPTIONNISTE\",\n  \"COMPTABLE_HOTEL\"\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team/{{team_member_id}}/sub-roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team",
+                "{{team_member_id}}",
+                "sub-roles"
+              ]
+            },
+            "description": "PARTNER hotelier - Assigner des sous-roles hotel a un membre (additif)."
+          },
+          "response": []
+        },
+        {
+          "name": "Consulter sous-roles hotel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team/{{team_member_id}}/sub-roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team",
+                "{{team_member_id}}",
+                "sub-roles"
+              ]
+            },
+            "description": "PARTNER hotelier - Consulter les sous-roles d un membre de l equipe hotel."
+          },
+          "response": []
+        },
+        {
+          "name": "Reactiver membre hotel",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team/{{team_member_id}}/activate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team",
+                "{{team_member_id}}",
+                "activate"
+              ]
+            },
+            "description": "PARTNER hotelier (GERANT_HOTEL) - Reactiver un membre retire."
+          },
+          "response": []
+        },
+        {
+          "name": "Retirer membre hotel",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team/{{team_member_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team",
+                "{{team_member_id}}"
+              ]
+            },
+            "description": "PARTNER hotelier (GERANT_HOTEL) - Retirer un membre de l equipe hotel."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoquer sous-role hotel",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/team/{{team_member_id}}/sub-roles/{{role}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "team",
+                "{{team_member_id}}",
+                "sub-roles",
+                "{{role}}"
+              ]
+            },
+            "description": "PARTNER hotelier - Revoquer un sous-role hotel d un membre (ex: {{role}} = RECEPTIONNISTE)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {
+          "name": "Client",
+          "item": [
+            {
+              "name": "Soumettre une reservation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"propertyId\": \"{{property_id}}\",\n  \"checkInDate\": \"2026-06-10\",\n  \"checkOutDate\": \"2026-06-15\",\n  \"guestCount\": 2,\n  \"notes\": \"Chambre avec vue si possible\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations"
+                  ]
+                },
+                "description": "CLIENT - Soumettre une demande de reservation hoteliere."
+              },
+              "response": []
+            },
+            {
+              "name": "Mes reservations",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/mine?page=0&size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "mine"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "CLIENT - Liste paginee des reservations du client connecte."
+              },
+              "response": []
+            },
+            {
+              "name": "Detail reservation",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}"
+                  ]
+                },
+                "description": "CLIENT ou PARTNER - Detail complet d une reservation."
+              },
+              "response": []
+            },
+            {
+              "name": "Annuler ma reservation",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}"
+                  ]
+                },
+                "description": "CLIENT - Annuler une reservation PENDING uniquement.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Changement de plans\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "Health & Monitoring",

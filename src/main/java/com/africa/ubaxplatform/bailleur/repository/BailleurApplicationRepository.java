@@ -12,4 +12,9 @@ public interface BailleurApplicationRepository extends JpaRepository<BailleurApp
   Page<BailleurApplication> findByAgencyId(UUID agencyId, Pageable pageable);
 
   boolean existsByPhoneAndStatus(String phone, BailleurApplicationStatus status);
+
+  Page<BailleurApplication> findByEmail(String email, Pageable pageable);
+
+  Page<BailleurApplication> findByEmailAndStatus(
+      String email, BailleurApplicationStatus status, Pageable pageable);
 }
