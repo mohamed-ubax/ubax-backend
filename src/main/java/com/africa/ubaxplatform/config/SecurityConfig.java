@@ -49,7 +49,6 @@ public class SecurityConfig {
     "/v1/auth/forgot-password/reset",
     "/v1/auth/register/**",
     "/v1/partner/apply",
-    "/v1/bailleur/apply",
     "/v1/code-list/type/**",
   };
 

@@ -50,13 +50,24 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Contrôleur de gestion des bailleurs et de leurs demandes d'adhésion à une agence.
  *
- * <p>Endpoints publics :
+ * <p><b>Flux mobile CLIENT → OWNER :</b>
+ *
+ * <ol>
+ *   <li>CLIENT browse les agences : {@code GET /v1/agencies}
+ *   <li>CLIENT soumet une demande : {@code POST /v1/bailleur/apply} (JWT CLIENT requis)
+ *   <li>DIRECTEUR_AGENCE approuve : {@code PATCH /v1/bailleur/agency/applications/{id}/decision}
+ *   <li>Approbation → rôle {@code UBAX_OWNER} ajouté au compte Keycloak + lien agence créé
+ *   <li>OWNER rafraîchit son token → formulaire de saisie de bien débloqué
+ * </ol>
+ *
+ * <p>Endpoints mobile OWNER :
  *
  * <ul>
- *   <li>{@code POST /v1/bailleur/apply} – soumettre une demande d'adhésion (sans authentification)
+ *   <li>{@code GET /v1/bailleur/my-applications} – suivi statut de la demande
+ *   <li>{@code GET /v1/bailleur/my-agencies} – agences liées (pour rattacher un bien)
  * </ul>
  *
- * <p>Endpoints agence (rôle {@code UBAX_PARTNER} + sous-rôle {@code DIRECTEUR_AGENCE} requis) :
+ * <p>Endpoints agence ({@code UBAX_PARTNER} + sous-rôle {@code DIRECTEUR_AGENCE}) :
  *
  * <ul>
  *   <li>{@code GET /v1/bailleur/agency/applications} – liste paginée des demandes reçues
@@ -64,7 +75,7 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>{@code PATCH /v1/bailleur/agency/applications/{id}/decision} – approuver / rejeter
  * </ul>
  *
- * <p>Endpoints admin (rôle {@code UBAX_ADMIN} requis) :
+ * <p>Endpoints admin ({@code UBAX_ADMIN}) :
  *
  * <ul>
  *   <li>{@code GET /v1/bailleur/admin/applications} – vue globale toutes agences confondues
@@ -73,7 +84,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/bailleur")
 @RequiredArgsConstructor
-@Tag(name = "Bailleur")
+@Tag(
+    name = "Bailleur",
+    description =
+        "Gestion des demandes d'adhésion bailleur à une agence. "
+            + "Les endpoints `/my-applications`, `/my-agencies` et `/apply` sont utilisés par l'application mobile.")
 @Slf4j
 public class BailleurController {
 
@@ -84,18 +99,22 @@ public class BailleurController {
 
   // ── Public ─────────────────────────────────────────────────────
 
-  /** Soumission publique d'une demande d'adhésion bailleur à une agence. */
+  /** Soumission d'une demande d'adhésion bailleur (CLIENT authentifié). */
   @PostMapping("/apply")
   @Operation(
       summary = "Soumettre une demande d'adhésion bailleur",
       description =
-          "🌐 **Public** – Formulaire de demande d'adhésion à une agence UBAX.\n\n"
+          "📱 **Mobile** · 🛡 **Rôle requis :** `CLIENT`\n\n"
+              + "Soumet une demande d'adhésion à une agence UBAX depuis le compte CLIENT connecté.\n\n"
+              + "Les informations d'identité (nom, prénom, téléphone, email) sont automatiquement extraites du compte CLIENT — "
+              + "seuls l'agence cible, la pièce d'identité et la liste des biens sont requis dans le corps.\n\n"
               + "**Vérifications automatiques :**\n"
-              + "- Si le bailleur est **connu** (téléphone existant) : contrôle que ses biens ne sont pas déjà gérés par une autre agence\n"
-              + "- Si le bailleur est **inconnu** : vérification géographique par Haversine (rayon configurable via `GEO_CONFLICT_RADIUS_METERS`)\n"
+              + "- Contrôle que les biens du bailleur ne sont pas déjà gérés par une autre agence\n"
+              + "- Vérification géographique par Haversine (rayon configurable via `GEO_CONFLICT_RADIUS_METERS`)\n"
               + "- Biens sans coordonnées : `conflictDetected = true` → revue manuelle obligatoire\n\n"
               + "La demande est créée avec le statut `PENDING` en attente de décision du `DIRECTEUR_AGENCE`.",
-      tags = {"Bailleur"})
+      tags = {"Bailleur"},
+      security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(
         responseCode = "201",
@@ -104,9 +123,14 @@ public class BailleurController {
             @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = BailleurApplicationResponse.class))),
+    @ApiResponse(responseCode = "400", description = "Données invalides", content = @Content),
     @ApiResponse(
-        responseCode = "400",
-        description = "Données invalides (téléphone, email, coordonnées hors plage...)",
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – CLIENT requis",
         content = @Content),
     @ApiResponse(responseCode = "404", description = "Agence introuvable", content = @Content),
     @ApiResponse(
@@ -114,10 +138,13 @@ public class BailleurController {
         description = "Conflit détecté – un bien de ce bailleur est déjà géré par une autre agence",
         content = @Content)
   })
-  public ResponseEntity<CustomResponse> apply(@RequestBody @Valid BailleurApplyRequest request)
+  public ResponseEntity<CustomResponse> apply(
+      @RequestBody @Valid BailleurApplyRequest request, HttpServletRequest httpRequest)
       throws CustomException {
 
-    BailleurApplicationResponse response = bailleurService.apply(request);
+    RequestUser caller =
+        RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.CLIENT);
+    BailleurApplicationResponse response = bailleurService.apply(caller.getSub(), request);
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             new CustomResponse(
@@ -303,9 +330,10 @@ public class BailleurController {
   @Operation(
       summary = "Mes demandes d'adhésion bailleur",
       description =
-          "🛡 **Rôle requis :** `OWNER`\n\n"
+          "📱 **Mobile** · 🛡 **Rôle requis :** `OWNER`\n\n"
               + "Retourne la liste paginée des demandes soumises par le bailleur connecté (filtrage par email du JWT).\n\n"
-              + "Filtrable par `status` : `PENDING` | `APPROVED` | `REJECTED` | `CANCELLED`.",
+              + "Filtrable par `status` : `PENDING` | `APPROVED` | `REJECTED` | `CANCELLED`.\n\n"
+              + "Utiliser ce endpoint pour afficher le statut de la demande en attente dans l'app mobile.",
       tags = {"Bailleur"},
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
@@ -336,7 +364,7 @@ public class BailleurController {
 
     RequestUser caller = RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.OWNER);
 
-    var result = bailleurService.getMyApplications(caller.getEmail(), status, pageable);
+    var result = bailleurService.getMyApplications(caller.getSub(), status, pageable);
 
     return ResponseEntity.ok(
         new CustomResponse(
@@ -351,8 +379,11 @@ public class BailleurController {
   @Operation(
       summary = "Mes agences partenaires",
       description =
-          "🛡 **Rôle requis :** `OWNER`\n\n"
-              + "Retourne la liste des agences auxquelles le bailleur connecté est lié (demandes approuvées).",
+          "📱 **Mobile** · 🛡 **Rôle requis :** `OWNER`\n\n"
+              + "Retourne la liste des agences auxquelles le bailleur connecté est lié (demandes approuvées).\n\n"
+              + "L'approbation d'une demande déclenche automatiquement l'ajout du rôle `UBAX_OWNER` sur le compte "
+              + "et la création du lien agence. Ce endpoint permet à l'app mobile de déterminer à quelle agence "
+              + "rattacher le formulaire de saisie de bien.",
       tags = {"Bailleur"},
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({

@@ -206,7 +206,7 @@ class UserRoleServiceImplTest {
       List<UserSubRoleResponse> result = service.getSubRoles(partner.getId(), RoleScope.AGENCE);
 
       assertThat(result).hasSize(1);
-      assertThat(result.get(0).role()).isEqualTo(AgenceRole.COMMERCIAL.name());
+      assertThat(result.getFirst().role()).isEqualTo(AgenceRole.COMMERCIAL.name());
     }
 
     @Test

@@ -2,8 +2,12 @@ package com.africa.ubaxplatform.unit.document;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.User;
@@ -69,7 +73,7 @@ class DocumentServiceImplTest {
     SharedTestFixtures.injectId(pendingDoc, UUID.randomUUID());
   }
 
-  // ── generateContractPdf ──────────────────────────────────────────────────
+  // generateContractPdf
 
   @Nested
   @DisplayName("generateContractPdf()")
@@ -117,7 +121,7 @@ class DocumentServiceImplTest {
     }
   }
 
-  // ── generateInvoice ──────────────────────────────────────────────────────
+  // generateInvoice
 
   @Nested
   @DisplayName("generateInvoice()")
@@ -162,7 +166,7 @@ class DocumentServiceImplTest {
     }
   }
 
-  // ── generateReceipt ──────────────────────────────────────────────────────
+  // generateReceipt
 
   @Nested
   @DisplayName("generateReceipt()")
@@ -194,7 +198,7 @@ class DocumentServiceImplTest {
     }
   }
 
-  // ── getDocumentsByRef ────────────────────────────────────────────────────
+  // getDocumentsByRef
 
   @Nested
   @DisplayName("getDocumentsByRef()")
