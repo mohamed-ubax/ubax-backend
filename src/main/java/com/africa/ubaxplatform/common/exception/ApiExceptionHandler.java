@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -161,6 +162,19 @@ public class ApiExceptionHandler {
                 Constants.Message.SERVER_ERROR_BODY,
                 Constants.Status.INTERNAL_SERVER_ERROR,
                 e.getMessage(),
+                null));
+  }
+
+  @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+  public ResponseEntity<CustomResponse> handleInvalidSort(InvalidDataAccessApiUsageException e) {
+    log.warn(
+        "[INVALID_SORT] Expression de tri invalide : {}", e.getMostSpecificCause().getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(
+            new CustomResponse(
+                Constants.Message.BAD_REQUEST_BODY,
+                Constants.Status.BAD_REQUEST,
+                "Paramètre 'sort' invalide — utilisez un nom de champ valide (ex: createdAt, price)",
                 null));
   }
 

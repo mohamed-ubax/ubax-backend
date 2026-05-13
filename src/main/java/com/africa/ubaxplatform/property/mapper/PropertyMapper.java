@@ -1,6 +1,7 @@
 package com.africa.ubaxplatform.property.mapper;
 
 import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.property.dto.PropertyAmenityResponse;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentResponse;
@@ -46,6 +47,7 @@ public class PropertyMapper {
   public static PropertyResponse toResponse(Property p, String coverPhotoUrl) {
     User owner = p.getOwner();
     Agency agency = p.getAgency();
+    Hotel hotel = p.getHotel();
     List<PropertyAmenityResponse> amenities =
         p.getAmenities().stream().map(PropertyMapper::toAmenityResponse).toList();
     return new PropertyResponse(
@@ -54,6 +56,8 @@ public class PropertyMapper {
         owner != null ? owner.getFullName() : null,
         agency != null ? agency.getId() : null,
         agency != null ? agency.getName() : null,
+        hotel != null ? hotel.getId() : null,
+        hotel != null ? hotel.getName() : null,
         p.getTitle(),
         p.getDescription(),
         p.getPropertyType(),

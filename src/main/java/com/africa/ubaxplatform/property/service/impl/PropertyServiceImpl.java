@@ -248,15 +248,17 @@ public class PropertyServiceImpl implements PropertyService {
       BigDecimal maxPrice,
       UUID agencyId,
       UUID ownerId,
+      UUID hotelId,
       Pageable pageable) {
     log.debug(
-        "[LIST] status={} city={} type={} tx={} minPrice={} maxPrice={} page={} size={}",
+        "[LIST] status={} city={} type={} tx={} minPrice={} maxPrice={} hotelId={} page={} size={}",
         status,
         city,
         propertyType,
         transactionType,
         minPrice,
         maxPrice,
+        hotelId,
         pageable.getPageNumber(),
         pageable.getPageSize());
     return propertyRepo
@@ -269,6 +271,7 @@ public class PropertyServiceImpl implements PropertyService {
             maxPrice,
             agencyId,
             ownerId,
+            hotelId,
             pageable)
         .map(p -> PropertyMapper.toResponse(p, resolveCoverPhotoUrl(p.getId())));
   }
@@ -281,7 +284,7 @@ public class PropertyServiceImpl implements PropertyService {
     UUID agencyId = caller.getAgency() != null ? caller.getAgency().getId() : null;
     UUID ownerId = agencyId == null ? caller.getId() : null;
     return propertyRepo
-        .findWithFilters(status, null, null, null, null, null, agencyId, ownerId, pageable)
+        .findWithFilters(status, null, null, null, null, null, agencyId, ownerId, null, pageable)
         .map(p -> PropertyMapper.toResponse(p, resolveCoverPhotoUrl(p.getId())));
   }
 

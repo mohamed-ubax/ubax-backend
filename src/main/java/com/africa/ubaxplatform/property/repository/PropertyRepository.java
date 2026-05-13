@@ -25,6 +25,7 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
         AND (:maxPrice IS NULL OR p.price           <= :maxPrice)
         AND (:agencyId IS NULL OR p.agency.id       = :agencyId)
         AND (:ownerId  IS NULL OR p.owner.id        = :ownerId)
+        AND (:hotelId  IS NULL OR p.hotel.id        = :hotelId)
       """)
   Page<Property> findWithFilters(
       @Param("status") PropertyStatus status,
@@ -35,6 +36,7 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
       @Param("maxPrice") BigDecimal maxPrice,
       @Param("agencyId") UUID agencyId,
       @Param("ownerId") UUID ownerId,
+      @Param("hotelId") UUID hotelId,
       Pageable pageable);
 
   long countByAgencyIdAndStatus(UUID agencyId, PropertyStatus status);

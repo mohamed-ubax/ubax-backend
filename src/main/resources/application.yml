@@ -12,6 +12,13 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+  # ─── Pagination ───────────────────────────────────────────────────
+  data:
+    web:
+      pageable:
+        max-page-size: 200
+        default-page-size: 20
+
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
@@ -115,6 +122,8 @@ springdoc:
       realm: ${keycloak.realm}
   api-docs:
     path: ${SPRINGDOC_API_DOCS_PATH:/api-docs}
+  default-produces-media-type: application/json
+  model-and-view-allowed: false
 
 # ─── Actuator / Monitoring ─────────────────────────────────────
 management:

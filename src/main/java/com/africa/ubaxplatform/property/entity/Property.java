@@ -1,6 +1,7 @@
 package com.africa.ubaxplatform.property.entity;
 
 import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
@@ -69,6 +70,13 @@ public class Property extends BaseEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "agency_id", foreignKey = @ForeignKey(name = "fk_property_agency"))
   private Agency agency;
+
+  /**
+   * Hôtel propriétaire du bien (chambre/suite). {@code null} pour les biens immobiliers classiques.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "hotel_id", foreignKey = @ForeignKey(name = "fk_property_hotel"))
+  private Hotel hotel;
 
   /** Titre accrocheur de l'annonce affiché dans les résultats de recherche. */
   @Column(name = "title", nullable = false, length = 255)
