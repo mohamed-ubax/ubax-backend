@@ -194,6 +194,9 @@ public class ResponseMessageConstants {
   // ── AGENCY ──────────────────────────────────────────────────────
   public static final String AGENCY_LIST_SUCCESS = "AGENCY_LIST_SUCCESS";
 
+  // ── HOTEL ────────────────────────────────────────────────────────
+  public static final String HOTEL_LIST_SUCCESS = "HOTEL_LIST_SUCCESS";
+
   // ── ADMIN PARTNER ────────────────────────────────────────────────
   public static final String PARTNER_GET_LIST_SUCCESS = "PARTNER_GET_LIST_SUCCESS";
   public static final String PARTNER_GET_SUCCESS = "PARTNER_GET_SUCCESS";

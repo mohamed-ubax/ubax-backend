@@ -17,5 +17,8 @@ public interface HotelRepository extends JpaRepository<Hotel, UUID> {
 
   Page<Hotel> findByActiveAndDeletedAtIsNull(boolean active, Pageable pageable);
 
+  Page<Hotel> findByActiveAndDeletedAtIsNullAndCityIgnoreCase(
+      boolean active, String city, Pageable pageable);
+
   long countByActiveAndDeletedAtIsNull(boolean active);
 }
