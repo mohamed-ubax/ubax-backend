@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
@@ -173,10 +174,10 @@ class PropertyServiceImplTest {
   class ListProperties {
 
     @Test
-    @DisplayName("Retourne une page de biens filtrée")
+    @DisplayName("Retourne une page de biens filtrée par ville")
     void list_returnsPage() {
       when(propertyRepo.findWithFilters(
-              any(), any(), any(), any(), any(), any(), any(), any(), any()))
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
           .thenReturn(new PageImpl<>(List.of(property)));
 
       var result =
@@ -189,9 +190,162 @@ class PropertyServiceImplTest {
               null,
               null,
               null,
+              null,
               PageRequest.of(0, 20));
 
       assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Filtre par agencyId – retourne les biens de l'agence")
+    void list_filterByAgencyId_returnsAgencyProperties() {
+      when(propertyRepo.findWithFilters(
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(property)));
+
+      var result =
+          service.list(
+              PropertyStatus.PUBLISHED,
+              null,
+              null,
+              null,
+              null,
+              null,
+              SharedTestFixtures.AGENCY_ID,
+              null,
+              null,
+              PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().get(0).agencyId()).isEqualTo(SharedTestFixtures.AGENCY_ID);
+    }
+
+    @Test
+    @DisplayName("Filtre par hotelId – retourne les chambres de l'hôtel")
+    void list_filterByHotelId_returnsHotelRooms() {
+      UUID hotelId = UUID.randomUUID();
+      Hotel hotel = buildHotel(hotelId);
+      Property hotelRoom =
+          Property.builder()
+              .owner(caller)
+              .hotel(hotel)
+              .title("Suite Présidentielle")
+              .propertyType("HOTEL_SUITE")
+              .transactionType("SHORT_STAY")
+              .price(BigDecimal.valueOf(150_000))
+              .city("Abidjan")
+              .status(PropertyStatus.PUBLISHED)
+              .build();
+      SharedTestFixtures.injectId(hotelRoom, UUID.randomUUID());
+
+      when(propertyRepo.findWithFilters(
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(hotelRoom)));
+
+      var result =
+          service.list(
+              PropertyStatus.PUBLISHED,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              hotelId,
+              PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().get(0).hotelId()).isEqualTo(hotelId);
+      assertThat(result.getContent().get(0).hotelName()).isEqualTo("Hôtel Test CI");
+    }
+
+    @Test
+    @DisplayName("Filtre par hotelId – page vide si hôtel sans biens")
+    void list_filterByHotelId_emptyWhenNoRooms() {
+      when(propertyRepo.findWithFilters(
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of()));
+
+      var result =
+          service.list(
+              PropertyStatus.PUBLISHED,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              UUID.randomUUID(),
+              PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Bien sans hôtel – hotelId et hotelName sont null dans la réponse")
+    void list_propertyWithoutHotel_hotelFieldsAreNull() {
+      when(propertyRepo.findWithFilters(
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(property)));
+
+      var result =
+          service.list(
+              PropertyStatus.PUBLISHED,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              PageRequest.of(0, 20));
+
+      assertThat(result.getContent().get(0).hotelId()).isNull();
+      assertThat(result.getContent().get(0).hotelName()).isNull();
+    }
+
+    @Test
+    @DisplayName("Bien avec hôtel – hotelId et hotelName présents dans la réponse")
+    void list_propertyWithHotel_responseContainsHotelInfo() {
+      UUID hotelId = UUID.randomUUID();
+      Hotel hotel = buildHotel(hotelId);
+      Property hotelRoom =
+          Property.builder()
+              .owner(caller)
+              .hotel(hotel)
+              .title("Chambre Deluxe")
+              .propertyType("HOTEL_SUITE")
+              .transactionType("SHORT_STAY")
+              .price(BigDecimal.valueOf(75_000))
+              .city("Abidjan")
+              .status(PropertyStatus.PUBLISHED)
+              .build();
+      SharedTestFixtures.injectId(hotelRoom, UUID.randomUUID());
+
+      when(propertyRepo.findWithFilters(
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(hotelRoom)));
+
+      var result =
+          service.list(
+              PropertyStatus.PUBLISHED,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              PageRequest.of(0, 20));
+
+      var response = result.getContent().get(0);
+      assertThat(response.hotelId()).isEqualTo(hotelId);
+      assertThat(response.hotelName()).isEqualTo("Hôtel Test CI");
+      assertThat(response.agencyId()).isNull();
     }
   }
 
@@ -207,7 +361,7 @@ class PropertyServiceImplTest {
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findWithFilters(
-              any(), any(), any(), any(), any(), any(), any(), any(), any()))
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
           .thenReturn(new PageImpl<>(List.of(property)));
 
       var result = service.listMine(SharedTestFixtures.KEYCLOAK_ID, null, Pageable.unpaged());
@@ -221,7 +375,7 @@ class PropertyServiceImplTest {
       User ownerOnly = SharedTestFixtures.buildUserWithoutAgency("kc-owner", UUID.randomUUID());
       when(userRepo.findByKeycloakId("kc-owner")).thenReturn(Optional.of(ownerOnly));
       when(propertyRepo.findWithFilters(
-              any(), any(), any(), any(), any(), any(), any(), any(), any()))
+              any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
           .thenReturn(new PageImpl<>(List.of()));
 
       var result = service.listMine("kc-owner", null, Pageable.unpaged());
@@ -699,5 +853,11 @@ class PropertyServiceImplTest {
     return new PropertyUpdateRequest(
         null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
         null, null, null, null, null, null, null, null, null, null, null);
+  }
+
+  private static Hotel buildHotel(UUID hotelId) {
+    Hotel hotel = Hotel.builder().name("Hôtel Test CI").build();
+    SharedTestFixtures.injectId(hotel, hotelId);
+    return hotel;
   }
 }

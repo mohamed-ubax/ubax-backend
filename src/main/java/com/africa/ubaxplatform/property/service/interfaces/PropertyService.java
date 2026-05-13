@@ -38,6 +38,7 @@ public interface PropertyService {
       BigDecimal maxPrice,
       UUID agencyId,
       UUID ownerId,
+      UUID hotelId,
       Pageable pageable);
 
   /** Liste les biens de l'agence/propriétaire authentifié, tous statuts. */

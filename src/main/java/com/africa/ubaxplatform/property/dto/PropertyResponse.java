@@ -18,6 +18,14 @@ public record PropertyResponse(
         UUID agencyId,
     @Schema(description = "Nom de l'agence gestionnaire (null si particulier)", nullable = true)
         String agencyName,
+    @Schema(
+            description = "Identifiant de l'hôtel propriétaire (null si bien immobilier classique)",
+            nullable = true)
+        UUID hotelId,
+    @Schema(
+            description = "Nom de l'hôtel propriétaire (null si bien immobilier classique)",
+            nullable = true)
+        String hotelName,
     @Schema(description = "Titre accrocheur de l'annonce") String title,
     @Schema(description = "Description complète du bien") String description,
     @Schema(

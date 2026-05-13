@@ -71,7 +71,14 @@ public class PropertyController {
       description =
           "🌐 **Public** pour `status=PUBLISHED` (défaut). "
               + "🛡 **ADMIN / SUPER_ADMIN** requis pour tout autre statut (`PENDING`, `DRAFT`, `REJECTED`, `ARCHIVED`).\n\n"
-              + "Retourne les biens avec filtres optionnels.",
+              + "Filtres disponibles :\n"
+              + "- `city` — ville du bien\n"
+              + "- `propertyType` — type de bien (`APARTMENT`, `VILLA`, `HOTEL_SUITE`…)\n"
+              + "- `transactionType` — nature de la transaction (`SALE`, `RENT`, `SHORT_STAY`…)\n"
+              + "- `minPrice` / `maxPrice` — fourchette de prix en XOF\n"
+              + "- `agencyId` — filtre par agence immobilière (UUID)\n"
+              + "- `ownerId` — filtre par propriétaire/bailleur (UUID)\n"
+              + "- `hotelId` — filtre par hôtel (UUID) — biens de type chambre/suite uniquement",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(
@@ -91,14 +98,35 @@ public class PropertyController {
         content = @Content)
   })
   public ResponseEntity<CustomResponse> list(
-      @RequestParam(required = false, defaultValue = "PUBLISHED") PropertyStatus status,
-      @RequestParam(required = false) String city,
-      @RequestParam(required = false) String propertyType,
-      @RequestParam(required = false) String transactionType,
-      @RequestParam(required = false) BigDecimal minPrice,
-      @RequestParam(required = false) BigDecimal maxPrice,
-      @RequestParam(required = false) UUID agencyId,
-      @RequestParam(required = false) UUID ownerId,
+      @Parameter(
+              description =
+                  "Statut des biens (défaut : PUBLISHED). ADMIN requis pour tout autre statut.")
+          @RequestParam(required = false, defaultValue = "PUBLISHED")
+          PropertyStatus status,
+      @Parameter(description = "Filtre par ville (insensible à la casse)")
+          @RequestParam(required = false)
+          String city,
+      @Parameter(description = "Filtre par type de bien (APARTMENT, VILLA, HOTEL_SUITE…)")
+          @RequestParam(required = false)
+          String propertyType,
+      @Parameter(description = "Filtre par type de transaction (SALE, RENT, SHORT_STAY…)")
+          @RequestParam(required = false)
+          String transactionType,
+      @Parameter(description = "Prix minimum en XOF") @RequestParam(required = false)
+          BigDecimal minPrice,
+      @Parameter(description = "Prix maximum en XOF") @RequestParam(required = false)
+          BigDecimal maxPrice,
+      @Parameter(description = "Filtre par agence immobilière (UUID)")
+          @RequestParam(required = false)
+          UUID agencyId,
+      @Parameter(description = "Filtre par propriétaire / bailleur (UUID)")
+          @RequestParam(required = false)
+          UUID ownerId,
+      @Parameter(
+              description =
+                  "Filtre par hôtel – retourne uniquement les chambres/suites de cet hôtel (UUID)")
+          @RequestParam(required = false)
+          UUID hotelId,
       @PageableDefault(size = 20)
           @SortDefault.SortDefaults({
             @SortDefault(sort = "boosted", direction = Sort.Direction.DESC),
@@ -125,6 +153,7 @@ public class PropertyController {
                 maxPrice,
                 agencyId,
                 ownerId,
+                hotelId,
                 pageable)));
   }
 
