@@ -23,6 +23,7 @@ import com.africa.ubaxplatform.property.dto.PropertyUpdateRequest;
 import com.africa.ubaxplatform.property.service.interfaces.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -96,6 +97,24 @@ public class PropertyController {
         responseCode = "403",
         description = "Rôle insuffisant – ADMIN requis pour les statuts non publiés",
         content = @Content)
+  })
+  @Parameters({
+    @Parameter(
+        name = "page",
+        description = "Numéro de page (0-based)",
+        example = "0",
+        schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")),
+    @Parameter(
+        name = "size",
+        description = "Nombre de résultats par page (max 200)",
+        example = "20",
+        schema = @Schema(type = "integer", minimum = "1", maximum = "200", defaultValue = "20")),
+    @Parameter(
+        name = "sort",
+        description =
+            "Tri : champ,direction — ex: `createdAt,desc` · `price,asc` · `publishedAt,desc`",
+        example = "publishedAt,desc",
+        schema = @Schema(type = "string"))
   })
   public ResponseEntity<CustomResponse> list(
       @Parameter(
