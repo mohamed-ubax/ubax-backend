@@ -39,6 +39,26 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
       @Param("hotelId") UUID hotelId,
       Pageable pageable);
 
+  @Query(
+      """
+      SELECT p FROM Property p
+      WHERE p.hotel IS NOT NULL
+        AND (:status   IS NULL OR p.status    = :status)
+        AND (:hotelId  IS NULL OR p.hotel.id  = :hotelId)
+      """)
+  Page<Property> findAllHotelProperties(
+      @Param("status") PropertyStatus status, @Param("hotelId") UUID hotelId, Pageable pageable);
+
+  @Query(
+      """
+      SELECT p FROM Property p
+      WHERE p.agency IS NOT NULL
+        AND (:status   IS NULL OR p.status     = :status)
+        AND (:agencyId IS NULL OR p.agency.id  = :agencyId)
+      """)
+  Page<Property> findAllAgencyProperties(
+      @Param("status") PropertyStatus status, @Param("agencyId") UUID agencyId, Pageable pageable);
+
   long countByAgencyIdAndStatus(UUID agencyId, PropertyStatus status);
 
   long countByOwnerIdAndStatus(UUID ownerId, PropertyStatus status);

@@ -45,6 +45,19 @@ public interface PropertyService {
   Page<PropertyResponse> listMine(String callerKeycloakId, PropertyStatus status, Pageable pageable)
       throws CustomException;
 
+  /**
+   * Admin : tous les biens liés à un hôtel (hotel IS NOT NULL), filtrable par statut et hotelId.
+   */
+  Page<PropertyResponse> listHotelProperties(
+      PropertyStatus status, UUID hotelId, Pageable pageable);
+
+  /**
+   * Admin : tous les biens liés à une agence (agency IS NOT NULL), filtrable par statut et
+   * agencyId.
+   */
+  Page<PropertyResponse> listAgencyProperties(
+      PropertyStatus status, UUID agencyId, Pageable pageable);
+
   PropertyResponse update(UUID id, String callerKeycloakId, PropertyUpdateRequest request)
       throws CustomException;
 

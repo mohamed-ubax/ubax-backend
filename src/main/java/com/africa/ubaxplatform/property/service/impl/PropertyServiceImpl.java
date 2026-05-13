@@ -289,6 +289,34 @@ public class PropertyServiceImpl implements PropertyService {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public Page<PropertyResponse> listHotelProperties(
+      PropertyStatus status, UUID hotelId, Pageable pageable) {
+    log.debug(
+        "[LIST_HOTEL_PROPS] status={} hotelId={} page={}",
+        status,
+        hotelId,
+        pageable.getPageNumber());
+    return propertyRepo
+        .findAllHotelProperties(status, hotelId, pageable)
+        .map(p -> PropertyMapper.toResponse(p, resolveCoverPhotoUrl(p.getId())));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<PropertyResponse> listAgencyProperties(
+      PropertyStatus status, UUID agencyId, Pageable pageable) {
+    log.debug(
+        "[LIST_AGENCY_PROPS] status={} agencyId={} page={}",
+        status,
+        agencyId,
+        pageable.getPageNumber());
+    return propertyRepo
+        .findAllAgencyProperties(status, agencyId, pageable)
+        .map(p -> PropertyMapper.toResponse(p, resolveCoverPhotoUrl(p.getId())));
+  }
+
+  @Override
   @Transactional
   public PropertyResponse update(UUID id, String callerKeycloakId, PropertyUpdateRequest req)
       throws CustomException {
