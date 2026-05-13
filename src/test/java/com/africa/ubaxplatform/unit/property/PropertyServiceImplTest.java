@@ -342,7 +342,7 @@ class PropertyServiceImplTest {
               null,
               PageRequest.of(0, 20));
 
-      var response = result.getContent().get(0);
+      var response = result.getContent().getFirst();
       assertThat(response.hotelId()).isEqualTo(hotelId);
       assertThat(response.hotelName()).isEqualTo("Hôtel Test CI");
       assertThat(response.agencyId()).isNull();
@@ -381,6 +381,171 @@ class PropertyServiceImplTest {
       var result = service.listMine("kc-owner", null, Pageable.unpaged());
 
       assertThat(result.getContent()).isEmpty();
+    }
+  }
+
+  // listHotelProperties
+
+  @Nested
+  @DisplayName("listHotelProperties()")
+  class ListHotelProperties {
+
+    private Property hotelRoom;
+    private UUID hotelId;
+    private Hotel hotel;
+
+    @BeforeEach
+    void setUp() {
+      hotelId = UUID.randomUUID();
+      hotel = buildHotel(hotelId);
+      hotelRoom =
+          Property.builder()
+              .owner(caller)
+              .hotel(hotel)
+              .title("Suite Deluxe")
+              .propertyType("HOTEL_SUITE")
+              .transactionType("SHORT_STAY")
+              .price(BigDecimal.valueOf(120_000))
+              .city("Abidjan")
+              .status(PropertyStatus.PUBLISHED)
+              .build();
+      SharedTestFixtures.injectId(hotelRoom, UUID.randomUUID());
+    }
+
+    @Test
+    @DisplayName("Retourne tous les biens hôteliers sans filtre de statut")
+    void listHotelProperties_noFilter_returnsAllHotelProperties() {
+      when(propertyRepo.findAllHotelProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(hotelRoom)));
+
+      var result = service.listHotelProperties(null, null, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().hotelId()).isEqualTo(hotelId);
+      assertThat(result.getContent().getFirst().hotelName()).isEqualTo("Hôtel Test CI");
+    }
+
+    @Test
+    @DisplayName("Filtre par status=PENDING – retourne uniquement les biens PENDING")
+    void listHotelProperties_filterByStatus_returnsPendingOnly() {
+      hotelRoom.setStatus(PropertyStatus.PENDING);
+      when(propertyRepo.findAllHotelProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(hotelRoom)));
+
+      var result = service.listHotelProperties(PropertyStatus.PENDING, null, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().status()).isEqualTo(PropertyStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("Filtre par hotelId – retourne uniquement les biens de cet hôtel")
+    void listHotelProperties_filterByHotelId_returnsSpecificHotel() {
+      when(propertyRepo.findAllHotelProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(hotelRoom)));
+
+      var result =
+          service.listHotelProperties(PropertyStatus.PUBLISHED, hotelId, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().hotelId()).isEqualTo(hotelId);
+    }
+
+    @Test
+    @DisplayName("Retourne une page vide quand aucun bien hôtelier n'existe")
+    void listHotelProperties_empty_whenNoHotelProperties() {
+      when(propertyRepo.findAllHotelProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of()));
+
+      var result = service.listHotelProperties(null, null, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).isEmpty();
+      assertThat(result.getTotalElements()).isZero();
+    }
+
+    @Test
+    @DisplayName("La réponse ne contient pas d'agencyId (bien lié à un hôtel, pas une agence)")
+    void listHotelProperties_response_agencyIdIsNull() {
+      when(propertyRepo.findAllHotelProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(hotelRoom)));
+
+      var result = service.listHotelProperties(null, null, PageRequest.of(0, 20));
+
+      assertThat(result.getContent().getFirst().agencyId()).isNull();
+      assertThat(result.getContent().getFirst().agencyName()).isNull();
+    }
+  }
+
+  // listAgencyProperties
+
+  @Nested
+  @DisplayName("listAgencyProperties()")
+  class ListAgencyProperties {
+
+    @Test
+    @DisplayName("Retourne tous les biens agence sans filtre de statut")
+    void listAgencyProperties_noFilter_returnsAllAgencyProperties() {
+      when(propertyRepo.findAllAgencyProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(property)));
+
+      var result = service.listAgencyProperties(null, null, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().agencyId()).isEqualTo(SharedTestFixtures.AGENCY_ID);
+    }
+
+    @Test
+    @DisplayName("Filtre par status=PENDING – retourne uniquement les biens PENDING")
+    void listAgencyProperties_filterByStatus_returnsPendingOnly() {
+      property.setStatus(PropertyStatus.PENDING);
+      when(propertyRepo.findAllAgencyProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(property)));
+
+      var result =
+          service.listAgencyProperties(PropertyStatus.PENDING, null, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().status()).isEqualTo(PropertyStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("Filtre par agencyId – retourne uniquement les biens de cette agence")
+    void listAgencyProperties_filterByAgencyId_returnsSpecificAgency() {
+      when(propertyRepo.findAllAgencyProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(property)));
+
+      var result =
+          service.listAgencyProperties(
+              PropertyStatus.PUBLISHED, SharedTestFixtures.AGENCY_ID, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().getFirst().agencyId()).isEqualTo(SharedTestFixtures.AGENCY_ID);
+    }
+
+    @Test
+    @DisplayName("Retourne une page vide quand aucun bien agence n'existe")
+    void listAgencyProperties_empty_whenNoAgencyProperties() {
+      when(propertyRepo.findAllAgencyProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of()));
+
+      var result = service.listAgencyProperties(null, null, PageRequest.of(0, 20));
+
+      assertThat(result.getContent()).isEmpty();
+      assertThat(result.getTotalElements()).isZero();
+    }
+
+    @Test
+    @DisplayName("La réponse contient agencyName et agencyId (bien lié à une agence)")
+    void listAgencyProperties_response_agencyInfoPresent() {
+      when(propertyRepo.findAllAgencyProperties(any(), any(), any()))
+          .thenReturn(new PageImpl<>(List.of(property)));
+
+      var result = service.listAgencyProperties(null, null, PageRequest.of(0, 20));
+
+      var response = result.getContent().getFirst();
+      assertThat(response.agencyId()).isEqualTo(SharedTestFixtures.AGENCY_ID);
+      assertThat(response.agencyName()).isNotNull();
+      assertThat(response.hotelId()).isNull();
     }
   }
 

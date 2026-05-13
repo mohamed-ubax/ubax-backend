@@ -176,6 +176,140 @@ public class PropertyController {
                 pageable)));
   }
 
+  // ── Vues admin globales ────────────────────────────────────────
+
+  @GetMapping("/admin/hotels")
+  @Operation(
+      summary = "Admin – Biens de tous les hôtels",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne tous les biens dont `hotel IS NOT NULL` (chambres, suites…), "
+              + "toutes agences et tous hôtels confondus.\n\n"
+              + "Filtres optionnels :\n"
+              + "- `status` — statut du bien (défaut : tous)\n"
+              + "- `hotelId` — restreindre à un hôtel précis",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Liste paginée des biens hôteliers",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PropertyResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – ADMIN requis",
+        content = @Content)
+  })
+  @Parameters({
+    @Parameter(
+        name = "page",
+        description = "Numéro de page (0-based)",
+        example = "0",
+        schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")),
+    @Parameter(
+        name = "size",
+        description = "Nombre de résultats par page (max 200)",
+        example = "20",
+        schema = @Schema(type = "integer", minimum = "1", maximum = "200", defaultValue = "20")),
+    @Parameter(
+        name = "sort",
+        description = "Tri : champ,direction — ex: `createdAt,desc` · `price,asc`",
+        example = "createdAt,desc",
+        schema = @Schema(type = "string"))
+  })
+  public ResponseEntity<CustomResponse> listHotelProperties(
+      @Parameter(description = "Filtre par statut (null = tous les statuts)")
+          @RequestParam(required = false)
+          PropertyStatus status,
+      @Parameter(description = "Restreindre à un hôtel précis (UUID)")
+          @RequestParam(required = false)
+          UUID hotelId,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_GET_LIST_SUCCESS,
+            propertyService.listHotelProperties(status, hotelId, pageable)));
+  }
+
+  @GetMapping("/admin/agencies")
+  @Operation(
+      summary = "Admin – Biens de toutes les agences",
+      description =
+          "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne tous les biens dont `agency IS NOT NULL`, "
+              + "toutes agences confondues.\n\n"
+              + "Filtres optionnels :\n"
+              + "- `status` — statut du bien (défaut : tous)\n"
+              + "- `agencyId` — restreindre à une agence précise",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Liste paginée des biens agence",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PropertyResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – ADMIN requis",
+        content = @Content)
+  })
+  @Parameters({
+    @Parameter(
+        name = "page",
+        description = "Numéro de page (0-based)",
+        example = "0",
+        schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")),
+    @Parameter(
+        name = "size",
+        description = "Nombre de résultats par page (max 200)",
+        example = "20",
+        schema = @Schema(type = "integer", minimum = "1", maximum = "200", defaultValue = "20")),
+    @Parameter(
+        name = "sort",
+        description = "Tri : champ,direction — ex: `createdAt,desc` · `price,asc`",
+        example = "createdAt,desc",
+        schema = @Schema(type = "string"))
+  })
+  public ResponseEntity<CustomResponse> listAgencyProperties(
+      @Parameter(description = "Filtre par statut (null = tous les statuts)")
+          @RequestParam(required = false)
+          PropertyStatus status,
+      @Parameter(description = "Restreindre à une agence précise (UUID)")
+          @RequestParam(required = false)
+          UUID agencyId,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_GET_LIST_SUCCESS,
+            propertyService.listAgencyProperties(status, agencyId, pageable)));
+  }
+
   @GetMapping("/{id}")
   @Operation(
       summary = "Détail d'un bien (public)",
