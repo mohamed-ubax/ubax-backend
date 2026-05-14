@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.reservation.repository;
 
+import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.reservation.codeList.ReservationStatus;
 import com.africa.ubaxplatform.reservation.entity.Reservation;
 import java.time.LocalDate;
@@ -28,6 +29,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
           + " AND r.status = :status AND r.deletedAt IS NULL")
   Page<Reservation> findByHotelIdAndStatus(
       @Param("hotelId") UUID hotelId, @Param("status") ReservationStatus status, Pageable pageable);
+
+  // ── Clients distincts d'un hôtel (via leurs réservations) ───────────────
+
+  @Query(
+      value =
+          "SELECT DISTINCT r.client FROM Reservation r"
+              + " WHERE r.property.hotel.id = :hotelId AND r.deletedAt IS NULL",
+      countQuery =
+          "SELECT COUNT(DISTINCT r.client) FROM Reservation r"
+              + " WHERE r.property.hotel.id = :hotelId AND r.deletedAt IS NULL")
+  Page<User> findDistinctClientsByHotelId(@Param("hotelId") UUID hotelId, Pageable pageable);
 
   // ── Admin : toutes les réservations ──────────────────────────────────────
 

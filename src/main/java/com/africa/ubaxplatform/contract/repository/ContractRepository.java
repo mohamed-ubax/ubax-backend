@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.contract.repository;
 
+import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.contract.codeList.ContractStatus;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import java.util.List;
@@ -30,6 +31,16 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
   Page<Contract> findByOwnerId(UUID ownerId, Pageable pageable);
 
   Page<Contract> findByOwnerIdAndStatus(UUID ownerId, ContractStatus status, Pageable pageable);
+
+  /** Locataires distincts d'une agence — clients ayant au moins un contrat sur un bien agence. */
+  @Query(
+      value =
+          "SELECT DISTINCT t.user FROM Contract c JOIN c.tenant t"
+              + " WHERE c.property.agency.id = :agencyId AND t.deletedAt IS NULL",
+      countQuery =
+          "SELECT COUNT(DISTINCT t.user) FROM Contract c JOIN c.tenant t"
+              + " WHERE c.property.agency.id = :agencyId AND t.deletedAt IS NULL")
+  Page<User> findDistinctClientsByAgencyId(@Param("agencyId") UUID agencyId, Pageable pageable);
 
   /** Tous les contrats actifs d'un type donné — utilisé par le PaymentSchedulerJob. */
   @Query("SELECT c FROM Contract c WHERE c.status = :status AND c.contractType = :contractType")
