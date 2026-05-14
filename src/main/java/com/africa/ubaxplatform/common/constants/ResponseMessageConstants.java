@@ -209,6 +209,14 @@ public class ResponseMessageConstants {
       "PARTNER_SUBSCRIPTION_UPDATE_SUCCESS";
   public static final String CLIENT_GET_LIST_SUCCESS = "CLIENT_GET_LIST_SUCCESS";
 
+  // ── TECHNICIEN ──────────────────────────────────────────────────
+  public static final String TECHNICIEN_CREATE_SUCCESS = "TECHNICIEN_CREATE_SUCCESS";
+  public static final String TECHNICIEN_GET_SUCCESS = "TECHNICIEN_GET_SUCCESS";
+  public static final String TECHNICIEN_GET_LIST_SUCCESS = "TECHNICIEN_GET_LIST_SUCCESS";
+  public static final String TECHNICIEN_UPDATE_SUCCESS = "TECHNICIEN_UPDATE_SUCCESS";
+  public static final String TECHNICIEN_DELETE_SUCCESS = "TECHNICIEN_DELETE_SUCCESS";
+  public static final String TECHNICIEN_NOT_FOUND = "TECHNICIEN_NOT_FOUND";
+
   // ── DASHBOARD ───────────────────────────────────────────────────
   public static final String DASHBOARD_GET_SUCCESS = "DASHBOARD_GET_SUCCESS";
   public static final String DASHBOARD_GET_FAILURE = "DASHBOARD_GET_FAILURE";

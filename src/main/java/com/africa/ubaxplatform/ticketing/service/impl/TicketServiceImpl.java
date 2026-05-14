@@ -9,6 +9,8 @@ import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
+import com.africa.ubaxplatform.technicien.entity.Technicien;
+import com.africa.ubaxplatform.technicien.repository.TechnicienRepository;
 import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import com.africa.ubaxplatform.ticketing.dto.AddTicketMessageRequest;
 import com.africa.ubaxplatform.ticketing.dto.AssignTicketRequest;
@@ -47,6 +49,7 @@ public class TicketServiceImpl implements TicketService {
   private final TicketAttachmentRepository attachmentRepo;
   private final UserRepository userRepo;
   private final ContractRepository contractRepo;
+  private final TechnicienRepository technicienRepo;
 
   @Override
   @Transactional
@@ -181,10 +184,32 @@ public class TicketServiceImpl implements TicketService {
     Ticket ticket = findTicket(ticketId);
     validateTransition(ticket.getStatus(), TicketStatus.TECHNICIAN_SENT);
 
-    ticket.setStatus(TicketStatus.TECHNICIAN_SENT);
-    ticket.setTechnicianName(request.getTechnicianName());
-    ticket.setTechnicianPhone(request.getTechnicianPhone());
+    if (request.getTechnicienId() != null) {
+      Technicien technicien =
+          technicienRepo
+              .findByIdAndDeletedAtIsNull(request.getTechnicienId())
+              .orElseThrow(
+                  () ->
+                      new CustomException(
+                          new NotFoundException(ResponseMessageConstants.TECHNICIEN_NOT_FOUND)));
+      ticket.setTechnicien(technicien);
+      ticket.setTechnicianName(technicien.getFullName());
+      ticket.setTechnicianPhone(technicien.getPhone());
+    } else {
+      if (request.getTechnicianName() == null || request.getTechnicianPhone() == null) {
+        throw new CustomException(
+            new BadRequestException(
+                "Fournir technicienId ou les champs technicianName + technicianPhone"));
+      }
+      ticket.setTechnicien(null);
+      ticket.setTechnicianName(request.getTechnicianName());
+      ticket.setTechnicianPhone(request.getTechnicianPhone());
+    }
     ticket.setInterventionScheduledAt(request.getInterventionScheduledAt());
+    if (request.getInterventionPrice() != null) {
+      ticket.setInterventionPrice(request.getInterventionPrice());
+    }
+    ticket.setStatus(TicketStatus.TECHNICIAN_SENT);
     log.info(
         "Intervention planifiée pour ticket {} : technicien={}",
         ticketId,

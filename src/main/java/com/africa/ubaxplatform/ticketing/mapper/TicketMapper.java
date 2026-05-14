@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.ticketing.mapper;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.contract.entity.Contract;
+import com.africa.ubaxplatform.technicien.entity.Technicien;
 import com.africa.ubaxplatform.ticketing.dto.TicketAttachmentResponse;
 import com.africa.ubaxplatform.ticketing.dto.TicketMessageResponse;
 import com.africa.ubaxplatform.ticketing.dto.TicketResponse;
@@ -40,6 +41,9 @@ public class TicketMapper {
     Contract contract = t.getContract();
     User reporter = t.getReporter();
     User assignedTo = t.getAssignedTo();
+    Technicien technicien = t.getTechnicien();
+    String techName = technicien != null ? technicien.getFullName() : t.getTechnicianName();
+    String techPhone = technicien != null ? technicien.getPhone() : t.getTechnicianPhone();
     return new TicketResponse(
         t.getId(),
         contract != null ? contract.getId() : null,
@@ -52,8 +56,11 @@ public class TicketMapper {
         t.getDescription(),
         t.getPriority(),
         t.getStatus(),
-        t.getTechnicianName(),
-        t.getTechnicianPhone(),
+        technicien != null ? technicien.getId() : null,
+        technicien != null ? technicien.getProfession() : null,
+        techName,
+        techPhone,
+        t.getInterventionPrice(),
         t.getInterventionScheduledAt(),
         t.getResolvedAt(),
         t.getClosedAt(),
