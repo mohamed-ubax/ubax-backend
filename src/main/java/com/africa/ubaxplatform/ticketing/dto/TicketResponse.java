@@ -45,8 +45,13 @@ public record TicketResponse(
     String description,
     String priority,
     TicketStatus status,
+    // ── Technicien ─────────────────────────────────────────────
+    UUID technicienId,
+    String technicienProfession,
     String technicianName,
     String technicianPhone,
+    BigDecimal interventionPrice,
+    // ── Intervention ───────────────────────────────────────────
     LocalDateTime interventionScheduledAt,
     LocalDateTime resolvedAt,
     LocalDateTime closedAt,

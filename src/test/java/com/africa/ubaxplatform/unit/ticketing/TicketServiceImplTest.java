@@ -10,9 +10,12 @@ import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
+import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
+import com.africa.ubaxplatform.technicien.entity.Technicien;
+import com.africa.ubaxplatform.technicien.repository.TechnicienRepository;
 import com.africa.ubaxplatform.testHelper.SharedTestFixtures;
 import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import com.africa.ubaxplatform.ticketing.dto.AddTicketMessageRequest;
@@ -55,6 +58,7 @@ class TicketServiceImplTest {
   @Mock private TicketAttachmentRepository attachmentRepo;
   @Mock private UserRepository userRepo;
   @Mock private ContractRepository contractRepo;
+  @Mock private TechnicienRepository technicienRepo;
 
   @InjectMocks private TicketServiceImpl service;
 
@@ -390,6 +394,66 @@ class TicketServiceImplTest {
 
       assertThatThrownBy(() -> service.scheduleIntervention(SharedTestFixtures.TICKET_ID, req))
           .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    @DisplayName("Succès – technicien enregistré assigné via technicienId")
+    void scheduleIntervention_withRegisteredTechnicien_success() throws Exception {
+      Ticket inAnalysis =
+          SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.IN_ANALYSIS);
+      Technicien technicien = SharedTestFixtures.buildTechnicien(agency, null);
+
+      ScheduleInterventionRequest req = new ScheduleInterventionRequest();
+      req.setTechnicienId(SharedTestFixtures.TECHNICIEN_ID);
+      req.setInterventionScheduledAt(LocalDateTime.now().plusDays(2));
+      req.setInterventionPrice(java.math.BigDecimal.valueOf(75_000));
+
+      when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.of(inAnalysis));
+      when(technicienRepo.findByIdAndDeletedAtIsNull(SharedTestFixtures.TECHNICIEN_ID))
+          .thenReturn(Optional.of(technicien));
+      when(ticketRepo.save(any(Ticket.class))).thenReturn(inAnalysis);
+
+      TicketResponse resp = service.scheduleIntervention(SharedTestFixtures.TICKET_ID, req);
+
+      assertThat(resp.status()).isEqualTo(TicketStatus.TECHNICIAN_SENT);
+      assertThat(inAnalysis.getTechnicien()).isEqualTo(technicien);
+      assertThat(inAnalysis.getInterventionPrice()).isEqualByComparingTo("75000");
+    }
+
+    @Test
+    @DisplayName(
+        "Echec – technicienId fourni mais introuvable → CustomException(NotFoundException)")
+    void scheduleIntervention_registeredTechnicienNotFound_throwsCustomException() {
+      Ticket inAnalysis =
+          SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.IN_ANALYSIS);
+
+      ScheduleInterventionRequest req = new ScheduleInterventionRequest();
+      req.setTechnicienId(SharedTestFixtures.TECHNICIEN_ID);
+      req.setInterventionScheduledAt(LocalDateTime.now().plusDays(2));
+
+      when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.of(inAnalysis));
+      when(technicienRepo.findByIdAndDeletedAtIsNull(SharedTestFixtures.TECHNICIEN_ID))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> service.scheduleIntervention(SharedTestFixtures.TICKET_ID, req))
+          .isInstanceOf(CustomException.class)
+          .hasCauseInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Echec – ni technicienId ni nom/téléphone fournis → CustomException(BadRequest)")
+    void scheduleIntervention_noTechnicienIdNoFields_throwsCustomException() {
+      Ticket inAnalysis =
+          SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.IN_ANALYSIS);
+
+      ScheduleInterventionRequest req = new ScheduleInterventionRequest();
+      req.setInterventionScheduledAt(LocalDateTime.now().plusDays(2));
+
+      when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.of(inAnalysis));
+
+      assertThatThrownBy(() -> service.scheduleIntervention(SharedTestFixtures.TICKET_ID, req))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining("technicienId");
     }
   }
 

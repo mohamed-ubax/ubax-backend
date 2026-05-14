@@ -4,6 +4,7 @@ import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.contract.entity.Contract;
+import com.africa.ubaxplatform.technicien.entity.Technicien;
 import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -133,6 +134,14 @@ public class Ticket extends BaseEntity {
   private TicketStatus status = TicketStatus.OPEN;
 
   /**
+   * Technicien externe référencé dans le système. Prioritaire sur les champs libres {@code
+   * technicianName} / {@code technicianPhone} lorsqu'il est renseigné.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "technicien_id", foreignKey = @ForeignKey(name = "fk_ticket_technicien"))
+  private Technicien technicien;
+
+  /**
    * Nom du prestataire ou technicien externe mandaté pour l'intervention. Renseigné par l'agent SAV
    * lors du passage au statut {@code TECHNICIAN_SENT}.
    */
@@ -142,6 +151,10 @@ public class Ticket extends BaseEntity {
   /** Numéro de téléphone du prestataire pour contact direct par le locataire. */
   @Column(name = "technician_phone", length = 20)
   private String technicianPhone;
+
+  /** Prix d'intervention négocié par téléphone et saisi par l'agent au moment du déclenchement. */
+  @Column(name = "intervention_price", precision = 15, scale = 2)
+  private java.math.BigDecimal interventionPrice;
 
   /**
    * Date et heure planifiées pour l'intervention du prestataire. Communiquée au locataire par
@@ -210,7 +223,7 @@ public class Ticket extends BaseEntity {
 
   /** {@code true} si un prestataire a été assigné et l'intervention planifiée. */
   public boolean hasTechnicianAssigned() {
-    return technicianName != null && interventionScheduledAt != null;
+    return (technicien != null || technicianName != null) && interventionScheduledAt != null;
   }
 
   /** {@code true} si le locataire a laissé une évaluation à la clôture. */

@@ -3,6 +3,7 @@ package com.africa.ubaxplatform.testHelper;
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.entity.UserSubRole;
 import com.africa.ubaxplatform.common.base.BaseEntity;
@@ -14,6 +15,7 @@ import com.africa.ubaxplatform.payment.codeList.PaymentStatus;
 import com.africa.ubaxplatform.payment.codeList.PaymentType;
 import com.africa.ubaxplatform.payment.entity.Expense;
 import com.africa.ubaxplatform.payment.entity.Payment;
+import com.africa.ubaxplatform.technicien.entity.Technicien;
 import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import com.africa.ubaxplatform.ticketing.entity.Ticket;
 import java.math.BigDecimal;
@@ -29,6 +31,8 @@ public final class SharedTestFixtures {
   public static final String KEYCLOAK_ID = "kc-" + UUID.randomUUID();
   public static final UUID USER_ID = UUID.randomUUID();
   public static final UUID AGENCY_ID = UUID.randomUUID();
+  public static final UUID HOTEL_ID = UUID.randomUUID();
+  public static final UUID TECHNICIEN_ID = UUID.randomUUID();
   public static final UUID PAYMENT_ID = UUID.randomUUID();
   public static final UUID EXPENSE_ID = UUID.randomUUID();
   public static final UUID TICKET_ID = UUID.randomUUID();
@@ -40,6 +44,41 @@ public final class SharedTestFixtures {
     Agency agency = Agency.builder().name("Agence Test CI").city("Abidjan").build();
     injectId(agency, AGENCY_ID);
     return agency;
+  }
+
+  public static Hotel buildHotel() {
+    Hotel hotel = Hotel.builder().name("Hotel Test CI").build();
+    injectId(hotel, HOTEL_ID);
+    return hotel;
+  }
+
+  public static User buildHotelUser(String keycloakId, UUID userId, Hotel hotel) {
+    User user =
+        User.builder()
+            .keycloakId(keycloakId)
+            .firstName("Amara")
+            .lastName("Koné")
+            .email("amara@hotel.ci")
+            .phone("+2250700000004")
+            .roles(new HashSet<>(Set.of(UserRole.PARTNER)))
+            .hotel(hotel)
+            .build();
+    injectId(user, userId);
+    return user;
+  }
+
+  public static Technicien buildTechnicien(Agency agency, Hotel hotel) {
+    Technicien t =
+        Technicien.builder()
+            .firstName("Mamadou")
+            .lastName("Diallo")
+            .phone("+2250712345678")
+            .profession("PLOMBIER")
+            .agency(agency)
+            .hotel(hotel)
+            .build();
+    injectId(t, TECHNICIEN_ID);
+    return t;
   }
 
   public static User buildPartnerUser() {
