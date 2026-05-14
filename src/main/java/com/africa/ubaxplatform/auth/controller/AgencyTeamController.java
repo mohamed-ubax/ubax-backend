@@ -3,7 +3,9 @@ package com.africa.ubaxplatform.auth.controller;
 import com.africa.ubaxplatform.auth.codeList.RoleScope;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
 import com.africa.ubaxplatform.auth.dto.AddTeamMemberRequest;
+import com.africa.ubaxplatform.auth.dto.ClientUserResponse;
 import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
+import com.africa.ubaxplatform.auth.service.interfaces.ClientListingService;
 import com.africa.ubaxplatform.auth.service.interfaces.UserRoleService;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
@@ -23,6 +25,10 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -57,7 +63,37 @@ import org.springframework.web.bind.annotation.RestController;
 public class AgencyTeamController {
 
   private final UserRoleService userRoleService;
+  private final ClientListingService clientListingService;
   private final RequestHeaderParser requestHeaderParser;
+
+  @GetMapping("/clients")
+  @Operation(
+      summary = "Lister les clients de mon agence",
+      description =
+          "🏢 **Rôle requis :** `PARTNER` de la même agence.\n\n"
+              + "Retourne la liste paginée des clients ayant au moins un contrat "
+              + "sur un bien géré par votre agence.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste paginée retournée"),
+    @ApiResponse(responseCode = "403", description = "Pas PARTNER de cette agence")
+  })
+  public ResponseEntity<CustomResponse> getAgencyClients(
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    Page<ClientUserResponse> page =
+        clientListingService.listClientsByCallerAgency(authentication.getName(), pageable);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.CLIENT_GET_LIST_SUCCESS,
+            page));
+  }
 
   @PostMapping
   @Operation(

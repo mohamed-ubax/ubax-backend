@@ -1,5 +1,6 @@
 package com.africa.ubaxplatform.auth.mapper;
 
+import com.africa.ubaxplatform.auth.dto.ClientUserResponse;
 import com.africa.ubaxplatform.auth.dto.RegisterResponse;
 import com.africa.ubaxplatform.auth.dto.UserResponse;
 import com.africa.ubaxplatform.auth.entity.Agency;
@@ -87,6 +88,24 @@ public class UserMapper {
         user.getLastLoginAt(),
         user.getCreatedAt(),
         user.getUpdatedAt());
+  }
+
+  /** Convertit un {@link User} en {@link ClientUserResponse} (vue légère pour les listings). */
+  public static ClientUserResponse toClientResponse(User user) {
+    return new ClientUserResponse(
+        user.getId(),
+        user.getFirstName(),
+        user.getLastName(),
+        user.getEmail(),
+        user.getPhone(),
+        user.getCity(),
+        resolveAvatarUrl(user.getAvatarUrl()),
+        user.isEmailVerified(),
+        user.isPhoneVerified(),
+        user.isIdentityVerified(),
+        user.isActive(),
+        user.getLastLoginAt(),
+        user.getCreatedAt());
   }
 
   /**
