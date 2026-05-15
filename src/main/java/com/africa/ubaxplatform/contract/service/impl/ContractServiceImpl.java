@@ -10,6 +10,7 @@ import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.contract.codeList.ContractStatus;
 import com.africa.ubaxplatform.contract.dto.ContractResponse;
+import com.africa.ubaxplatform.contract.dto.ContractStatsResponse;
 import com.africa.ubaxplatform.contract.dto.CreateContractRequest;
 import com.africa.ubaxplatform.contract.dto.TerminateContractRequest;
 import com.africa.ubaxplatform.contract.entity.Contract;
@@ -30,6 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.TextStyle;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -108,25 +110,22 @@ public class ContractServiceImpl implements ContractService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<ContractResponse> list(String keycloakId, ContractStatus status, Pageable pageable)
+  public Page<ContractResponse> list(
+      String keycloakId, ContractStatus status, String search, Pageable pageable)
       throws CustomException {
     User caller = requireUser(keycloakId);
+    String normalizedSearch = (search != null && !search.isBlank()) ? search.trim() : null;
 
     if (caller.getAgency() != null) {
-      UUID agencyId = caller.getAgency().getId();
-      return status != null
-          ? contractRepo
-              .findByAgencyIdAndStatus(agencyId, status, pageable)
-              .map(ContractMapper::toResponse)
-          : contractRepo.findByAgencyId(agencyId, pageable).map(ContractMapper::toResponse);
+      return contractRepo
+          .searchByAgency(caller.getAgency().getId(), status, normalizedSearch, pageable)
+          .map(ContractMapper::toResponse);
     }
 
-    if (caller.getAgency() == null && caller.getHotel() == null) {
-      return status != null
-          ? contractRepo
-              .findByOwnerIdAndStatus(caller.getId(), status, pageable)
-              .map(ContractMapper::toResponse)
-          : contractRepo.findByOwnerId(caller.getId(), pageable).map(ContractMapper::toResponse);
+    if (caller.getHotel() == null) {
+      return contractRepo
+          .searchByOwner(caller.getId(), status, normalizedSearch, pageable)
+          .map(ContractMapper::toResponse);
     }
 
     throw new CustomException(
@@ -136,11 +135,28 @@ public class ContractServiceImpl implements ContractService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<ContractResponse> listAll(ContractStatus status, Pageable pageable) {
-    if (status != null) {
-      return contractRepo.findAll(pageable).map(ContractMapper::toResponse);
+  public Page<ContractResponse> listAll(ContractStatus status, String search, Pageable pageable) {
+    String normalizedSearch = (search != null && !search.isBlank()) ? search.trim() : null;
+    return contractRepo
+        .searchAll(status, normalizedSearch, pageable)
+        .map(ContractMapper::toResponse);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ContractStatsResponse getStats(String keycloakId) throws CustomException {
+    User caller = requireUser(keycloakId);
+
+    List<Object[]> rows;
+    if (caller.getAgency() != null) {
+      rows = contractRepo.countByAgencyGroupByStatus(caller.getAgency().getId());
+    } else if (caller.getHotel() == null) {
+      rows = contractRepo.countByOwnerGroupByStatus(caller.getId());
+    } else {
+      rows = contractRepo.countAllGroupByStatus();
     }
-    return contractRepo.findAll(pageable).map(ContractMapper::toResponse);
+
+    return buildStats(rows);
   }
 
   @Override
@@ -326,6 +342,20 @@ public class ContractServiceImpl implements ContractService {
 
     paymentRepo.save(payment);
     log.info("Premier loyer créé pour contrat {} : dueDate={}", contract.getId(), dueDate);
+  }
+
+  private ContractStatsResponse buildStats(List<Object[]> rows) {
+    long active = 0, pending = 0, terminated = 0;
+    for (Object[] row : rows) {
+      ContractStatus status = (ContractStatus) row[0];
+      long count = (Long) row[1];
+      switch (status) {
+        case ACTIVE -> active += count;
+        case DRAFT, PENDING_SIGNATURE -> pending += count;
+        case TERMINATED, CANCELLED, EXPIRED -> terminated += count;
+      }
+    }
+    return new ContractStatsResponse(active + pending + terminated, active, pending, terminated);
   }
 
   private User requireUser(String keycloakId) throws CustomException {

@@ -7,6 +7,7 @@ import com.africa.ubaxplatform.technicien.dto.UpdateTechnicienRequest;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface TechnicienService {
 
@@ -22,6 +23,9 @@ public interface TechnicienService {
       throws CustomException;
 
   TechnicienResponse toggleAvailability(String callerKeycloakId, UUID id) throws CustomException;
+
+  TechnicienResponse uploadAvatar(String callerKeycloakId, UUID id, MultipartFile file)
+      throws CustomException;
 
   void delete(String callerKeycloakId, UUID id) throws CustomException;
 }

@@ -9,6 +9,7 @@ import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
+import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import com.africa.ubaxplatform.technicien.dto.CreateTechnicienRequest;
 import com.africa.ubaxplatform.technicien.dto.TechnicienResponse;
 import com.africa.ubaxplatform.technicien.dto.UpdateTechnicienRequest;
@@ -16,6 +17,7 @@ import com.africa.ubaxplatform.technicien.entity.Technicien;
 import com.africa.ubaxplatform.technicien.repository.TechnicienRepository;
 import com.africa.ubaxplatform.technicien.service.interfaces.TechnicienService;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,14 +25,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TechnicienServiceImpl implements TechnicienService {
 
+  private static final String BUCKET = "technicien-avatars";
+  private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024;
+  private static final Set<String> ALLOWED_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+
   private final TechnicienRepository technicienRepo;
   private final UserRepository userRepo;
+  private final MinioService minioService;
 
   @Override
   @Transactional
@@ -132,6 +140,56 @@ public class TechnicienServiceImpl implements TechnicienService {
 
   @Override
   @Transactional
+  public TechnicienResponse uploadAvatar(String callerKeycloakId, UUID id, MultipartFile file)
+      throws CustomException {
+    if (file == null || file.isEmpty()) {
+      throw new CustomException(new BadRequestException("Le fichier est vide"));
+    }
+    String contentType = file.getContentType();
+    if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
+      throw new CustomException(
+          new BadRequestException("Format non supporté. Formats acceptés : JPEG, PNG, WEBP"));
+    }
+    if (file.getSize() > MAX_SIZE_BYTES) {
+      throw new CustomException(
+          new BadRequestException("La taille du fichier ne doit pas dépasser 5 Mo"));
+    }
+
+    Technicien technicien = findAndCheckAccess(callerKeycloakId, id);
+
+    String ext =
+        switch (contentType) {
+          case "image/jpeg" -> ".jpg";
+          case "image/png" -> ".png";
+          default -> ".webp";
+        };
+    String objectName = technicien.getId().toString() + ext;
+
+    String existing = technicien.getAvatarUrl();
+    if (existing != null) {
+      String existingObj = extractObjectName(existing);
+      if (existingObj != null && !existingObj.equals(objectName)) {
+        minioService.deleteFile(BUCKET, existingObj);
+      }
+    }
+
+    String avatarUrl;
+    try {
+      avatarUrl =
+          minioService.uploadFile(
+              BUCKET, objectName, file.getInputStream(), file.getSize(), contentType);
+    } catch (Exception e) {
+      throw new CustomException(
+          new BadRequestException("Erreur lors de l'upload : " + e.getMessage()));
+    }
+
+    technicien.setAvatarUrl(avatarUrl);
+    log.info("Avatar mis à jour pour technicien id={}", id);
+    return toResponse(technicienRepo.save(technicien));
+  }
+
+  @Override
+  @Transactional
   public void delete(String callerKeycloakId, UUID id) throws CustomException {
     Technicien technicien = findAndCheckAccess(callerKeycloakId, id);
     technicien.setDeletedAt(LocalDateTime.now());
@@ -173,6 +231,13 @@ public class TechnicienServiceImpl implements TechnicienService {
             () ->
                 new CustomException(
                     new UnAuthorizedException(ResponseMessageConstants.USER_NOT_FOUND)));
+  }
+
+  private String extractObjectName(String url) {
+    if (url == null) return null;
+    String path = url.contains("://") ? url.replaceFirst("https?://[^/]+/", "") : url;
+    int slash = path.indexOf('/');
+    return slash >= 0 ? path.substring(slash + 1) : path;
   }
 
   private TechnicienResponse toResponse(Technicien t) {

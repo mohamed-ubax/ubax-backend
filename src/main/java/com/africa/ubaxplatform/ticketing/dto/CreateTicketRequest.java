@@ -25,24 +25,28 @@ public class CreateTicketRequest {
 
   @NotBlank(message = "La catégorie est obligatoire")
   @Pattern(
-      regexp = "LEAK|ELECTRICAL|LOCK|PLUMBING|APPLIANCE|STRUCTURE|PEST|COMMON_AREA|OTHER",
+      regexp =
+          "PLOMBIER|ELECTRICIEN|SERRURIER|MENUISIER|MACON|PEINTRE|CLIMATISATION|VITRERIE|JARDINAGE|NETTOYAGE|DESINSECTISATION|AUTRE",
       message =
-          "Catégorie invalide. Valeurs : LEAK, ELECTRICAL, LOCK, PLUMBING, APPLIANCE, STRUCTURE,"
-              + " PEST, COMMON_AREA, OTHER")
+          "Catégorie invalide. Valeurs : PLOMBIER, ELECTRICIEN, SERRURIER, MENUISIER, MACON,"
+              + " PEINTRE, CLIMATISATION, VITRERIE, JARDINAGE, NETTOYAGE, DESINSECTISATION, AUTRE")
   @Schema(
-      description = "Catégorie de l'incident",
+      description = "Catégorie métier de l'incident (alignée avec TECHNICIEN_PROFESSION)",
       allowableValues = {
-        "LEAK",
-        "ELECTRICAL",
-        "LOCK",
-        "PLUMBING",
-        "APPLIANCE",
-        "STRUCTURE",
-        "PEST",
-        "COMMON_AREA",
-        "OTHER"
+        "PLOMBIER",
+        "ELECTRICIEN",
+        "SERRURIER",
+        "MENUISIER",
+        "MACON",
+        "PEINTRE",
+        "CLIMATISATION",
+        "VITRERIE",
+        "JARDINAGE",
+        "NETTOYAGE",
+        "DESINSECTISATION",
+        "AUTRE"
       },
-      example = "LEAK")
+      example = "PLOMBIER")
   private String category;
 
   @NotBlank(message = "Le titre est obligatoire")
@@ -51,8 +55,9 @@ public class CreateTicketRequest {
   private String title;
 
   @NotBlank(message = "La description est obligatoire")
+  @Size(min = 20, message = "La description doit contenir au moins 20 caractères")
   @Schema(
-      description = "Description détaillée de l'incident",
+      description = "Description détaillée de l'incident (20 caractères minimum)",
       example = "Il y a une fuite d'eau sous l'évier depuis ce matin. L'eau coule en continu.")
   private String description;
 

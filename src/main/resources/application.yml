@@ -106,6 +106,7 @@ minio:
   buckets:
     users-avatars,
     agencies-logos,
+    technicien-avatars,
     properties-media,
     property-documents,
     tenant-documents,

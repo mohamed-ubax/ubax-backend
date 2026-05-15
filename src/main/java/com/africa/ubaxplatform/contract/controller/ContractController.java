@@ -10,6 +10,7 @@ import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import com.africa.ubaxplatform.contract.codeList.ContractStatus;
 import com.africa.ubaxplatform.contract.dto.ContractResponse;
+import com.africa.ubaxplatform.contract.dto.ContractStatsResponse;
 import com.africa.ubaxplatform.contract.dto.CreateContractRequest;
 import com.africa.ubaxplatform.contract.dto.TerminateContractRequest;
 import com.africa.ubaxplatform.contract.service.interfaces.ContractService;
@@ -77,6 +78,7 @@ public class ContractController {
   })
   public ResponseEntity<CustomResponse> list(
       @RequestParam(required = false) ContractStatus status,
+      @RequestParam(required = false) String search,
       @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
           Pageable pageable,
       HttpServletRequest httpRequest)
@@ -87,9 +89,9 @@ public class ContractController {
 
     Page<ContractResponse> page;
     if (caller.hasRole(UserRole.ADMIN) || caller.hasRole(UserRole.SUPER_ADMIN)) {
-      page = contractService.listAll(status, pageable);
+      page = contractService.listAll(status, search, pageable);
     } else {
-      page = contractService.list(caller.getSub(), status, pageable);
+      page = contractService.list(caller.getSub(), status, search, pageable);
     }
 
     return ResponseEntity.ok(
@@ -98,6 +100,27 @@ public class ContractController {
             Constants.Status.OK,
             ResponseMessageConstants.CONTRACT_GET_LIST_SUCCESS,
             page));
+  }
+
+  @GetMapping("/stats")
+  @Operation(
+      summary = "KPIs contrats (total, actifs, en attente, résiliés/annulés)",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Statistiques retournées"),
+  })
+  public ResponseEntity<CustomResponse> getStats(HttpServletRequest httpRequest)
+      throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+    ContractStatsResponse stats = contractService.getStats(caller.getSub());
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.CONTRACT_GET_STATS_SUCCESS,
+            stats));
   }
 
   @GetMapping("/{id}")
