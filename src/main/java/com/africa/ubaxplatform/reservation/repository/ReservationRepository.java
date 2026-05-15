@@ -34,11 +34,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
   @Query(
       value =
-          "SELECT DISTINCT r.client FROM Reservation r"
-              + " WHERE r.property.hotel.id = :hotelId AND r.deletedAt IS NULL",
+          "SELECT u FROM User u WHERE u.id IN ("
+              + "SELECT DISTINCT r.client.id FROM Reservation r"
+              + " WHERE r.property.hotel.id = :hotelId AND r.deletedAt IS NULL)",
       countQuery =
-          "SELECT COUNT(DISTINCT r.client) FROM Reservation r"
-              + " WHERE r.property.hotel.id = :hotelId AND r.deletedAt IS NULL")
+          "SELECT COUNT(u) FROM User u WHERE u.id IN ("
+              + "SELECT DISTINCT r.client.id FROM Reservation r"
+              + " WHERE r.property.hotel.id = :hotelId AND r.deletedAt IS NULL)")
   Page<User> findDistinctClientsByHotelId(@Param("hotelId") UUID hotelId, Pageable pageable);
 
   // ── Admin : toutes les réservations ──────────────────────────────────────

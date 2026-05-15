@@ -1,8 +1,12 @@
 package com.africa.ubaxplatform.auth.controller;
 
+import com.africa.ubaxplatform.auth.codeList.RoleScope;
 import com.africa.ubaxplatform.auth.codeList.UserRole;
+import com.africa.ubaxplatform.auth.dto.AddTeamMemberRequest;
 import com.africa.ubaxplatform.auth.dto.ClientUserResponse;
+import com.africa.ubaxplatform.auth.dto.UserSubRoleResponse;
 import com.africa.ubaxplatform.auth.service.interfaces.ClientListingService;
+import com.africa.ubaxplatform.auth.service.interfaces.UserRoleService;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
@@ -15,27 +19,49 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Gestion de l'équipe et des clients d'un hôtel partenaire.
+ *
+ * <p>Scope concerné : {@code HOTEL} — valeurs : GERANT_HOTEL, RECEPTIONNISTE, COMPTABLE_HOTEL,
+ * RESPONSABLE_HEBERGEMENT.
+ */
 @RestController
 @RequestMapping("/v1/hotel")
 @RequiredArgsConstructor
 @Tag(
     name = "Hotel Team",
-    description = "🏨 **PARTNER (hôtel)** — Gestion de l'équipe et des clients de l'hôtel.")
+    description =
+        "🏨 **PARTNER (même hôtel)** — Gestion des sous-rôles internes hôtel et liste clients.\n\n"
+            + "**Rôles disponibles :** GERANT_HOTEL · RECEPTIONNISTE · COMPTABLE_HOTEL · RESPONSABLE_HEBERGEMENT\n\n"
+            + "Un membre peut cumuler plusieurs sous-rôles. L'auto-assignation est autorisée.")
 public class HotelTeamController {
 
+  private final UserRoleService userRoleService;
   private final ClientListingService clientListingService;
   private final RequestHeaderParser requestHeaderParser;
+
+  // ── Clients ────────────────────────────────────────────────────────────────
 
   @GetMapping("/clients")
   @Operation(
@@ -65,5 +91,231 @@ public class HotelTeamController {
             Constants.Status.OK,
             ResponseMessageConstants.CLIENT_GET_LIST_SUCCESS,
             page));
+  }
+
+  // ── Équipe ─────────────────────────────────────────────────────────────────
+
+  @GetMapping("/team")
+  @Operation(
+      summary = "Lister les membres de l'équipe hôtel",
+      description =
+          "🏨 **Rôle requis :** `PARTNER` du même hôtel.\n\n"
+              + "Retourne tous les membres actifs de votre hôtel avec leurs informations de profil.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste retournée"),
+    @ApiResponse(responseCode = "403", description = "Pas PARTNER de cet hôtel")
+  })
+  public ResponseEntity<CustomResponse> getTeamMembers(
+      JwtAuthenticationToken authentication, HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    var result = userRoleService.getTeamMembers(callerKeycloakId, RoleScope.HOTEL);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_SUCCESS,
+            result));
+  }
+
+  @PostMapping("/team")
+  @Operation(
+      summary = "Inviter un nouveau membre dans l'équipe hôtel",
+      description =
+          "🏨 **Rôle requis :** `PARTNER` du même hôtel.\n\n"
+              + "Crée un compte PARTNER pour le nouveau membre, l'attache à votre hôtel, "
+              + "assigne les sous-rôles fournis et envoie un email permettant à l'employé de "
+              + "définir son mot de passe.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "201", description = "Membre créé et email envoyé"),
+    @ApiResponse(responseCode = "400", description = "Données invalides ou sous-rôles incorrects"),
+    @ApiResponse(responseCode = "403", description = "Pas PARTNER de cet hôtel"),
+    @ApiResponse(responseCode = "409", description = "Email déjà utilisé")
+  })
+  public ResponseEntity<CustomResponse> addMember(
+      @RequestBody @Valid AddTeamMemberRequest request,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    var result = userRoleService.addTeamMember(callerKeycloakId, request, RoleScope.HOTEL);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(
+            new CustomResponse(
+                Constants.Message.SUCCESS_BODY,
+                Constants.Status.CREATED,
+                ResponseMessageConstants.TEAM_MEMBER_CREATE_SUCCESS,
+                result));
+  }
+
+  @PostMapping("/team/{userId}/sub-roles")
+  @Operation(
+      summary = "Assigner des sous-rôles hôtel à un membre",
+      description =
+          "🛡 **Rôle requis :** `PARTNER` du même hôtel.\n\n"
+              + "Assigne un ou plusieurs sous-rôles HOTEL à un membre de votre équipe. "
+              + "L'auto-assignation est autorisée (`userId` = votre propre ID). "
+              + "Les rôles existants sont préservés (assignation additive).",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "201", description = "Sous-rôles assignés"),
+    @ApiResponse(responseCode = "400", description = "Rôles invalides pour le scope HOTEL"),
+    @ApiResponse(responseCode = "403", description = "Pas le même hôtel ou pas PARTNER"),
+    @ApiResponse(responseCode = "404", description = "Utilisateur introuvable")
+  })
+  public ResponseEntity<CustomResponse> assignSubRoles(
+      @PathVariable UUID userId,
+      @RequestBody @NotEmpty(message = "Au moins un rôle est requis") List<String> roles,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    List<UserSubRoleResponse> result =
+        userRoleService.assignPartnerSubRoles(callerKeycloakId, userId, roles, RoleScope.HOTEL);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(
+            new CustomResponse(
+                Constants.Message.SUCCESS_BODY,
+                Constants.Status.CREATED,
+                ResponseMessageConstants.USER_UPDATE_SUCCESS,
+                result));
+  }
+
+  @GetMapping("/team/{userId}/sub-roles")
+  @Operation(
+      summary = "Consulter les sous-rôles hôtel d'un membre",
+      description = "🛡 **Rôle requis :** `PARTNER` du même hôtel.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponse(responseCode = "200", description = "Liste des sous-rôles retournée")
+  public ResponseEntity<CustomResponse> getSubRoles(
+      @PathVariable UUID userId,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    List<UserSubRoleResponse> result =
+        userRoleService.getPartnerSubRoles(callerKeycloakId, userId, RoleScope.HOTEL);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_SUCCESS,
+            result));
+  }
+
+  @GetMapping("/team/inactive")
+  @Operation(
+      summary = "Lister les membres inactifs de l'équipe hôtel",
+      description =
+          "🏨 **Rôle requis :** `PARTNER` du même hôtel.\n\n"
+              + "Retourne les membres ayant été retirés (soft-deleted) de votre hôtel.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste retournée"),
+    @ApiResponse(responseCode = "403", description = "Pas PARTNER de cet hôtel")
+  })
+  public ResponseEntity<CustomResponse> getInactiveTeamMembers(
+      JwtAuthenticationToken authentication, HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    var result = userRoleService.getInactiveTeamMembers(callerKeycloakId, RoleScope.HOTEL);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_GET_LIST_SUCCESS,
+            result));
+  }
+
+  @PatchMapping("/team/{userId}/activate")
+  @Operation(
+      summary = "Réactiver un membre retiré de l'équipe hôtel",
+      description =
+          "🏨 **Rôle requis :** `PARTNER` · gérant (`GERANT_HOTEL`) ou fondateur du même hôtel.\n\n"
+              + "Annule le soft delete et réactive le compte dans Keycloak.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Membre réactivé"),
+    @ApiResponse(responseCode = "400", description = "Membre déjà actif"),
+    @ApiResponse(responseCode = "403", description = "Pas les droits nécessaires"),
+    @ApiResponse(responseCode = "404", description = "Membre introuvable")
+  })
+  public ResponseEntity<CustomResponse> activateMember(
+      @PathVariable UUID userId,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    userRoleService.reactivateTeamMember(callerKeycloakId, userId, RoleScope.HOTEL);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_UPDATE_SUCCESS,
+            null));
+  }
+
+  @DeleteMapping("/team/{userId}")
+  @Operation(
+      summary = "Retirer un membre de l'équipe hôtel",
+      description =
+          "🏨 **Rôle requis :** `PARTNER` · gérant (`GERANT_HOTEL`) ou fondateur du même hôtel.\n\n"
+              + "Désactive le compte dans Keycloak et marque l'utilisateur comme supprimé en base (soft delete). "
+              + "Le fondateur de la structure et votre propre compte ne peuvent pas être retirés.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Membre retiré"),
+    @ApiResponse(responseCode = "400", description = "Auto-suppression ou membre déjà supprimé"),
+    @ApiResponse(responseCode = "403", description = "Pas les droits nécessaires"),
+    @ApiResponse(responseCode = "404", description = "Membre introuvable")
+  })
+  public ResponseEntity<CustomResponse> removeMember(
+      @PathVariable UUID userId,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    userRoleService.removeTeamMember(callerKeycloakId, userId, RoleScope.HOTEL);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_DELETE_SUCCESS,
+            null));
+  }
+
+  @DeleteMapping("/team/{userId}/sub-roles/{role}")
+  @Operation(
+      summary = "Révoquer un sous-rôle hôtel d'un membre",
+      description = "🛡 **Rôle requis :** `PARTNER` du même hôtel.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Sous-rôle révoqué"),
+    @ApiResponse(responseCode = "404", description = "Sous-rôle introuvable")
+  })
+  public ResponseEntity<CustomResponse> revokeSubRole(
+      @PathVariable UUID userId,
+      @PathVariable String role,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    String callerKeycloakId = authentication.getName();
+    userRoleService.revokePartnerSubRole(callerKeycloakId, userId, role, RoleScope.HOTEL);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.USER_UPDATE_SUCCESS,
+            null));
   }
 }

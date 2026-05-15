@@ -77,13 +77,20 @@ src/main/java/com/africa/ubaxplatform/
 │   ├── codeList/       TicketStatus (enum), MessageType (enum)
 │   ├── controller/     TicketController
 │   ├── dto/            CreateTicketRequest, AddTicketMessageRequest, AssignTicketRequest,
-│   │                   ScheduleInterventionRequest, UpdateRepairCostRequest,
-│   │                   UpdateTicketStatusRequest, TicketResponse, TicketMessageResponse,
-│   │                   TicketAttachmentResponse
-│   ├── entity/         Ticket, TicketAttachment, TicketMessage
+│   │                   ScheduleInterventionRequest (technicienId + interventionPrice),
+│   │                   UpdateRepairCostRequest, UpdateTicketStatusRequest,
+│   │                   TicketResponse (technicienId, technicienProfession, interventionPrice),
+│   │                   TicketMessageResponse, TicketAttachmentResponse
+│   ├── entity/         Ticket (+ technicien FK + interventionPrice), TicketAttachment, TicketMessage
 │   ├── mapper/         TicketMapper
 │   ├── repository/     TicketRepository, TicketMessageRepository, TicketAttachmentRepository
 │   └── service/        TicketService (interface) + TicketServiceImpl
+├── technicien/     ✅ Prestataires externes SAV — gérés par agence ou hôtel (pas de compte plateforme)
+│   ├── controller/     TechnicienController (6 endpoints /v1/technicians)
+│   ├── dto/            CreateTechnicienRequest, UpdateTechnicienRequest, TechnicienResponse
+│   ├── entity/         Technicien (soft delete, available, agency XOR hotel)
+│   ├── repository/     TechnicienRepository
+│   └── service/        TechnicienService (interface) + TechnicienServiceImpl
 ├── contract/       ✅ Baux et contrats — cycle de vie complet + génération premier loyer
 │   ├── codeList/       ContractStatus (DRAFT→PENDING_SIGNATURE→ACTIVE→TERMINATED|CANCELLED)
 │   ├── controller/     ContractController (8 endpoints /v1/contracts)
@@ -282,8 +289,12 @@ public class ModuleController {
 | V041 | `make_payment_recorded_by_nullable.sql` | `recorded_by` nullable sur `payments` (paiements système sans acteur humain) |
 | V042 | `drop_property_type_check_constraint.sql` | Suppression contrainte CHECK statique `properties_property_type_check` — bloquait HOTEL_SUITE et autres types hôteliers ajoutés en V034 |
 | V043 | `add_user_id_to_bailleur_applications.sql` | Colonne `user_id UUID` (nullable, FK → `users.id`) sur `bailleur_applications` — lie la demande au compte CLIENT authentifié |
+| V044 | `add_hotel_id_to_properties.sql` | Colonne `hotel_id UUID` (FK → `hotels.id`) sur `properties` — filtre biens par hôtel |
+| V045 | `create_techniciens.sql` | Table `techniciens` (agency_id XOR hotel_id, available, soft delete, CHECK constraint structure) |
+| V046 | `add_technicien_to_tickets.sql` | Colonnes `technicien_id UUID` (FK → `techniciens.id`) + `intervention_price DECIMAL(15,2)` sur `tickets` |
+| V047 | `seed_technicien_profession_code_lists.sql` | Seed `la_code_list` (TECHNICIEN_PROFESSION : PLOMBIER, ELECTRICIEN, SERRURIER, MENUISIER, MACON, PEINTRE, CLIMATISATION, VITRERIE, JARDINAGE, NETTOYAGE, DESINSECTISATION, AUTRE) |
 
-Prochaine version disponible : **V044**
+Prochaine version disponible : **V048**
 
 ---
 
@@ -312,6 +323,7 @@ Prochaine version disponible : **V044**
 | `PUT` | `/v1/admin/users/{userId}/role` | `SUPER_ADMIN` | Changer rôle admin |
 | `DELETE` | `/v1/admin/users/{userId}` | `SUPER_ADMIN` | Supprimer admin |
 | `POST` | `/v1/users/me/avatar` | Authentifié | Mettre à jour avatar |
+| `GET` | `/v1/admin/clients` | `ADMIN` | Liste tous les clients (`?agencyId=` ou `?hotelId=` optionnel) |
 
 ### Sous-rôles (User Sub-Roles)
 
@@ -335,6 +347,21 @@ Prochaine version disponible : **V044**
 | `POST` | `/v1/agency/team` | `PARTNER` + `DIRECTEUR_AGENCE` | Ajouter membre |
 | `PUT` | `/v1/agency/team/{userId}/role` | `PARTNER` + `DIRECTEUR_AGENCE` | Changer rôle |
 | `DELETE` | `/v1/agency/team/{userId}` | `PARTNER` + `DIRECTEUR_AGENCE` | Retirer membre |
+| `GET` | `/v1/agency/clients` | `PARTNER` | Clients de mon agence (via contrats) |
+
+### Hotel Team
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/hotel/clients` | `PARTNER` | Clients de mon hôtel (via réservations) |
+| `GET` | `/v1/hotel/team` | `PARTNER` | Lister membres actifs |
+| `POST` | `/v1/hotel/team` | `PARTNER` | Inviter un nouveau membre |
+| `POST` | `/v1/hotel/team/{userId}/sub-roles` | `PARTNER` | Assigner des sous-rôles HOTEL |
+| `GET` | `/v1/hotel/team/{userId}/sub-roles` | `PARTNER` | Consulter les sous-rôles d'un membre |
+| `GET` | `/v1/hotel/team/inactive` | `PARTNER` | Lister les membres inactifs |
+| `PATCH` | `/v1/hotel/team/{userId}/activate` | `PARTNER` | Réactiver un membre |
+| `DELETE` | `/v1/hotel/team/{userId}` | `PARTNER` | Retirer un membre (soft delete) |
+| `DELETE` | `/v1/hotel/team/{userId}/sub-roles/{role}` | `PARTNER` | Révoquer un sous-rôle |
 
 ### Partner
 
@@ -424,10 +451,23 @@ Prochaine version disponible : **V044**
 | `GET` | `/v1/tickets/{id}` | Authentifié | Détail |
 | `PATCH` | `/v1/tickets/{id}/status` | `PARTNER/ADMIN` | Mettre à jour le statut |
 | `PATCH` | `/v1/tickets/{id}/assign` | `PARTNER/ADMIN` | Assigner à un agent |
-| `PATCH` | `/v1/tickets/{id}/schedule` | `PARTNER/ADMIN` | Programmer une intervention |
+| `PATCH` | `/v1/tickets/{id}/schedule` | `PARTNER/ADMIN` | Planifier intervention (technicienId ou nom/tel libre + interventionPrice) |
 | `PATCH` | `/v1/tickets/{id}/repair-cost` | `PARTNER/ADMIN` | Renseigner le coût de réparation |
 | `POST` | `/v1/tickets/{id}/messages` | Authentifié | Ajouter un message |
 | `GET` | `/v1/tickets/{id}/messages` | Authentifié | Lister les messages |
+
+### Techniciens
+
+> Prestataires externes gérés par une agence **ou** un hôtel. N'ont pas de compte sur la plateforme. Assignables aux tickets SAV via `technicienId`.
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/technicians` | `PARTNER` | Créer un technicien |
+| `GET` | `/v1/technicians` | `PARTNER` | Liste paginée (filtre `?available=`) |
+| `GET` | `/v1/technicians/{id}` | `PARTNER` | Détail |
+| `PUT` | `/v1/technicians/{id}` | `PARTNER` | Mettre à jour |
+| `PATCH` | `/v1/technicians/{id}/availability` | `PARTNER` | Basculer disponibilité |
+| `DELETE` | `/v1/technicians/{id}` | `PARTNER` | Supprimer (soft delete) |
 
 ### Bailleur
 
