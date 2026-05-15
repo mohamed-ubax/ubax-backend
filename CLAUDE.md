@@ -294,7 +294,10 @@ public class ModuleController {
 | V046 | `add_technicien_to_tickets.sql` | Colonnes `technicien_id UUID` (FK → `techniciens.id`) + `intervention_price DECIMAL(15,2)` sur `tickets` |
 | V047 | `seed_technicien_profession_code_lists.sql` | Seed `la_code_list` (TECHNICIEN_PROFESSION : PLOMBIER, ELECTRICIEN, SERRURIER, MENUISIER, MACON, PEINTRE, CLIMATISATION, VITRERIE, JARDINAGE, NETTOYAGE, DESINSECTISATION, AUTRE) |
 
-Prochaine version disponible : **V048**
+| V048 | `update_ticket_category_code_lists.sql` | Mise à jour code lists catégories tickets |
+| V049 | `create_property_favorites.sql` | Table `property_favorites` (user_id FK, property_id FK, contrainte unique) |
+
+Prochaine version disponible : **V050**
 
 ---
 
@@ -460,6 +463,16 @@ Prochaine version disponible : **V048**
 | `POST` | `/v1/tickets/{id}/messages` | Authentifié | Ajouter un message |
 | `GET` | `/v1/tickets/{id}/messages` | Authentifié | Lister les messages |
 | `GET` | `/v1/tickets/{id}/attachments` | Authentifié | Lister les pièces jointes |
+
+### Favoris
+
+> 📱 **CLIENT / OWNER** — Biens immobiliers mis en favori depuis l'app mobile. Retourne des `PropertyResponse` complets, triés par date d'ajout décroissante. L'ajout est **idempotent** (pas de 409 si déjà favori).
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/favorites/{propertyId}` | `CLIENT/OWNER` | Ajouter un bien aux favoris (idempotent) |
+| `DELETE` | `/v1/favorites/{propertyId}` | `CLIENT/OWNER` | Retirer un bien des favoris |
+| `GET` | `/v1/favorites/mine` | `CLIENT/OWNER` | Liste paginée des biens favoris |
 
 ### Techniciens
 
