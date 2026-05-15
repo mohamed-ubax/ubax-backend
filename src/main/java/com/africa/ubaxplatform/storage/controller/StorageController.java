@@ -102,6 +102,7 @@ public class StorageController {
           "tenant-documents",
           "agencies-logos",
           "users-avatars",
+          "technicien-avatars",
           "ticket-attachments",
           "partner-documents");
 
@@ -799,7 +800,7 @@ public class StorageController {
   private Set<String> allowedMimesFor(String bucket) {
     return switch (bucket) {
       case "properties-media", "ticket-attachments" -> MIME_MEDIA;
-      case "agencies-logos", "users-avatars" -> MIME_IMAGES;
+      case "agencies-logos", "users-avatars", "technicien-avatars" -> MIME_IMAGES;
       default -> MIME_DOCS; // property-documents, tenant-documents, partner-documents
     };
   }

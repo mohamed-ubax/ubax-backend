@@ -107,6 +107,7 @@ public class ResponseMessageConstants {
   // ── CONTRACT ────────────────────────────────────────────────────
   public static final String CONTRACT_GET_SUCCESS = "CONTRACT_GET_SUCCESS";
   public static final String CONTRACT_GET_LIST_SUCCESS = "CONTRACT_GET_LIST_SUCCESS";
+  public static final String CONTRACT_GET_STATS_SUCCESS = "CONTRACT_GET_STATS_SUCCESS";
   public static final String CONTRACT_CREATE_SUCCESS = "CONTRACT_CREATE_SUCCESS";
   public static final String CONTRACT_UPDATE_SUCCESS = "CONTRACT_UPDATE_SUCCESS";
   public static final String CONTRACT_DELETE_SUCCESS = "CONTRACT_DELETE_SUCCESS";
@@ -214,6 +215,7 @@ public class ResponseMessageConstants {
   public static final String TECHNICIEN_GET_SUCCESS = "TECHNICIEN_GET_SUCCESS";
   public static final String TECHNICIEN_GET_LIST_SUCCESS = "TECHNICIEN_GET_LIST_SUCCESS";
   public static final String TECHNICIEN_UPDATE_SUCCESS = "TECHNICIEN_UPDATE_SUCCESS";
+  public static final String TECHNICIEN_AVATAR_UPDATE_SUCCESS = "TECHNICIEN_AVATAR_UPDATE_SUCCESS";
   public static final String TECHNICIEN_DELETE_SUCCESS = "TECHNICIEN_DELETE_SUCCESS";
   public static final String TECHNICIEN_NOT_FOUND = "TECHNICIEN_NOT_FOUND";
 

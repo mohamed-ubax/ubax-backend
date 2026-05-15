@@ -12,6 +12,8 @@ import com.africa.ubaxplatform.technicien.dto.TechnicienResponse;
 import com.africa.ubaxplatform.technicien.dto.UpdateTechnicienRequest;
 import com.africa.ubaxplatform.technicien.service.interfaces.TechnicienService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -25,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,7 +39,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/v1/technicians")
@@ -177,6 +182,47 @@ public class TechnicienController {
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             ResponseMessageConstants.TECHNICIEN_UPDATE_SUCCESS,
+            response));
+  }
+
+  @PostMapping(value = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @Operation(
+      summary = "Uploader / remplacer la photo du technicien",
+      description =
+          "🔧 **Rôle requis :** `PARTNER`.\n\n"
+              + "Upload ou remplace la photo du technicien. L'agent gère cette opération car les"
+              + " techniciens n'ont pas de compte sur la plateforme.\n\n"
+              + "**Formats acceptés :** JPEG, PNG, WEBP — max 5 Mo.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = "multipart/form-data",
+              schema =
+                  @Schema(
+                      type = "object",
+                      requiredProperties = {"file"})))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Avatar mis à jour"),
+    @ApiResponse(responseCode = "400", description = "Fichier vide, format ou taille invalide"),
+    @ApiResponse(responseCode = "403", description = "Technicien d'une autre structure"),
+    @ApiResponse(responseCode = "404", description = "Technicien introuvable")
+  })
+  public ResponseEntity<CustomResponse> uploadAvatar(
+      @PathVariable UUID id,
+      @RequestPart("file") MultipartFile file,
+      JwtAuthenticationToken authentication,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    TechnicienResponse response =
+        technicienService.uploadAvatar(authentication.getName(), id, file);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TECHNICIEN_AVATAR_UPDATE_SUCCESS,
             response));
   }
 

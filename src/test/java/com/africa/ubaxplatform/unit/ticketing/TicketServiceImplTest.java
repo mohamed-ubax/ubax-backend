@@ -81,9 +81,9 @@ class TicketServiceImplTest {
   private CreateTicketRequest buildCreateRequest() {
     CreateTicketRequest req = new CreateTicketRequest();
     req.setContractId(SharedTestFixtures.CONTRACT_ID);
-    req.setCategory("ELECTRICAL");
+    req.setCategory("ELECTRICIEN");
     req.setTitle("Panne électrique salon");
-    req.setDescription("Le disjoncteur saute chaque soir");
+    req.setDescription("Le disjoncteur saute chaque soir depuis plusieurs jours");
     req.setPriority("HIGH");
     return req;
   }
@@ -109,7 +109,7 @@ class TicketServiceImplTest {
       TicketResponse resp = service.create(SharedTestFixtures.KEYCLOAK_ID, buildCreateRequest());
 
       assertThat(resp).isNotNull();
-      assertThat(resp.category()).isEqualTo("ELECTRICAL");
+      assertThat(resp.category()).isEqualTo("ELECTRICIEN");
       assertThat(resp.status()).isEqualTo(TicketStatus.OPEN);
     }
 

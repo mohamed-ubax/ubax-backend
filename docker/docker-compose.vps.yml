@@ -102,6 +102,7 @@ services:
 
         mc mb --ignore-existing ubax/users-avatars
         mc mb --ignore-existing ubax/agencies-logos
+        mc mb --ignore-existing ubax/technicien-avatars
         mc mb --ignore-existing ubax/properties-media
         mc mb --ignore-existing ubax/property-documents
         mc mb --ignore-existing ubax/tenant-documents
@@ -111,6 +112,7 @@ services:
 
         mc anonymous set download ubax/users-avatars
         mc anonymous set download ubax/agencies-logos
+        mc anonymous set download ubax/technicien-avatars
         mc anonymous set download ubax/properties-media
 
         echo "Buckets MinIO initialises avec succes"

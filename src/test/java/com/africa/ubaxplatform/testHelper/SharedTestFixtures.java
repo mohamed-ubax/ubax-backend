@@ -168,9 +168,9 @@ public final class SharedTestFixtures {
         Ticket.builder()
             .contract(contract)
             .reporter(reporter)
-            .category("ELECTRICAL")
+            .category("ELECTRICIEN")
             .title("Panne électrique salon")
-            .description("Le disjoncteur saute chaque soir")
+            .description("Le disjoncteur saute chaque soir depuis plusieurs jours")
             .status(status)
             .build();
     injectId(t, TICKET_ID);

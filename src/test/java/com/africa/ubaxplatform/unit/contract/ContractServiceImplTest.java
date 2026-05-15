@@ -168,15 +168,16 @@ class ContractServiceImplTest {
   class ListContracts {
 
     @Test
-    @DisplayName("Succès – PARTNER filtre par agence sans statut")
+    @DisplayName("Succès – PARTNER filtre par agence sans statut ni recherche")
     void list_partnerNoStatus_filtersByAgency() throws CustomException {
       Page<Contract> page = new PageImpl<>(java.util.List.of(draftContract));
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
-      when(contractRepo.findByAgencyId(SharedTestFixtures.AGENCY_ID, PageRequest.of(0, 10)))
+      when(contractRepo.searchByAgency(
+              SharedTestFixtures.AGENCY_ID, null, null, PageRequest.of(0, 10)))
           .thenReturn(page);
 
-      var result = service.list(SharedTestFixtures.KEYCLOAK_ID, null, PageRequest.of(0, 10));
+      var result = service.list(SharedTestFixtures.KEYCLOAK_ID, null, null, PageRequest.of(0, 10));
 
       assertThat(result.getContent()).hasSize(1);
     }
@@ -187,12 +188,13 @@ class ContractServiceImplTest {
       Page<Contract> page = new PageImpl<>(java.util.List.of(draftContract));
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
-      when(contractRepo.findByAgencyIdAndStatus(
-              SharedTestFixtures.AGENCY_ID, ContractStatus.DRAFT, PageRequest.of(0, 10)))
+      when(contractRepo.searchByAgency(
+              SharedTestFixtures.AGENCY_ID, ContractStatus.DRAFT, null, PageRequest.of(0, 10)))
           .thenReturn(page);
 
       var result =
-          service.list(SharedTestFixtures.KEYCLOAK_ID, ContractStatus.DRAFT, PageRequest.of(0, 10));
+          service.list(
+              SharedTestFixtures.KEYCLOAK_ID, ContractStatus.DRAFT, null, PageRequest.of(0, 10));
 
       assertThat(result.getContent()).hasSize(1);
     }
@@ -206,10 +208,11 @@ class ContractServiceImplTest {
       Page<Contract> page = new PageImpl<>(java.util.List.of(draftContract));
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(owner));
-      when(contractRepo.findByOwnerId(SharedTestFixtures.USER_ID, PageRequest.of(0, 10)))
+      when(contractRepo.searchByOwner(
+              SharedTestFixtures.USER_ID, null, null, PageRequest.of(0, 10)))
           .thenReturn(page);
 
-      var result = service.list(SharedTestFixtures.KEYCLOAK_ID, null, PageRequest.of(0, 10));
+      var result = service.list(SharedTestFixtures.KEYCLOAK_ID, null, null, PageRequest.of(0, 10));
 
       assertThat(result.getContent()).hasSize(1);
     }

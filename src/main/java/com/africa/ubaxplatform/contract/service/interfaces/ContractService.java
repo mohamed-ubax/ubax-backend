@@ -3,6 +3,7 @@ package com.africa.ubaxplatform.contract.service.interfaces;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.contract.codeList.ContractStatus;
 import com.africa.ubaxplatform.contract.dto.ContractResponse;
+import com.africa.ubaxplatform.contract.dto.ContractStatsResponse;
 import com.africa.ubaxplatform.contract.dto.CreateContractRequest;
 import com.africa.ubaxplatform.contract.dto.TerminateContractRequest;
 import java.util.UUID;
@@ -11,12 +12,15 @@ import org.springframework.data.domain.Pageable;
 
 public interface ContractService {
 
+  ContractStatsResponse getStats(String keycloakId) throws CustomException;
+
   ContractResponse create(String keycloakId, CreateContractRequest request) throws CustomException;
 
-  Page<ContractResponse> list(String keycloakId, ContractStatus status, Pageable pageable)
+  Page<ContractResponse> list(
+      String keycloakId, ContractStatus status, String search, Pageable pageable)
       throws CustomException;
 
-  Page<ContractResponse> listAll(ContractStatus status, Pageable pageable);
+  Page<ContractResponse> listAll(ContractStatus status, String search, Pageable pageable);
 
   ContractResponse getById(String keycloakId, UUID id) throws CustomException;
 
