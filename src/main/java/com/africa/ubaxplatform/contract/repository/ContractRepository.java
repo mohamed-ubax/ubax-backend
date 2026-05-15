@@ -35,11 +35,13 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
   /** Locataires distincts d'une agence — clients ayant au moins un contrat sur un bien agence. */
   @Query(
       value =
-          "SELECT DISTINCT t.user FROM Contract c JOIN c.tenant t"
-              + " WHERE c.property.agency.id = :agencyId AND t.deletedAt IS NULL",
+          "SELECT u FROM User u WHERE u.id IN ("
+              + "SELECT DISTINCT t.user.id FROM Contract c JOIN c.tenant t"
+              + " WHERE c.property.agency.id = :agencyId AND t.deletedAt IS NULL)",
       countQuery =
-          "SELECT COUNT(DISTINCT t.user) FROM Contract c JOIN c.tenant t"
-              + " WHERE c.property.agency.id = :agencyId AND t.deletedAt IS NULL")
+          "SELECT COUNT(u) FROM User u WHERE u.id IN ("
+              + "SELECT DISTINCT t.user.id FROM Contract c JOIN c.tenant t"
+              + " WHERE c.property.agency.id = :agencyId AND t.deletedAt IS NULL)")
   Page<User> findDistinctClientsByAgencyId(@Param("agencyId") UUID agencyId, Pageable pageable);
 
   /** Tous les contrats actifs d'un type donné — utilisé par le PaymentSchedulerJob. */
