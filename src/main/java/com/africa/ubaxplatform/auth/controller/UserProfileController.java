@@ -40,7 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/v1/users")
 @RequiredArgsConstructor
-@Tag(name = "Mobile")
+@Tag(name = "Profil Utilisateur")
 @Slf4j
 public class UserProfileController {
 

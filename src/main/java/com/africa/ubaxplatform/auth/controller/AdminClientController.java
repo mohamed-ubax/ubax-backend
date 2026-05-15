@@ -29,11 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/admin/clients")
 @RequiredArgsConstructor
-@Tag(
-    name = "Administration – Clients",
-    description =
-        "🛡 **Rôles requis :** `ADMIN` · `SUPER_ADMIN`\n\n"
-            + "Listing des clients (UBAX_CLIENT) avec filtres optionnels par agence ou par hôtel.")
+@Tag(name = "Administration UBAX")
 public class AdminClientController {
 
   private final ClientListingService clientListingService;

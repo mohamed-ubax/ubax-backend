@@ -49,7 +49,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/admin/users")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Administration Plateforme", description = "Gestion des administrateurs internes UBAX")
+@Tag(name = "Administration UBAX")
 public class AdminController {
 
   private final AdminManagementService adminManagementService;

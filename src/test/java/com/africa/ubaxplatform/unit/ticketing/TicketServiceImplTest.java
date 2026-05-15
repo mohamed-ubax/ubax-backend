@@ -232,7 +232,7 @@ class TicketServiceImplTest {
     void getById_success() throws Exception {
       when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.of(openTicket));
 
-      TicketResponse resp = service.getById(SharedTestFixtures.TICKET_ID);
+      TicketResponse resp = service.getById(SharedTestFixtures.TICKET_ID, null);
 
       assertThat(resp).isNotNull();
       assertThat(resp.status()).isEqualTo(TicketStatus.OPEN);
@@ -243,7 +243,7 @@ class TicketServiceImplTest {
     void getById_notFound_throwsNotFoundException() {
       when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.empty());
 
-      assertThatThrownBy(() -> service.getById(SharedTestFixtures.TICKET_ID))
+      assertThatThrownBy(() -> service.getById(SharedTestFixtures.TICKET_ID, null))
           .isInstanceOf(NotFoundException.class);
     }
   }

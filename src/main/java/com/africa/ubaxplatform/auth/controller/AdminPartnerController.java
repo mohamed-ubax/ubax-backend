@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/admin")
 @RequiredArgsConstructor
-@Tag(name = "Administration Plateforme")
+@Tag(name = "Administration UBAX")
 public class AdminPartnerController {
 
   private final UserRoleService userRoleService;

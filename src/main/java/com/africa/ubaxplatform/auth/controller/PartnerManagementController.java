@@ -37,10 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/admin/partners")
 @RequiredArgsConstructor
-@Tag(
-    name = "Admin – Gestion des partenaires",
-    description =
-        "Suspension, réactivation et abonnements des agences et hôtels partenaires — réservé aux administrateurs UBAX")
+@Tag(name = "Administration UBAX")
 public class PartnerManagementController {
 
   private final AdminPartnerService adminPartnerService;
