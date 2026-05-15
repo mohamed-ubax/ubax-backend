@@ -1,10 +1,12 @@
 package com.africa.ubaxplatform.ticketing.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -69,4 +71,11 @@ public class CreateTicketRequest {
       allowableValues = {"LOW", "NORMAL", "HIGH", "URGENT"},
       example = "HIGH")
   private String priority;
+
+  @Valid
+  @Schema(
+      description =
+          "Images ou vidéos de l'incident (URLs pré-uploadées via GET /v1/storage/presign/ticket-attachment)."
+              + " Optionnel — max recommandé : 5 fichiers.")
+  private List<TicketAttachmentInput> attachments;
 }

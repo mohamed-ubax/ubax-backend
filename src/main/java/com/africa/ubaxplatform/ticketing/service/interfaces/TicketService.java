@@ -24,7 +24,9 @@ public interface TicketService {
       String keycloakId, TicketStatus status, UUID assignedToId, Pageable pageable)
       throws CustomException;
 
-  TicketResponse getById(UUID ticketId) throws CustomException;
+  TicketResponse getById(UUID ticketId, String callerKeycloakId) throws CustomException;
+
+  Page<TicketResponse> listMine(String keycloakId, Pageable pageable) throws CustomException;
 
   TicketResponse assign(UUID ticketId, AssignTicketRequest request) throws CustomException;
 

@@ -126,25 +126,62 @@ public class TicketController {
             result));
   }
 
+  @GetMapping("/mine")
+  @Operation(
+      summary = "Mes tickets (CLIENT / OWNER)",
+      description =
+          "Retourne les tickets déclarés par l'utilisateur connecté, triés du plus récent au plus ancien.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponse(responseCode = "200", description = "Liste paginée")
+  public ResponseEntity<CustomResponse> listMine(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.CLIENT, UserRole.OWNER, UserRole.PARTNER);
+    var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TICKET_GET_LIST_SUCCESS,
+            ticketService.listMine(caller.getSub(), pageable)));
+  }
+
   @GetMapping("/{ticketId}")
   @Operation(
       summary = "Détail d'un ticket",
-      description = "Retourne le détail complet d'un ticket.",
+      description =
+          "Retourne le détail complet d'un ticket. "
+              + "CLIENT et OWNER ne peuvent consulter que leurs propres tickets (vérification reporter).",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Ticket trouvé"),
+    @ApiResponse(responseCode = "403", description = "Ticket appartenant à un autre utilisateur"),
     @ApiResponse(responseCode = "404", description = "Ticket introuvable")
   })
   public ResponseEntity<CustomResponse> getById(
       @PathVariable UUID ticketId, HttpServletRequest httpRequest) throws CustomException {
-    RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN,
+            UserRole.CLIENT,
+            UserRole.OWNER);
+    boolean isRestricted =
+        caller.getRole() == UserRole.CLIENT || caller.getRole() == UserRole.OWNER;
+    String keycloakId = isRestricted ? caller.getSub() : null;
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             ResponseMessageConstants.TICKET_GET_SUCCESS,
-            ticketService.getById(ticketId)));
+            ticketService.getById(ticketId, keycloakId)));
   }
 
   @PatchMapping("/{ticketId}/assign")

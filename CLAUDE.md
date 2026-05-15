@@ -444,17 +444,22 @@ Prochaine version disponible : **V048**
 
 ### Ticketing
 
+> **Création avec images** : `POST /v1/tickets` accepte un champ `attachments[]` (optionnel). Chaque entrée est une URL pré-uploadée via `GET /v1/storage/presign/ticket-attachment`. Les fichiers sont sauvegardés comme `TicketAttachment` (type `INCIDENT_PHOTO` par défaut) dans la même transaction.
+> **Accès CLIENT** : un CLIENT peut créer un ticket, lister ses propres tickets (`/mine`) et consulter le détail de ses tickets uniquement (vérification reporter — 403 si pas déclarant).
+
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `POST` | `/v1/tickets` | Authentifié | Créer un ticket |
-| `GET` | `/v1/tickets` | `PARTNER/ADMIN` | Liste paginée + filtres |
-| `GET` | `/v1/tickets/{id}` | Authentifié | Détail |
+| `POST` | `/v1/tickets` | `PARTNER/CLIENT/OWNER` | Créer un ticket (+ `attachments[]` optionnel) |
+| `GET` | `/v1/tickets` | `PARTNER/ADMIN` | Liste paginée + filtres (agence du caller) |
+| `GET` | `/v1/tickets/mine` | `CLIENT/OWNER/PARTNER` | Mes tickets déclarés (paginé, tri createdAt DESC) |
+| `GET` | `/v1/tickets/{id}` | `PARTNER/ADMIN` ou `CLIENT/OWNER` (reporter uniquement) | Détail — CLIENT/OWNER : 403 si pas reporter |
 | `PATCH` | `/v1/tickets/{id}/status` | `PARTNER/ADMIN` | Mettre à jour le statut |
 | `PATCH` | `/v1/tickets/{id}/assign` | `PARTNER/ADMIN` | Assigner à un agent |
 | `PATCH` | `/v1/tickets/{id}/schedule` | `PARTNER/ADMIN` | Planifier intervention (technicienId ou nom/tel libre + interventionPrice) |
 | `PATCH` | `/v1/tickets/{id}/repair-cost` | `PARTNER/ADMIN` | Renseigner le coût de réparation |
 | `POST` | `/v1/tickets/{id}/messages` | Authentifié | Ajouter un message |
 | `GET` | `/v1/tickets/{id}/messages` | Authentifié | Lister les messages |
+| `GET` | `/v1/tickets/{id}/attachments` | Authentifié | Lister les pièces jointes |
 
 ### Techniciens
 

@@ -7,6 +7,7 @@ import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
 import com.africa.ubaxplatform.technicien.entity.Technicien;
@@ -16,12 +17,14 @@ import com.africa.ubaxplatform.ticketing.dto.AddTicketMessageRequest;
 import com.africa.ubaxplatform.ticketing.dto.AssignTicketRequest;
 import com.africa.ubaxplatform.ticketing.dto.CreateTicketRequest;
 import com.africa.ubaxplatform.ticketing.dto.ScheduleInterventionRequest;
+import com.africa.ubaxplatform.ticketing.dto.TicketAttachmentInput;
 import com.africa.ubaxplatform.ticketing.dto.TicketAttachmentResponse;
 import com.africa.ubaxplatform.ticketing.dto.TicketMessageResponse;
 import com.africa.ubaxplatform.ticketing.dto.TicketResponse;
 import com.africa.ubaxplatform.ticketing.dto.UpdateRepairCostRequest;
 import com.africa.ubaxplatform.ticketing.dto.UpdateTicketStatusRequest;
 import com.africa.ubaxplatform.ticketing.entity.Ticket;
+import com.africa.ubaxplatform.ticketing.entity.TicketAttachment;
 import com.africa.ubaxplatform.ticketing.entity.TicketMessage;
 import com.africa.ubaxplatform.ticketing.entity.TicketMessage.MessageType;
 import com.africa.ubaxplatform.ticketing.mapper.TicketMapper;
@@ -83,6 +86,27 @@ public class TicketServiceImpl implements TicketService {
             .build();
 
     Ticket saved = ticketRepo.save(ticket);
+
+    if (request.getAttachments() != null) {
+      for (TicketAttachmentInput a : request.getAttachments()) {
+        String type =
+            a.getAttachmentType() != null
+                ? a.getAttachmentType()
+                : Constants.CodeList.AttachmentType.INCIDENT_PHOTO;
+        attachmentRepo.save(
+            TicketAttachment.builder()
+                .ticket(saved)
+                .uploadedBy(reporter)
+                .fileUrl(a.getFileUrl())
+                .fileName(a.getFileName())
+                .fileSize(a.getFileSize())
+                .mimeType(a.getMimeType())
+                .attachmentType(type)
+                .caption(a.getCaption())
+                .build());
+      }
+    }
+
     log.info(
         "Ticket créé : id={}, contractId={}, reporter={}",
         saved.getId(),
@@ -127,13 +151,26 @@ public class TicketServiceImpl implements TicketService {
 
   @Override
   @Transactional(readOnly = true)
-  public TicketResponse getById(UUID ticketId) throws CustomException {
+  public TicketResponse getById(UUID ticketId, String callerKeycloakId) throws CustomException {
     Ticket ticket =
         ticketRepo
             .findById(ticketId)
             .orElseThrow(
                 () -> new NotFoundException(ResponseMessageConstants.TICKET_GET_FAILURE_NOT_FOUND));
+    if (callerKeycloakId != null) {
+      User reporter = ticket.getReporter();
+      if (reporter == null || !reporter.getKeycloakId().equals(callerKeycloakId)) {
+        throw new UnAuthorizedException("Vous n'êtes pas le déclarant de ce ticket");
+      }
+    }
     return TicketMapper.toResponse(ticket);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<TicketResponse> listMine(String keycloakId, Pageable pageable)
+      throws CustomException {
+    return ticketRepo.findByReporterKeycloakId(keycloakId, pageable).map(TicketMapper::toResponse);
   }
 
   @Override

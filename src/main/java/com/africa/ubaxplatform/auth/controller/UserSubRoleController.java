@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/admin/users/{userId}/sub-roles")
 @RequiredArgsConstructor
-@Tag(name = "User Sub-Roles")
+@Tag(name = "Administration UBAX")
 public class UserSubRoleController {
 
   private final UserRoleService userRoleService;
