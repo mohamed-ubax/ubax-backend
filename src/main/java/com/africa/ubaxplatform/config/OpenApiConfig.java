@@ -318,7 +318,21 @@ import org.springframework.context.annotation.Configuration;
                   + "| `GET /v1/storage/presign/read` | (privé) | Lecture URL presignée GET |\n\n"
                   + "> Après upload via presigned URL, passer l'URL au endpoint métier correspondant."),
 
-      // ── 20. RÉFÉRENTIELS ─────────────────────────────────────────────────────
+      // ── 20. FAVORIS ──────────────────────────────────────────────────────────
+      @Tag(
+          name = "Favoris",
+          description =
+              "📱 **CLIENT / OWNER** — Gestion des biens immobiliers favoris.\n\n"
+                  + "| Endpoint | Description |\n"
+                  + "|---|---|\n"
+                  + "| `POST /v1/favorites/{propertyId}` | Ajouter aux favoris (idempotent) |\n"
+                  + "| `DELETE /v1/favorites/{propertyId}` | Retirer des favoris |\n"
+                  + "| `GET /v1/favorites/mine` | Liste paginée des biens favoris |\n\n"
+                  + "L'ajout est **idempotent** : si le bien est déjà en favori, retourne le favori existant sans erreur (pas de 409).\n\n"
+                  + "La liste `GET /v1/favorites/mine` retourne des `PropertyResponse` complets "
+                  + "(mêmes champs que `GET /v1/properties`), triés par date d'ajout décroissante."),
+
+      // ── 21. RÉFÉRENTIELS ─────────────────────────────────────────────────────
       @Tag(
           name = "CodeList",
           description =

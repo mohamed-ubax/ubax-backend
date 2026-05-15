@@ -234,4 +234,10 @@ public class ResponseMessageConstants {
   public static final String CODELIST_POST_DUPLICATE = "CODELIST_POST_DUPLICATE";
   public static final String CODELIST_PUT_FAILURE = "CODELIST_PUT_FAILURE";
   public static final String CODELIST_PUT_FAILURE_BAD_REQUEST = "CODELIST_PUT_FAILURE_BAD_REQUEST";
+
+  // ── FAVORIS ─────────────────────────────────────────────────────
+  public static final String FAVORITE_ADD_SUCCESS = "FAVORITE_ADD_SUCCESS";
+  public static final String FAVORITE_REMOVE_SUCCESS = "FAVORITE_REMOVE_SUCCESS";
+  public static final String FAVORITE_GET_LIST_SUCCESS = "FAVORITE_GET_LIST_SUCCESS";
+  public static final String FAVORITE_NOT_FOUND = "FAVORITE_NOT_FOUND";
 }
