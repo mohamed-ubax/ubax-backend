@@ -9,11 +9,13 @@ import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.SetBucketPolicyArgs;
 import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
 import java.io.InputStream;
 import java.text.Normalizer;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,9 @@ public class MinioServiceImpl implements MinioService {
   private static final String BUCKET_PARTNER_DOCS = "partner-documents";
   private static final String BUCKET_AGENCIES_LOGOS = "agencies-logos";
   private static final String[] PARTNER_SUB_DIRS = {"legal", "contracts"};
+
+  private static final Set<String> PUBLIC_BUCKETS =
+      Set.of("users-avatars", "agencies-logos", "technicien-avatars", "properties-media");
 
   @Value("${minio.public-endpoint}")
   private String publicEndpoint;
@@ -60,11 +65,39 @@ public class MinioServiceImpl implements MinioService {
               minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
               log.info("MinIO : bucket '{}' créé", bucket);
             }
+            if (PUBLIC_BUCKETS.contains(bucket)) {
+              applyPublicReadPolicy(bucket);
+            }
           } catch (Exception e) {
             log.warn(
                 "MinIO : impossible de vérifier/créer le bucket '{}' : {}", bucket, e.getMessage());
           }
         });
+  }
+
+  private void applyPublicReadPolicy(String bucket) {
+    String policy =
+        """
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {"AWS": ["*"]},
+              "Action": ["s3:GetObject"],
+              "Resource": ["arn:aws:s3:::%s/*"]
+            }
+          ]
+        }
+        """
+            .formatted(bucket);
+    try {
+      minioClient.setBucketPolicy(
+          SetBucketPolicyArgs.builder().bucket(bucket).config(policy).build());
+      log.info("MinIO : politique public-read appliquée sur '{}'", bucket);
+    } catch (Exception e) {
+      log.warn("MinIO : impossible d'appliquer la politique sur '{}' : {}", bucket, e.getMessage());
+    }
   }
 
   @Override
