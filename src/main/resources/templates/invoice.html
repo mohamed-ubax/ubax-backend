@@ -100,7 +100,8 @@
     </tr>
     <tr class="total-row">
       <td>TOTAL</td>
-      <td th:text="${#numbers.formatDecimal(payment.amountPaid != null ? payment.amountPaid : payment.amount, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</td>
+      <td th:with="totalAmt=(payment.amountPaid != null ? payment.amountPaid : payment.amount)"
+          th:text="${#numbers.formatDecimal(totalAmt, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</td>
     </tr>
   </table>
 
