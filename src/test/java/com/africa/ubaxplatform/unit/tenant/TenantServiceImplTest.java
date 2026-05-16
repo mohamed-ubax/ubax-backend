@@ -101,6 +101,29 @@ class TenantServiceImplTest {
     }
 
     @Test
+    @DisplayName("Succès – dossier créé avec documents → statut PENDING_REVIEW immédiat")
+    void create_withDocuments_transitionsToPendingReview() throws CustomException {
+      User user = TenantTestFixtures.buildUser();
+      TenantCreateRequest req = TenantTestFixtures.buildCreateRequestWithDocuments();
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.of(user));
+      when(tenantRepo.existsByUserId(TenantTestFixtures.USER_ID)).thenReturn(false);
+      when(tenantRepo.save(any(Tenant.class)))
+          .thenAnswer(
+              inv -> {
+                Tenant t = inv.getArgument(0);
+                TenantTestFixtures.injectId(t, TenantTestFixtures.TENANT_ID);
+                return t;
+              });
+
+      TenantResponse response = service.create(TenantTestFixtures.KEYCLOAK_ID, req);
+
+      assertThat(response.status()).isEqualTo(TenantStatus.PENDING_REVIEW);
+      assertThat(response.idDocumentUrl()).isEqualTo("https://minio/tenant-documents/id-card.pdf");
+      assertThat(response.idDocumentNumber()).isEqualTo("CI-2024-001");
+    }
+
+    @Test
     @DisplayName("Échec – utilisateur introuvable → CustomException USER_NOT_FOUND")
     void create_userNotFound_throwsCustomException() {
       when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.empty());
@@ -238,6 +261,24 @@ class TenantServiceImplTest {
           TenantTestFixtures.buildCompleteTenant(
               TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, user);
       TenantUpdateRequest req = TenantTestFixtures.buildPartialUpdateRequest();
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.of(user));
+      when(tenantRepo.findByUserId(TenantTestFixtures.USER_ID)).thenReturn(Optional.of(tenant));
+      when(tenantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+      TenantResponse response = service.updateMyProfile(TenantTestFixtures.KEYCLOAK_ID, req);
+
+      assertThat(response.status()).isEqualTo(TenantStatus.PENDING_REVIEW);
+    }
+
+    @Test
+    @DisplayName("Succès – dossier REJECTED complété → repasse automatiquement à PENDING_REVIEW")
+    void updateMyProfile_rejectedDossierCompleted_transitionsToPendingReview()
+        throws CustomException {
+      User user = TenantTestFixtures.buildUser();
+      Tenant tenant =
+          TenantTestFixtures.buildTenant(TenantTestFixtures.TENANT_ID, TenantStatus.REJECTED, user);
+      TenantUpdateRequest req = TenantTestFixtures.buildCompleteUpdateRequest();
 
       when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.of(user));
       when(tenantRepo.findByUserId(TenantTestFixtures.USER_ID)).thenReturn(Optional.of(tenant));

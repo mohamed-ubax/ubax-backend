@@ -84,8 +84,21 @@ public class TenantServiceImpl implements TenantService {
             .guarantorName(request.guarantorName())
             .guarantorPhone(request.guarantorPhone())
             .guarantorEmail(request.guarantorEmail())
+            .idDocumentUrl(request.idDocumentUrl())
+            .idDocumentType(request.idDocumentType())
+            .idDocumentNumber(request.idDocumentNumber())
+            .idDocumentExpiry(
+                request.idDocumentExpiry() != null
+                    ? LocalDate.parse(request.idDocumentExpiry())
+                    : null)
+            .incomeProofUrl(request.incomeProofUrl())
+            .addressProofUrl(request.addressProofUrl())
             .status(TenantStatus.INCOMPLETE)
             .build();
+
+    if (isDossierComplete(tenant)) {
+      tenant.setStatus(TenantStatus.PENDING_REVIEW);
+    }
 
     return toResponse(tenantRepo.save(tenant));
   }
@@ -136,8 +149,10 @@ public class TenantServiceImpl implements TenantService {
     if (request.incomeProofUrl() != null) tenant.setIncomeProofUrl(request.incomeProofUrl());
     if (request.addressProofUrl() != null) tenant.setAddressProofUrl(request.addressProofUrl());
 
-    // Réévalue le statut vers PENDING_REVIEW si le dossier devient suffisamment complet
-    if (tenant.getStatus() == TenantStatus.INCOMPLETE && isDossierComplete(tenant)) {
+    // Réévalue le statut : INCOMPLETE ou REJECTED → PENDING_REVIEW si le dossier est complet
+    if ((tenant.getStatus() == TenantStatus.INCOMPLETE
+            || tenant.getStatus() == TenantStatus.REJECTED)
+        && isDossierComplete(tenant)) {
       tenant.setStatus(TenantStatus.PENDING_REVIEW);
     }
 
@@ -232,11 +247,11 @@ public class TenantServiceImpl implements TenantService {
     tenantRepo.save(tenant);
   }
 
-  // Vérification de complétude du dossier
+  // Seule la pièce d'identité est requise — le justificatif de revenus reste optionnel
+  // (marché africain : beaucoup de travailleurs informels sans bulletin de salaire)
   private boolean isDossierComplete(Tenant t) {
     return t.getIdDocumentUrl() != null
         && t.getIdDocumentNumber() != null
-        && t.getIdDocumentExpiry() != null
-        && t.getIncomeProofUrl() != null;
+        && t.getIdDocumentExpiry() != null;
   }
 }
