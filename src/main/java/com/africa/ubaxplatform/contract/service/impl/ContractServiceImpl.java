@@ -218,7 +218,7 @@ public class ContractServiceImpl implements ContractService {
       log.error("Échec génération PDF contrat {} : {}", id, e.getMessage());
     }
 
-    return ContractMapper.toResponse(saved);
+    return ContractMapper.toResponse(requireContract(id));
   }
 
   @Override
@@ -273,6 +273,16 @@ public class ContractServiceImpl implements ContractService {
     contract.setStatus(ContractStatus.CANCELLED);
     log.info("Contrat {} → CANCELLED", id);
     return ContractMapper.toResponse(contractRepo.save(contract));
+  }
+
+  @Override
+  @Transactional
+  public ContractResponse regeneratePdf(String keycloakId, UUID id) throws CustomException {
+    User caller = requireUser(keycloakId);
+    Contract contract = requireContract(id);
+    documentService.generateContractPdf(contract.getId(), caller);
+    log.info("Régénération PDF demandée pour contrat {}", id);
+    return ContractMapper.toResponse(requireContract(id));
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

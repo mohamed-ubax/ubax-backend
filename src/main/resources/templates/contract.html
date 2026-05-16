@@ -34,7 +34,7 @@
     </div>
     <div class="doc-meta">
       <div class="ref" th:text="${contract.referenceNumber}">CTR-2025-LEASE-XXXXXX</div>
-      <div>Émis le <span th:text="${#dates.format(#dates.createNow(), 'dd/MM/yyyy')}">01/01/2025</span></div>
+      <div>Émis le <span th:text="${#temporals.format(today, 'dd/MM/yyyy')}">01/01/2025</span></div>
       <div><span class="badge" th:text="${contract.status}">DRAFT</span></div>
     </div>
   </div>

@@ -3,6 +3,7 @@ package com.africa.ubaxplatform.document.generator;
 import com.africa.ubaxplatform.payment.entity.Payment;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class InvoiceGenerator {
     ctx.setVariable("property", payment.getProperty());
     ctx.setVariable("tenant", payment.getTenant());
     ctx.setVariable("agency", payment.getAgency());
+    ctx.setVariable("today", LocalDate.now());
 
     String html = templateEngine.process("invoice", ctx);
     return renderToPdf(html);
