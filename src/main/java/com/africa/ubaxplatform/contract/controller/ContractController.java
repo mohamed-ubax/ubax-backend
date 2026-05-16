@@ -60,7 +60,12 @@ public class ContractController {
       throws CustomException {
     RequestUser caller =
         RoleGuard.requireAnyRole(
-            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
     ContractResponse response = contractService.create(caller.getSub(), request);
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
@@ -85,7 +90,12 @@ public class ContractController {
       throws CustomException {
     RequestUser caller =
         RoleGuard.requireAnyRole(
-            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
 
     Page<ContractResponse> page;
     if (caller.hasRole(UserRole.ADMIN) || caller.hasRole(UserRole.SUPER_ADMIN)) {
@@ -113,7 +123,12 @@ public class ContractController {
       throws CustomException {
     RequestUser caller =
         RoleGuard.requireAnyRole(
-            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
     ContractStatsResponse stats = contractService.getStats(caller.getSub());
     return ResponseEntity.ok(
         new CustomResponse(
@@ -139,6 +154,7 @@ public class ContractController {
             UserRole.PARTNER,
             UserRole.OWNER,
             UserRole.ADMIN,
+            UserRole.SUPER_ADMIN,
             UserRole.CLIENT);
     ContractResponse response = contractService.getById(caller.getSub(), id);
     return ResponseEntity.ok(
@@ -166,7 +182,12 @@ public class ContractController {
       throws CustomException {
     RequestUser caller =
         RoleGuard.requireAnyRole(
-            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
     ContractResponse response = contractService.update(caller.getSub(), id, request);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -189,7 +210,12 @@ public class ContractController {
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RequestUser caller =
         RoleGuard.requireAnyRole(
-            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
     ContractResponse response = contractService.submit(caller.getSub(), id);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -201,7 +227,7 @@ public class ContractController {
 
   @PatchMapping("/{id}/activate")
   @Operation(
-      summary = "Activer un contrat (PENDING_SIGNATURE → ACTIVE) — admin seulement",
+      summary = "Activer un contrat (PENDING_SIGNATURE → ACTIVE)",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Contrat activé"),
@@ -210,7 +236,14 @@ public class ContractController {
   })
   public ResponseEntity<CustomResponse> activate(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
-    RequestUser caller = RoleGuard.requireAdmin(requestHeaderParser, httpRequest);
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
     ContractResponse response = contractService.activate(caller.getSub(), id);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -236,7 +269,12 @@ public class ContractController {
       throws CustomException {
     RequestUser caller =
         RoleGuard.requireAnyRole(
-            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
     ContractResponse response = contractService.terminate(caller.getSub(), id, request);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -259,7 +297,12 @@ public class ContractController {
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RequestUser caller =
         RoleGuard.requireAnyRole(
-            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.OWNER, UserRole.ADMIN);
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
     ContractResponse response = contractService.cancel(caller.getSub(), id);
     return ResponseEntity.ok(
         new CustomResponse(

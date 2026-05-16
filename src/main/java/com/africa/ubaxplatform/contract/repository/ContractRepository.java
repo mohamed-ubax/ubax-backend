@@ -35,6 +35,10 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
   /**
    * Recherche flexible pour une agence : filtre optionnel par statut et/ou mot-clé (titre du bien,
    * numéro de contrat, prénom/nom du locataire). Les paramètres null sont ignorés.
+   *
+   * <p>CAST(tu.firstName AS string) force Hibernate 6 à émettre un CAST SQL VARCHAR plutôt que
+   * bytea, évitant l'erreur PostgreSQL "function lower(bytea) does not exist" sur les LEFT JOINs
+   * nullable.
    */
   @Query(
       value =
@@ -44,8 +48,8 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
               + " AND (:search IS NULL OR ("
               + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', :search, '%'))"
               + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.firstName) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.lastName) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
               + " ))",
       countQuery =
           "SELECT COUNT(c) FROM Contract c LEFT JOIN c.tenant t LEFT JOIN t.user tu"
@@ -54,8 +58,8 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
               + " AND (:search IS NULL OR ("
               + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', :search, '%'))"
               + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.firstName) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.lastName) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
               + " ))")
   Page<Contract> searchByAgency(
       @Param("agencyId") UUID agencyId,
@@ -75,8 +79,8 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
               + " AND (:search IS NULL OR ("
               + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', :search, '%'))"
               + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.firstName) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.lastName) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
               + " ))",
       countQuery =
           "SELECT COUNT(c) FROM Contract c LEFT JOIN c.tenant t LEFT JOIN t.user tu"
@@ -85,8 +89,8 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
               + " AND (:search IS NULL OR ("
               + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', :search, '%'))"
               + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.firstName) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.lastName) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
               + " ))")
   Page<Contract> searchByOwner(
       @Param("ownerId") UUID ownerId,
@@ -102,8 +106,8 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
               + " AND (:search IS NULL OR ("
               + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', :search, '%'))"
               + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.firstName) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.lastName) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
               + " ))",
       countQuery =
           "SELECT COUNT(c) FROM Contract c LEFT JOIN c.tenant t LEFT JOIN t.user tu"
@@ -111,8 +115,8 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
               + " AND (:search IS NULL OR ("
               + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', :search, '%'))"
               + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.firstName) LIKE LOWER(CONCAT('%', :search, '%'))"
-              + "   OR LOWER(tu.lastName) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', :search, '%'))"
               + " ))")
   Page<Contract> searchAll(
       @Param("status") ContractStatus status, @Param("search") String search, Pageable pageable);
