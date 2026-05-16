@@ -1,5 +1,7 @@
 package com.africa.ubaxplatform.testHelper;
 
+import com.africa.ubaxplatform.auth.entity.Agency;
+import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
@@ -27,6 +29,8 @@ public final class TenantTestFixtures {
   public static final String KEYCLOAK_ID = UUID.randomUUID().toString();
   public static final UUID USER_ID = UUID.randomUUID();
   public static final UUID TENANT_ID = UUID.randomUUID();
+  public static final UUID AGENCY_ID = UUID.randomUUID();
+  public static final UUID PROPERTY_ID = UUID.randomUUID();
 
   public static User buildUser() {
     return buildUser(KEYCLOAK_ID, USER_ID);
@@ -42,6 +46,42 @@ public final class TenantTestFixtures {
             .phone("+2250711223344")
             .build();
     injectId(user, userId);
+    return user;
+  }
+
+  public static User buildUserWithAgency() {
+    return buildUserWithAgency(KEYCLOAK_ID, USER_ID, AGENCY_ID);
+  }
+
+  public static User buildUserWithAgency(String keycloakId, UUID userId, UUID agencyId) {
+    Agency agency = Agency.builder().name("Agence Test CI").city("Abidjan").build();
+    injectId(agency, agencyId);
+    User user =
+        User.builder()
+            .keycloakId(keycloakId)
+            .firstName("Amara")
+            .lastName("Koné")
+            .email("amara.kone@example.ci")
+            .phone("+2250711223344")
+            .agency(agency)
+            .build();
+    injectId(user, userId);
+    return user;
+  }
+
+  public static User buildUserWithHotel() {
+    Hotel hotel = Hotel.builder().name("Hotel Test CI").build();
+    injectId(hotel, UUID.randomUUID());
+    User user =
+        User.builder()
+            .keycloakId(KEYCLOAK_ID)
+            .firstName("Amara")
+            .lastName("Koné")
+            .email("amara.kone@example.ci")
+            .phone("+2250711223344")
+            .hotel(hotel)
+            .build();
+    injectId(user, USER_ID);
     return user;
   }
 

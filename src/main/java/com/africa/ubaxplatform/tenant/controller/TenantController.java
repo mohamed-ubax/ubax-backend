@@ -188,9 +188,16 @@ public class TenantController {
   @Operation(
       summary = "Lister les dossiers locataires",
       description =
-          "Retourne une page de dossiers locataires, filtrables par statut. "
+          "Retourne une page de dossiers locataires, filtrables par statut et/ou bien immobilier. "
               + "Pagination par défaut : 20 éléments triés par `createdAt` décroissant.\n\n"
-              + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`, `AGENCY`",
+              + "**Filtres disponibles :**\n"
+              + "- `status` — filtre par statut du dossier (`INCOMPLETE`, `PENDING_REVIEW`, `QUALIFIED`, `REJECTED`, `BLACKLISTED`)\n"
+              + "- `propertyId` — filtre les dossiers liés à un bien spécifique via les contrats\n\n"
+              + "**Comportement par rôle :**\n"
+              + "- `ADMIN` / `SUPER_ADMIN` : tous les dossiers non archivés (toutes agences)\n"
+              + "- `PARTNER` agence : uniquement les dossiers liés aux contrats de son agence\n"
+              + "- `PARTNER` hôtel : accès refusé (403) — les hôtels gèrent des réservations, pas des dossiers KYC\n\n"
+              + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`, `PARTNER` (agence uniquement)",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Liste retournée avec succès"),
@@ -214,6 +221,9 @@ public class TenantController {
                       }))
           @RequestParam(required = false)
           TenantStatus status,
+      @Parameter(description = "Filtre par bien immobilier (UUID). Omis = tous les biens.")
+          @RequestParam(required = false)
+          UUID propertyId,
       @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
           Pageable pageable,
       HttpServletRequest httpRequest)
@@ -225,7 +235,7 @@ public class TenantController {
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN,
             UserRole.PARTNER);
-    Page<TenantResponse> page = tenantService.list(caller.getSub(), status, pageable);
+    Page<TenantResponse> page = tenantService.list(caller.getSub(), status, propertyId, pageable);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
@@ -274,7 +284,8 @@ public class TenantController {
           "Valide le dossier locataire : passe le statut en **QUALIFIED** et positionne `isQualified = true`. "
               + "Prérequis : le dossier doit être en statut **PENDING_REVIEW** (dossier complet soumis). "
               + "Cette validation est nécessaire pour déclencher la génération et la signature d'un bail.\n\n"
-              + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`, `AGENCY`",
+              + "**Contrainte PARTNER :** un partenaire agence ne peut qualifier que les dossiers liés à un contrat de **son agence** (403 sinon).\n\n"
+              + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`, `PARTNER` (agence — dossiers de son agence uniquement)",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Dossier qualifié avec succès"),
@@ -312,7 +323,8 @@ public class TenantController {
           "Refuse le dossier locataire et enregistre le motif de refus communiqué au locataire. "
               + "Le statut passe en **REJECTED** et `isQualified` est remis à `false`. "
               + "Le motif (`reason`) est obligatoire.\n\n"
-              + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`, `AGENCY`",
+              + "**Contrainte PARTNER :** un partenaire agence ne peut rejeter que les dossiers liés à un contrat de **son agence** (403 sinon).\n\n"
+              + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`, `PARTNER` (agence — dossiers de son agence uniquement)",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Dossier rejeté avec succès"),
@@ -332,9 +344,14 @@ public class TenantController {
           String reason,
       HttpServletRequest httpRequest)
       throws CustomException {
-    RoleGuard.requireAnyRole(
-        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.PARTNER);
-    TenantResponse response = tenantService.reject(id, reason);
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN,
+            UserRole.PARTNER);
+    TenantResponse response = tenantService.reject(id, reason, caller.getSub());
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,

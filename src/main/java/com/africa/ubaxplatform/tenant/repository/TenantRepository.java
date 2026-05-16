@@ -28,13 +28,50 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
   // ── Partenaire agence : dossiers liés via contrats de l'agence ───────────
 
   @Query(
-      "SELECT DISTINCT t FROM Tenant t JOIN Contract c ON c.tenant = t"
-          + " WHERE c.property.agency.id = :agencyId AND t.deletedAt IS NULL")
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
+          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId)")
   Page<Tenant> findByAgencyId(@Param("agencyId") UUID agencyId, Pageable pageable);
 
   @Query(
-      "SELECT DISTINCT t FROM Tenant t JOIN Contract c ON c.tenant = t"
-          + " WHERE c.property.agency.id = :agencyId AND t.status = :status AND t.deletedAt IS NULL")
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
+          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId)")
   Page<Tenant> findByAgencyIdAndStatus(
       @Param("agencyId") UUID agencyId, @Param("status") TenantStatus status, Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
+          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId AND c.property.id = :propertyId)")
+  Page<Tenant> findByAgencyIdAndPropertyId(
+      @Param("agencyId") UUID agencyId, @Param("propertyId") UUID propertyId, Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
+          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId AND c.property.id = :propertyId)")
+  Page<Tenant> findByAgencyIdAndPropertyIdAndStatus(
+      @Param("agencyId") UUID agencyId,
+      @Param("propertyId") UUID propertyId,
+      @Param("status") TenantStatus status,
+      Pageable pageable);
+
+  // ── Admin : filtre par bien ───────────────────────────────────────────────
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
+          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+  Page<Tenant> findByPropertyId(@Param("propertyId") UUID propertyId, Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
+          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+  Page<Tenant> findByPropertyIdAndStatus(
+      @Param("propertyId") UUID propertyId,
+      @Param("status") TenantStatus status,
+      Pageable pageable);
+
+  // ── Vérification appartenance agence (pour qualify/reject PARTNER) ────────
+
+  @Query(
+      "SELECT COUNT(t) > 0 FROM Tenant t WHERE t.id = :tenantId AND t.deletedAt IS NULL"
+          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId)")
+  boolean isLinkedToAgency(@Param("tenantId") UUID tenantId, @Param("agencyId") UUID agencyId);
 }

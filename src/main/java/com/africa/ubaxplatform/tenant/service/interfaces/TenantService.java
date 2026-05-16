@@ -48,7 +48,7 @@ public interface TenantService {
   TenantResponse getById(String keycloakId, UUID id) throws CustomException;
 
   /**
-   * Retourne une page de dossiers locataires, filtrable par statut.
+   * Retourne une page de dossiers locataires, filtrable par statut et/ou bien.
    *
    * <ul>
    *   <li>ADMIN / SUPER_ADMIN : tous les dossiers non archivés.
@@ -58,10 +58,12 @@ public interface TenantService {
    *
    * @param keycloakId identifiant Keycloak de l'appelant
    * @param status filtre optionnel ; null = tous les statuts
+   * @param propertyId filtre optionnel par bien ; null = tous les biens
    * @param pageable pagination
    * @return page de dossiers
    */
-  Page<TenantResponse> list(String keycloakId, TenantStatus status, Pageable pageable)
+  Page<TenantResponse> list(
+      String keycloakId, TenantStatus status, UUID propertyId, Pageable pageable)
       throws CustomException;
 
   /**
@@ -78,9 +80,10 @@ public interface TenantService {
    *
    * @param id identifiant du dossier
    * @param reason motif du refus
+   * @param callerKeycloakId identifiant Keycloak de l'agent/gestionnaire
    * @return le dossier mis à jour
    */
-  TenantResponse reject(UUID id, String reason) throws CustomException;
+  TenantResponse reject(UUID id, String reason, String callerKeycloakId) throws CustomException;
 
   /**
    * Supprime logiquement un dossier locataire (soft delete).

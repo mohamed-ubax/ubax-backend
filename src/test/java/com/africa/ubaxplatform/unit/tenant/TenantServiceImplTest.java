@@ -11,6 +11,7 @@ import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
+import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import com.africa.ubaxplatform.tenant.dto.TenantCreateRequest;
 import com.africa.ubaxplatform.tenant.dto.TenantResponse;
@@ -393,12 +394,161 @@ class TenantServiceImplTest {
           .thenReturn(page);
 
       Page<TenantResponse> result =
-          service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, pageable);
+          service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, null, pageable);
 
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().getFirst().status()).isEqualTo(TenantStatus.PENDING_REVIEW);
       verify(tenantRepo).findByStatusAndDeletedAtIsNull(TenantStatus.PENDING_REVIEW, pageable);
       verify(tenantRepo, never()).findByDeletedAtIsNull(any());
+    }
+
+    @Test
+    @DisplayName("Admin – filtre par propertyId uniquement → findByPropertyId")
+    void list_adminWithPropertyId_callsFindByPropertyId() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      Pageable pageable = PageRequest.of(0, 10);
+      User u = TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
+      Page<Tenant> page =
+          new PageImpl<>(
+              List.of(
+                  TenantTestFixtures.buildCompleteTenant(
+                      UUID.randomUUID(), TenantStatus.QUALIFIED, u)));
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByPropertyId(TenantTestFixtures.PROPERTY_ID, pageable)).thenReturn(page);
+
+      Page<TenantResponse> result =
+          service.list(
+              TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, pageable);
+
+      assertThat(result.getContent()).hasSize(1);
+      verify(tenantRepo).findByPropertyId(TenantTestFixtures.PROPERTY_ID, pageable);
+    }
+
+    @Test
+    @DisplayName("Admin – filtre par propertyId + status → findByPropertyIdAndStatus")
+    void list_adminWithPropertyIdAndStatus_callsFindByPropertyIdAndStatus() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByPropertyIdAndStatus(
+              TenantTestFixtures.PROPERTY_ID, TenantStatus.PENDING_REVIEW, pageable))
+          .thenReturn(page);
+
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID,
+          TenantStatus.PENDING_REVIEW,
+          TenantTestFixtures.PROPERTY_ID,
+          pageable);
+
+      verify(tenantRepo)
+          .findByPropertyIdAndStatus(
+              TenantTestFixtures.PROPERTY_ID, TenantStatus.PENDING_REVIEW, pageable);
+    }
+
+    @Test
+    @DisplayName("PARTNER agence – sans filtre → findByAgencyId")
+    void list_partnerNoFilter_callsFindByAgencyId() throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyId(TenantTestFixtures.AGENCY_ID, pageable)).thenReturn(page);
+
+      service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, pageable);
+
+      verify(tenantRepo).findByAgencyId(TenantTestFixtures.AGENCY_ID, pageable);
+    }
+
+    @Test
+    @DisplayName("PARTNER agence – filtre status → findByAgencyIdAndStatus")
+    void list_partnerWithStatus_callsFindByAgencyIdAndStatus() throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyIdAndStatus(
+              TenantTestFixtures.AGENCY_ID, TenantStatus.PENDING_REVIEW, pageable))
+          .thenReturn(page);
+
+      service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, null, pageable);
+
+      verify(tenantRepo)
+          .findByAgencyIdAndStatus(
+              TenantTestFixtures.AGENCY_ID, TenantStatus.PENDING_REVIEW, pageable);
+    }
+
+    @Test
+    @DisplayName("PARTNER agence – filtre propertyId → findByAgencyIdAndPropertyId")
+    void list_partnerWithPropertyId_callsFindByAgencyIdAndPropertyId() throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyIdAndPropertyId(
+              TenantTestFixtures.AGENCY_ID, TenantTestFixtures.PROPERTY_ID, pageable))
+          .thenReturn(page);
+
+      service.list(TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, pageable);
+
+      verify(tenantRepo)
+          .findByAgencyIdAndPropertyId(
+              TenantTestFixtures.AGENCY_ID, TenantTestFixtures.PROPERTY_ID, pageable);
+    }
+
+    @Test
+    @DisplayName(
+        "PARTNER agence – filtre propertyId + status → findByAgencyIdAndPropertyIdAndStatus")
+    void list_partnerWithPropertyIdAndStatus_callsFindByAgencyIdAndPropertyIdAndStatus()
+        throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyIdAndPropertyIdAndStatus(
+              TenantTestFixtures.AGENCY_ID,
+              TenantTestFixtures.PROPERTY_ID,
+              TenantStatus.PENDING_REVIEW,
+              pageable))
+          .thenReturn(page);
+
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID,
+          TenantStatus.PENDING_REVIEW,
+          TenantTestFixtures.PROPERTY_ID,
+          pageable);
+
+      verify(tenantRepo)
+          .findByAgencyIdAndPropertyIdAndStatus(
+              TenantTestFixtures.AGENCY_ID,
+              TenantTestFixtures.PROPERTY_ID,
+              TenantStatus.PENDING_REVIEW,
+              pageable);
+    }
+
+    @Test
+    @DisplayName("PARTNER hôtel → UnAuthorizedException")
+    void list_hotelPartner_throwsUnauthorized() {
+      User hotelPartner = TenantTestFixtures.buildUserWithHotel();
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(hotelPartner));
+
+      assertThatThrownBy(
+              () -> service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, PageRequest.of(0, 10)))
+          .isInstanceOf(UnAuthorizedException.class);
     }
 
     @Test
@@ -418,7 +568,7 @@ class TenantServiceImplTest {
           .thenReturn(Optional.of(admin));
       when(tenantRepo.findByDeletedAtIsNull(pag)).thenReturn(page);
 
-      Page<TenantResponse> result = service.list(TenantTestFixtures.KEYCLOAK_ID, null, pag);
+      Page<TenantResponse> result = service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, pag);
 
       assertThat(result.getContent()).hasSize(2);
       verify(tenantRepo).findByDeletedAtIsNull(pag);
@@ -453,6 +603,53 @@ class TenantServiceImplTest {
       verify(tenantRepo).save(captor.capture());
       assertThat(captor.getValue().getQualifiedBy()).isEqualTo(reviewer);
       assertThat(captor.getValue().getRejectionReason()).isNull();
+    }
+
+    @Test
+    @DisplayName("Succès – PARTNER de la bonne agence qualifie le dossier")
+    void qualify_partnerCorrectAgency_success() throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
+      Tenant tenant =
+          TenantTestFixtures.buildCompleteTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
+      when(tenantRepo.isLinkedToAgency(TenantTestFixtures.TENANT_ID, TenantTestFixtures.AGENCY_ID))
+          .thenReturn(true);
+      when(tenantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+      TenantResponse response =
+          service.qualify(TenantTestFixtures.TENANT_ID, TenantTestFixtures.KEYCLOAK_ID);
+
+      assertThat(response.status()).isEqualTo(TenantStatus.QUALIFIED);
+      assertThat(response.qualified()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Échec – PARTNER d'une autre agence → UnAuthorizedException")
+    void qualify_partnerWrongAgency_throwsUnauthorized() {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
+      Tenant tenant =
+          TenantTestFixtures.buildCompleteTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
+      when(tenantRepo.isLinkedToAgency(TenantTestFixtures.TENANT_ID, TenantTestFixtures.AGENCY_ID))
+          .thenReturn(false);
+
+      assertThatThrownBy(
+              () -> service.qualify(TenantTestFixtures.TENANT_ID, TenantTestFixtures.KEYCLOAK_ID))
+          .isInstanceOf(UnAuthorizedException.class);
+
+      verify(tenantRepo, never()).save(any());
     }
 
     @Test
@@ -492,35 +689,98 @@ class TenantServiceImplTest {
   class Reject {
 
     @Test
-    @DisplayName("Succès – dossier rejeté avec motif")
-    void reject_success_setsRejectedStatus() throws CustomException {
-      User user = TenantTestFixtures.buildUser();
+    @DisplayName("Succès – admin rejette avec motif (sans vérification agence)")
+    void reject_success_adminNoOwnershipCheck() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
       Tenant tenant =
           TenantTestFixtures.buildCompleteTenant(
-              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, user);
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
       String reason = "Revenus insuffisants par rapport au loyer demandé";
 
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
       when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
       when(tenantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-      TenantResponse response = service.reject(TenantTestFixtures.TENANT_ID, reason);
+      TenantResponse response =
+          service.reject(TenantTestFixtures.TENANT_ID, reason, TenantTestFixtures.KEYCLOAK_ID);
 
       assertThat(response.status()).isEqualTo(TenantStatus.REJECTED);
       assertThat(response.qualified()).isFalse();
       assertThat(response.rejectionReason()).isEqualTo(reason);
+      verify(tenantRepo, never()).isLinkedToAgency(any(), any());
+    }
+
+    @Test
+    @DisplayName("Succès – PARTNER de la bonne agence rejette le dossier")
+    void reject_partnerCorrectAgency_success() throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
+      Tenant tenant =
+          TenantTestFixtures.buildCompleteTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
+      String reason = "Dossier incomplet";
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
+      when(tenantRepo.isLinkedToAgency(TenantTestFixtures.TENANT_ID, TenantTestFixtures.AGENCY_ID))
+          .thenReturn(true);
+      when(tenantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+      TenantResponse response =
+          service.reject(TenantTestFixtures.TENANT_ID, reason, TenantTestFixtures.KEYCLOAK_ID);
+
+      assertThat(response.status()).isEqualTo(TenantStatus.REJECTED);
+      assertThat(response.rejectionReason()).isEqualTo(reason);
+    }
+
+    @Test
+    @DisplayName("Échec – PARTNER d'une autre agence → UnAuthorizedException")
+    void reject_partnerWrongAgency_throwsUnauthorized() {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
+      Tenant tenant =
+          TenantTestFixtures.buildCompleteTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
+      when(tenantRepo.isLinkedToAgency(TenantTestFixtures.TENANT_ID, TenantTestFixtures.AGENCY_ID))
+          .thenReturn(false);
+
+      assertThatThrownBy(
+              () ->
+                  service.reject(
+                      TenantTestFixtures.TENANT_ID, "motif", TenantTestFixtures.KEYCLOAK_ID))
+          .isInstanceOf(UnAuthorizedException.class);
+
+      verify(tenantRepo, never()).save(any());
     }
 
     @Test
     @DisplayName("Échec – motif null → CustomException TENANT_UPDATE_FAILURE")
     void reject_nullReason_throwsCustomException() {
-      User user = TenantTestFixtures.buildUser();
+      User admin = TenantTestFixtures.buildUser();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
       Tenant tenant =
           TenantTestFixtures.buildTenant(
-              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, user);
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
 
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
       when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
 
-      assertThatThrownBy(() -> service.reject(TenantTestFixtures.TENANT_ID, null))
+      assertThatThrownBy(
+              () ->
+                  service.reject(
+                      TenantTestFixtures.TENANT_ID, null, TenantTestFixtures.KEYCLOAK_ID))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.TENANT_UPDATE_FAILURE);
 
@@ -530,14 +790,21 @@ class TenantServiceImplTest {
     @Test
     @DisplayName("Échec – motif vide → CustomException TENANT_UPDATE_FAILURE")
     void reject_blankReason_throwsCustomException() {
-      User user = TenantTestFixtures.buildUser();
+      User admin = TenantTestFixtures.buildUser();
+      User tenantUser =
+          TenantTestFixtures.buildUser(UUID.randomUUID().toString(), UUID.randomUUID());
       Tenant tenant =
           TenantTestFixtures.buildTenant(
-              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, user);
+              TenantTestFixtures.TENANT_ID, TenantStatus.PENDING_REVIEW, tenantUser);
 
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
       when(tenantRepo.findById(TenantTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
 
-      assertThatThrownBy(() -> service.reject(TenantTestFixtures.TENANT_ID, "   "))
+      assertThatThrownBy(
+              () ->
+                  service.reject(
+                      TenantTestFixtures.TENANT_ID, "   ", TenantTestFixtures.KEYCLOAK_ID))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.TENANT_UPDATE_FAILURE);
 

@@ -95,8 +95,6 @@ public class PaymentController {
             requestHeaderParser,
             httpRequest,
             UserRole.PARTNER,
-            UserRole.PARTNER,
-            UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
     return ResponseEntity.ok(
@@ -145,8 +143,6 @@ public class PaymentController {
             requestHeaderParser,
             httpRequest,
             UserRole.PARTNER,
-            UserRole.PARTNER,
-            UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
     return ResponseEntity.ok(
@@ -181,13 +177,7 @@ public class PaymentController {
   public ResponseEntity<CustomResponse> getById(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RoleGuard.requireAnyRole(
-        requestHeaderParser,
-        httpRequest,
-        UserRole.PARTNER,
-        UserRole.PARTNER,
-        UserRole.PARTNER,
-        UserRole.ADMIN,
-        UserRole.SUPER_ADMIN);
+        requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.ADMIN, UserRole.SUPER_ADMIN);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
@@ -239,8 +229,6 @@ public class PaymentController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.PARTNER,
-            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
@@ -296,8 +284,6 @@ public class PaymentController {
             requestHeaderParser,
             httpRequest,
             UserRole.PARTNER,
-            UserRole.PARTNER,
-            UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
     return ResponseEntity.ok(
@@ -337,8 +323,6 @@ public class PaymentController {
         RoleGuard.requireAnyRole(
             requestHeaderParser,
             httpRequest,
-            UserRole.PARTNER,
-            UserRole.PARTNER,
             UserRole.PARTNER,
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN);
