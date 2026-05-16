@@ -3,6 +3,7 @@ package com.africa.ubaxplatform.document.generator;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class ContractGenerator {
     ctx.setVariable("owner", contract.getOwner());
     ctx.setVariable("tenant", contract.getTenant());
     ctx.setVariable("createdBy", contract.getCreatedBy());
+    ctx.setVariable("today", LocalDate.now());
 
     String html = templateEngine.process("contract", ctx);
     return renderToPdf(html);

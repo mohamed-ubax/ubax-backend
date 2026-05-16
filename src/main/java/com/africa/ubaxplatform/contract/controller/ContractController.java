@@ -284,6 +284,28 @@ public class ContractController {
             response));
   }
 
+  @PatchMapping("/{id}/generate-pdf")
+  @Operation(
+      summary = "Régénérer le PDF d'un contrat (tout statut)",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "PDF régénéré"),
+    @ApiResponse(responseCode = "404", description = "Contrat introuvable"),
+  })
+  public ResponseEntity<CustomResponse> regeneratePdf(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    ContractResponse response = contractService.regeneratePdf(caller.getSub(), id);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.CONTRACT_UPDATE_SUCCESS,
+            response));
+  }
+
   @PatchMapping("/{id}/cancel")
   @Operation(
       summary = "Annuler un contrat (DRAFT ou PENDING_SIGNATURE → CANCELLED)",

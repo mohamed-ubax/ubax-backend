@@ -35,7 +35,7 @@
     </div>
     <div class="doc-meta">
       <div class="ref" th:text="${payment.reference}">PAY-XXXX</div>
-      <div>Date : <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}">01/01/2025</span></div>
+      <div>Date : <span th:text="${#temporals.format(today, 'dd/MM/yyyy')}">01/01/2025</span></div>
       <div><span class="badge" th:text="${payment.status}">PAID</span></div>
     </div>
   </div>

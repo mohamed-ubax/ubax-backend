@@ -35,4 +35,6 @@ public interface ContractService {
       throws CustomException;
 
   ContractResponse cancel(String keycloakId, UUID id) throws CustomException;
+
+  ContractResponse regeneratePdf(String keycloakId, UUID id) throws CustomException;
 }

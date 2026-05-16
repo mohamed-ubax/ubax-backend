@@ -68,11 +68,14 @@ public class DocumentServiceImpl implements DocumentService {
       record.setReferenceNumber(generateRef("CTR"));
       record.setStatus(DocumentStatus.GENERATED);
 
+      contract.setFileUrl(url);
+      contractRepo.save(contract);
+
       log.info("Contrat PDF généré : contractId={}, url={}", contractId, url);
     } catch (Exception e) {
       record.setStatus(DocumentStatus.FAILED);
       record.setErrorMessage(e.getMessage());
-      log.error("Échec génération contrat PDF contractId={} : {}", contractId, e.getMessage());
+      log.error("Échec génération contrat PDF contractId={}", contractId, e);
     }
 
     return documentRepo.save(record);
