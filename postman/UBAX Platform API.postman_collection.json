@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "4831e5dd-c569-4dc3-a8ae-cb1c494fd8ec",
+    "_postman_id": "b4c3560e-e674-4852-9e0a-9c34e9097fd3",
     "name": "UBAX Platform API",
-    "description": "Collection complète des APIs UBAX Platform\n\nBase URL: {{base_url}}\nAuthentification: Keycloak OAuth2 (JWT Bearer Token)\n\nVariables d'environnement requises:\n- base_url: http://localhost:9999/api\n- access_token: (auto-rempli par Login)\n- refresh_token: (auto-rempli par Login)\n- keycloak_user_id\n- admin_user_id\n- tenant_id\n- partner_application_id\n- property_id\n- media_id\n- document_id\n- payment_id\n- expense_id\n- bailleur_application_id\n- reservation_id\n- contract_id\n- ticket_id\n- hotel_id\n- owner_user_id\n- team_member_id\n- role",
+    "description": "Collection complète des APIs UBAX Platform\n\nBase URL: {{base_url}}\nAuthentification: Keycloak OAuth2 (JWT Bearer Token)\n\nVariables d'environnement requises:\n- base_url: http://localhost:9999/api\n- access_token: (auto-rempli par Login)\n- refresh_token: (auto-rempli par Login)\n- keycloak_user_id\n- admin_user_id\n- tenant_id\n- partner_application_id\n- property_id\n- media_id\n- document_id\n- payment_id\n- expense_id\n- bailleur_application_id\n- reservation_id\n- contract_id\n- ticket_id\n- hotel_id\n- owner_user_id\n- team_member_id\n- technician_id\n- agency_id\n- role\n- tenant_doc_upload_url\n- tenant_id_document_url\n- tenant_income_proof_url\n- tenant_address_proof_url",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "28441649",
-    "_collection_link": "https://go.postman.co/collection/28441649-4831e5dd-c569-4dc3-a8ae-cb1c494fd8ec?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/28441649-b4c3560e-e674-4852-9e0a-9c34e9097fd3?source=collection_link"
   },
   "item": [
     {
@@ -129,7 +129,9 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -146,7 +148,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+221773880047\",\n  \"password\": \"password1234\"\n}"
+                  "raw": "{\n  \"phone\": \"+221778787778\",\n  \"password\": \"password123\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/login/phone",
@@ -1051,6 +1053,36 @@
             "description": "PARTNER agence - Revoquer un sous-role agence d un membre (ex: {{role}} = COMMERCIAL)."
           },
           "response": []
+        },
+        {
+          "name": "Clients de mon agence",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/agency/clients?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agency",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "PARTNER agence : Lister les clients de mon agence (via leurs contrats actifs)."
+          },
+          "response": []
         }
       ],
       "description": "Gestion de l'équipe interne d'une agence (PARTNER + DIRECTEUR_AGENCE)"
@@ -1062,6 +1094,170 @@
           "name": "Client",
           "item": [
             {
+              "name": "Upload Documents KYC",
+              "item": [
+                {
+                  "name": "1 – Presigned URL pièce d'identité",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "    var json = pm.response.json();",
+                          "    if (json.data) {",
+                          "        pm.environment.set('tenant_doc_upload_url', json.data.uploadUrl);",
+                          "        pm.environment.set('tenant_id_document_url', json.data.publicUrl);",
+                          "        console.log('Upload URL sauvegardée → tenant_doc_upload_url');",
+                          "        console.log('Public URL sauvegardée → tenant_id_document_url');",
+                          "    }",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/v1/storage/presign/tenant-document?contentType=application/pdf&expires=900",
+                      "host": ["{{base_url}}"],
+                      "path": ["v1", "storage", "presign", "tenant-document"],
+                      "query": [
+                        { "key": "contentType", "value": "application/pdf", "description": "Formats acceptés : application/pdf, image/jpeg, image/png, image/webp" },
+                        { "key": "expires", "value": "900", "description": "Durée de validité en secondes (max 3600)" }
+                      ]
+                    },
+                    "description": "Génère une URL PUT présignée pour uploader la pièce d'identité directement vers MinIO.\n\nLe script de test sauvegarde automatiquement :\n- `tenant_doc_upload_url` → URL PUT à usage unique (expire dans `expires` secondes)\n- `tenant_id_document_url` → URL publique à passer dans le dossier locataire\n\n**Étape suivante :** requête « 2 – PUT Upload vers MinIO »"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "2 – PUT Upload vers MinIO (pièce d'identité)",
+                  "request": {
+                    "auth": { "type": "noauth" },
+                    "method": "PUT",
+                    "header": [
+                      { "key": "Content-Type", "value": "application/pdf" }
+                    ],
+                    "body": {
+                      "mode": "file",
+                      "file": { "src": "" }
+                    },
+                    "url": {
+                      "raw": "{{tenant_doc_upload_url}}",
+                      "host": ["{{tenant_doc_upload_url}}"]
+                    },
+                    "description": "Upload le fichier directement vers MinIO via l'URL présignée obtenue à l'étape précédente.\n\n**Important :**\n- Aucun header Authorization (l'URL présignée contient déjà la signature)\n- `Content-Type` doit correspondre au `contentType` utilisé pour générer la presigned URL\n- Sélectionner le fichier dans l'onglet « Body → file »\n- L'URL est valide pendant la durée définie à l'étape 1 (900s par défaut)\n\n**Étape suivante :** créer le dossier locataire avec `{{tenant_id_document_url}}`"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "1bis – Upload direct multipart (alternative mobile)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "if (pm.response.code === 201) {",
+                          "    var json = pm.response.json();",
+                          "    if (json.data && json.data.fileUrl) {",
+                          "        pm.environment.set('tenant_id_document_url', json.data.fileUrl);",
+                          "        console.log('fileUrl sauvegardée → tenant_id_document_url : ' + json.data.fileUrl);",
+                          "    }",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "file",
+                          "type": "file",
+                          "src": "",
+                          "description": "Pièce d'identité (PDF, JPEG, PNG, WEBP – max 20 Mo)"
+                        },
+                        {
+                          "key": "bucket",
+                          "value": "tenant-documents",
+                          "type": "text"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/v1/storage/upload",
+                      "host": ["{{base_url}}"],
+                      "path": ["v1", "storage", "upload"]
+                    },
+                    "description": "Alternative à la presigned URL : le fichier transite par le backend puis est stocké dans MinIO.\n\nRecommandé pour les apps mobiles (pas de requête PUT séparée).\n\nLe script de test sauvegarde automatiquement `tenant_id_document_url`.\n\n**Formats acceptés :** application/pdf, image/jpeg, image/png, image/webp – max 20 Mo"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Presigned URL justificatif de revenus (optionnel)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "if (pm.response.code === 200) {",
+                          "    var json = pm.response.json();",
+                          "    if (json.data) {",
+                          "        pm.environment.set('tenant_doc_upload_url', json.data.uploadUrl);",
+                          "        pm.environment.set('tenant_income_proof_url', json.data.publicUrl);",
+                          "        console.log('Upload URL sauvegardée → tenant_doc_upload_url');",
+                          "        console.log('Public URL sauvegardée → tenant_income_proof_url');",
+                          "    }",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/v1/storage/presign/tenant-document?contentType=application/pdf&expires=900",
+                      "host": ["{{base_url}}"],
+                      "path": ["v1", "storage", "presign", "tenant-document"],
+                      "query": [
+                        { "key": "contentType", "value": "application/pdf" },
+                        { "key": "expires", "value": "900" }
+                      ]
+                    },
+                    "description": "Génère une presigned URL pour le justificatif de revenus (bulletin de salaire, relevé bancaire…).\n\nOptionnel — non requis pour atteindre PENDING_REVIEW (contexte marché africain : travailleurs informels sans justificatif).\n\nSauvegarde `tenant_income_proof_url` pour l'utiliser dans le dossier locataire."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Lire un document privé (presigned GET)",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/v1/storage/presign/read?fileUrl={{tenant_id_document_url}}",
+                      "host": ["{{base_url}}"],
+                      "path": ["v1", "storage", "presign", "read"],
+                      "query": [
+                        { "key": "fileUrl", "value": "{{tenant_id_document_url}}", "description": "URL du fichier telle que stockée en base (tenant_id_document_url, tenant_income_proof_url, etc.)" }
+                      ]
+                    },
+                    "description": "Génère une URL GET temporaire (180 secondes) pour consulter un document KYC stocké dans le bucket privé `tenant-documents`.\n\nUtiliser l'URL retournée directement dans un navigateur ou une image preview côté frontend.\n\n**TTL :** 180 s (le plus court — données KYC sensibles)"
+                  },
+                  "response": []
+                }
+              ],
+              "description": "Flux d'upload des documents KYC du locataire vers MinIO.\n\n**Flux presigned URL (recommandé web) :**\n1. Requête « 1 – Presigned URL » → récupère `uploadUrl` et `publicUrl`\n2. Requête « 2 – PUT Upload » → envoie le fichier directement à MinIO\n3. Requête « Create Tenant Profile » → utilise `{{tenant_id_document_url}}`\n\n**Flux multipart (recommandé mobile) :**\n1. Requête « 1bis – Upload direct multipart » → envoie le fichier via le backend\n2. Requête « Create Tenant Profile » → utilise `{{tenant_id_document_url}}`\n\n**Variables auto-remplies :** `tenant_doc_upload_url`, `tenant_id_document_url`, `tenant_income_proof_url`"
+            },
+            {
               "name": "Create Tenant Profile",
               "event": [
                 {
@@ -1072,6 +1268,8 @@
                       "    var json = pm.response.json();",
                       "    if (json.data && json.data.id) {",
                       "        pm.environment.set('tenant_id', json.data.id);",
+                      "        console.log('tenant_id sauvegardé : ' + json.data.id);",
+                      "        console.log('Statut dossier : ' + json.data.status);",
                       "    }",
                       "}"
                     ],
@@ -1089,20 +1287,15 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"employmentStatus\": \"SALARIE\",\n  \"employerName\": \"UBAX Corp\",\n  \"monthlyIncome\": 500000,\n  \"hasGuarantor\": true,\n  \"guarantorName\": \"Jane Doe\",\n  \"guarantorPhone\": \"+2250700000000\",\n  \"guarantorEmail\": \"jane.doe@example.com\"\n}"
+                  "raw": "{\n    \"employmentStatus\": \"SELF_EMPLOYED\",\n    \"employerName\": null,\n    \"monthlyIncome\": 300000,\n    \"hasGuarantor\": false,\n    \"idDocumentUrl\": \"{{tenant_id_document_url}}\",\n    \"idDocumentType\": \"CNI\",\n    \"idDocumentNumber\": \"SN-1234567890\",\n    \"idDocumentExpiry\": \"2030-12-31\",\n    \"incomeProofUrl\": \"{{tenant_income_proof_url}}\",\n    \"addressProofUrl\": \"{{tenant_address_proof_url}}\"\n}",
+                  "options": { "raw": { "language": "json" } }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "tenants",
-                    "profile"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "tenants", "profile"]
                 },
-                "description": "CLIENT : Créer un profil locataire (dossier KYC)."
+                "description": "CLIENT : Créer un profil locataire (dossier KYC).\n\nSi `idDocumentUrl` + `idDocumentNumber` + `idDocumentExpiry` sont fournis → statut `PENDING_REVIEW` immédiat.\nSinon → statut `INCOMPLETE` (documents à compléter via PATCH).\n\n`incomeProofUrl` et `addressProofUrl` sont optionnels (marché africain : travailleurs informels sans justificatif de revenus).\n\n**Pré-requis :** exécuter « Upload Documents KYC » pour remplir `{{tenant_id_document_url}}`"
               },
               "response": []
             },
@@ -1113,14 +1306,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "tenants",
-                    "profile"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "tenants", "profile"]
                 },
                 "description": "Récupérer mon profil locataire."
               },
@@ -1138,20 +1325,15 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"employmentStatus\": \"SALARIE\",\n  \"employerName\": \"Updated Corp\",\n  \"monthlyIncome\": 750000,\n  \"hasGuarantor\": false,\n  \"idDocumentUrl\": \"https://minio.ubax.io/tenant-documents/id.pdf\",\n  \"idDocumentType\": \"CNI\",\n  \"idDocumentNumber\": \"CI-123456789\",\n  \"idDocumentExpiry\": \"2028-12-31\",\n  \"incomeProofUrl\": \"https://minio.ubax.io/tenant-documents/income.pdf\",\n  \"addressProofUrl\": \"https://minio.ubax.io/tenant-documents/address.pdf\"\n}"
+                  "raw": "{\n    \"employmentStatus\": \"SELF_EMPLOYED\",\n    \"idDocumentUrl\": \"{{tenant_id_document_url}}\",\n    \"idDocumentType\": \"CNI\",\n    \"idDocumentNumber\": \"SN-1234567890\",\n    \"idDocumentExpiry\": \"2030-12-31\",\n    \"incomeProofUrl\": \"{{tenant_income_proof_url}}\",\n    \"addressProofUrl\": \"{{tenant_address_proof_url}}\"\n}",
+                  "options": { "raw": { "language": "json" } }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "tenants",
-                    "profile"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "tenants", "profile"]
                 },
-                "description": "CLIENT : Mettre à jour mon profil locataire."
+                "description": "CLIENT : Mettre à jour mon profil locataire.\n\nSert aussi à re-soumettre un dossier INCOMPLETE ou REJECTED — si les 3 champs d'identité sont présents après la mise à jour, le statut passe automatiquement à PENDING_REVIEW.\n\n**Pré-requis :** exécuter « Upload Documents KYC » pour remplir les variables `{{tenant_id_document_url}}` etc."
               },
               "response": []
             }
@@ -1316,18 +1498,6 @@
                   ],
                   "query": [
                     {
-                      "key": "page",
-                      "value": "0"
-                    },
-                    {
-                      "key": "size",
-                      "value": "20"
-                    },
-                    {
-                      "key": "sort",
-                      "value": "createdAt,desc"
-                    },
-                    {
                       "key": "city",
                       "value": "Dakar",
                       "disabled": true
@@ -1361,6 +1531,18 @@
                       "key": "hasPool",
                       "value": "true",
                       "disabled": true
+                    },
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "createdAt,desc"
                     }
                   ]
                 },
@@ -2806,9 +2988,6 @@
                 }
               ],
               "request": {
-                "auth": {
-                  "type": "noauth"
-                },
                 "method": "POST",
                 "header": [
                   {
@@ -2818,7 +2997,12 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"firstName\": \"Oumar\",\n  \"lastName\": \"Sow\",\n  \"phone\": \"+221771234567\",\n  \"email\": \"oumar.sow@gmail.com\",\n  \"idType\": \"CNI\",\n  \"idNumber\": \"1234567890\",\n  \"agencyId\": \"{{agency_id}}\",\n  \"properties\": [\n    {\n      \"description\": \"Villa 4 chambres à Almadies\",\n      \"address\": \"12 Rue des Almadies, Dakar\",\n      \"city\": \"Dakar\",\n      \"propertyType\": \"VILLA\",\n      \"estimatedRent\": 350000\n    }\n  ],\n  \"message\": \"Je souhaite confier la gestion de mes biens à votre agence.\"\n}"
+                  "raw": "{\n  \"agencyId\": \"{{agency_id}}\",\n  \"idType\": \"CNI\",\n  \"idNumber\": \"1234567890\",\n  \"properties\": [\n    {\n      \"description\": \"Villa 4 chambres a Almadies\",\n      \"address\": \"12 Rue des Almadies, Dakar\",\n      \"city\": \"Dakar\",\n      \"propertyType\": \"VILLA\",\n      \"estimatedRent\": 350000\n    }\n  ],\n  \"message\": \"Je souhaite confier la gestion de mes biens a votre agence.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/apply",
@@ -2831,7 +3015,7 @@
                     "apply"
                   ]
                 },
-                "description": "Public : Soumettre une demande d'adhésion bailleur auprès d'une agence."
+                "description": "CLIENT authentifie (JWT requis) : Soumettre une demande d adhesion bailleur.\nfirstName, lastName, phone, email sont extraits automatiquement du compte — seuls agencyId, idType, idNumber et properties sont requis.\nidType : CNI | PASSEPORT | PERMIS_CONDUIRE | TITRE_SEJOUR | CARTE_CONSULAIRE\nFlux : GET /v1/agencies → choisir une agence → POST ici."
               },
               "response": []
             }
@@ -3004,9 +3188,69 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "OWNER Mobile",
+          "item": [
+            {
+              "name": "Mes demandes d adhesion (OWNER)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/bailleur/my-applications?page=0&size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "my-applications"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "OWNER : Lister mes demandes d adhesion bailleur avec leur statut.\nStatuts : PENDING | APPROVED | REJECTED | CANCELLED"
+              },
+              "response": []
+            },
+            {
+              "name": "Mes agences partenaires (OWNER)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/bailleur/my-agencies",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "my-agencies"
+                  ]
+                },
+                "description": "OWNER : Lister les agences auxquelles je suis lie en tant que bailleur. Utilise pour rattacher un bien a une agence."
+              },
+              "response": []
+            }
+          ]
         }
       ],
-      "description": "Gestion des demandes d'adhésion bailleur (propriétaires souhaitant confier leur bien à une agence)"
+      "description": "Gestion des demandes d'adhésion bailleur (propriétaires souhaitant confier leur bien à une agence)\n\nFlux mobile CLIENT → OWNER :\n1. GET /v1/agencies → choisir une agence\n2. POST /v1/bailleur/apply (JWT CLIENT) → demande soumise\n3. DIRECTEUR_AGENCE approuve → rôle UBAX_OWNER ajouté automatiquement\n4. OWNER refresh token → formulaire bien débloqué\n\nMobile OWNER suivi : GET /v1/bailleur/my-applications | GET /v1/bailleur/my-agencies"
     },
     {
       "name": "Storage",
@@ -3873,7 +4117,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/v1/code-list?page=0&size=25&sort=type,asc",
+                  "raw": "{{base_url}}/v1/code-list?page=0&size=222&sort=type,asc",
                   "host": [
                     "{{base_url}}"
                   ],
@@ -3888,7 +4132,7 @@
                     },
                     {
                       "key": "size",
-                      "value": "25"
+                      "value": "222"
                     },
                     {
                       "key": "sort",
@@ -4108,6 +4352,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Changement de plans\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
                   "host": [
@@ -4119,16 +4372,7 @@
                     "{{reservation_id}}"
                   ]
                 },
-                "description": "CLIENT - Annuler une reservation PENDING uniquement.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Changement de plans\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "CLIENT - Annuler une reservation PENDING uniquement."
               },
               "response": []
             }
@@ -4205,6 +4449,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Surreservation - impossibilite d honorer la demande\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/reservations/{{reservation_id}}/cancel",
                   "host": [
@@ -4217,16 +4470,7 @@
                     "cancel"
                   ]
                 },
-                "description": "PARTNER hotelier - Annuler une reservation PENDING ou CONFIRMED.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Surreservation - impossibilite d honorer la demande\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "PARTNER hotelier - Annuler une reservation PENDING ou CONFIRMED."
               },
               "response": []
             },
@@ -4495,6 +4739,15 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"terminationReason\": \"Non-paiement de 2 mois de loyer consecutifs\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{base_url}}/v1/contracts/{{contract_id}}/terminate",
               "host": [
@@ -4507,16 +4760,7 @@
                 "terminate"
               ]
             },
-            "description": "PARTNER/OWNER/ADMIN - Resilier un contrat ACTIVE -> TERMINATED.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"terminationReason\": \"Non-paiement de 2 mois de loyer consecutifs\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "PARTNER/OWNER/ADMIN - Resilier un contrat ACTIVE -> TERMINATED."
           },
           "response": []
         },
@@ -4561,7 +4805,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"contractId\": \"{{contract_id}}\",\n  \"category\": \"LEAK\",\n  \"title\": \"Fuite sous l evier de la cuisine\",\n  \"description\": \"Il y a une fuite d eau sous l evier depuis ce matin.\",\n  \"priority\": \"HIGH\"\n}",
+                  "raw": "{\n  \"contractId\": \"{{contract_id}}\",\n  \"category\": \"PLOMBIER\",\n  \"title\": \"Fuite sous l evier de la cuisine\",\n  \"description\": \"Il y a une fuite d eau sous l evier depuis ce matin. L eau coule en continu.\",\n  \"priority\": \"HIGH\",\n  \"attachments\": [\n    {\n      \"fileUrl\": \"{{file_url}}\",\n      \"attachmentType\": \"INCIDENT_PHOTO\"\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -4578,7 +4822,7 @@
                     "tickets"
                   ]
                 },
-                "description": "Authentifie - Creer un ticket de maintenance/SAV dans le cadre d un contrat actif."
+                "description": "CLIENT/PARTNER/OWNER : Creer un ticket de maintenance/SAV dans le cadre d un contrat actif.\nCatégories (alignées TECHNICIEN_PROFESSION) : PLOMBIER, ELECTRICIEN, SERRURIER, MENUISIER, MACON, PEINTRE, CLIMATISATION, VITRERIE, JARDINAGE, NETTOYAGE, DESINSECTISATION, AUTRE\nPriorités : LOW, NORMAL, HIGH, URGENT\nattachments[] : URLs pré-uploadées via GET /v1/storage/presign/ticket-attachment (optionnel)."
               },
               "response": []
             },
@@ -4619,6 +4863,36 @@
               "response": []
             },
             {
+              "name": "Mes tickets (CLIENT / OWNER)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/tickets/mine?page=0&size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tickets",
+                    "mine"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "CLIENT/OWNER/PARTNER : Mes tickets declares, tries du plus recent au plus ancien. Le CLIENT ne voit que ses propres tickets."
+              },
+              "response": []
+            },
+            {
               "name": "Detail ticket",
               "request": {
                 "method": "GET",
@@ -4648,6 +4922,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"IN_ANALYSIS\",\n  \"note\": \"Technicien contacte, intervention prevue demain\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/status",
                   "host": [
@@ -4660,16 +4943,7 @@
                     "status"
                   ]
                 },
-                "description": "PARTNER/ADMIN - Workflow: OPEN->IN_ANALYSIS->TECHNICIAN_SENT->RESOLVED->CLOSED.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"status\": \"IN_ANALYSIS\",\n  \"note\": \"Technicien contacte, intervention prevue demain\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "PARTNER/ADMIN - Workflow: OPEN->IN_ANALYSIS->TECHNICIAN_SENT->RESOLVED->CLOSED."
               },
               "response": []
             },
@@ -4683,6 +4957,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"assignedToId\": \"{{user_id}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/assign",
                   "host": [
@@ -4695,16 +4978,7 @@
                     "assign"
                   ]
                 },
-                "description": "PARTNER/ADMIN - Assigner un ticket a un agent SAV.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"assignedToId\": \"{{user_id}}\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "PARTNER/ADMIN - Assigner un ticket a un agent SAV."
               },
               "response": []
             },
@@ -4718,6 +4992,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"technicienId\": \"{{technician_id}}\",\n  \"interventionScheduledAt\": \"2026-05-15T09:00:00\",\n  \"interventionPrice\": 75000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/schedule",
                   "host": [
@@ -4730,16 +5013,7 @@
                     "schedule"
                   ]
                 },
-                "description": "PARTNER/ADMIN - Planifier une intervention technique.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"technicianName\": \"Mamadou Diallo\",\n  \"technicianPhone\": \"+221771234567\",\n  \"scheduledAt\": \"2026-05-15T09:00:00\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "PARTNER/ADMIN - Planifier une intervention technique.\nMode 1 (technicien enregistre) : fournir technicienId (coordonnees recup automatiquement).\nMode 2 (prestataire libre) : fournir technicianName + technicianPhone.\ninterventionPrice : prix negocie en XOF."
               },
               "response": []
             },
@@ -4753,6 +5027,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"repairCost\": 85000,\n  \"costImputedTo\": \"TENANT\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/tickets/{{ticket_id}}/repair-cost",
                   "host": [
@@ -4765,16 +5048,7 @@
                     "repair-cost"
                   ]
                 },
-                "description": "PARTNER/ADMIN - Enregistrer le cout de reparation et son imputation.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"repairCost\": 85000,\n  \"costImputedTo\": \"TENANT\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "PARTNER/ADMIN - Enregistrer le cout de reparation et son imputation."
               },
               "response": []
             }
@@ -4959,6 +5233,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptionPlan\": \"PRO\",\n  \"subscriptionExpiresAt\": \"2027-12-31T23:59:59\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/admin/partners/agencies/{{agency_id}}/subscription",
                   "host": [
@@ -4973,16 +5256,7 @@
                     "subscription"
                   ]
                 },
-                "description": "ADMIN/SUPER_ADMIN - Mettre a jour le plan et la date d expiration de l abonnement agence.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"subscriptionPlan\": \"PRO\",\n  \"subscriptionExpiresAt\": \"2027-12-31T23:59:59\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "ADMIN/SUPER_ADMIN - Mettre a jour le plan et la date d expiration de l abonnement agence."
               },
               "response": []
             }
@@ -5080,6 +5354,15 @@
                     "value": "application/json"
                   }
                 ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptionPlan\": \"PREMIUM\",\n  \"subscriptionExpiresAt\": \"2027-12-31T23:59:59\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
                 "url": {
                   "raw": "{{base_url}}/v1/admin/partners/hotels/{{hotel_id}}/subscription",
                   "host": [
@@ -5094,16 +5377,7 @@
                     "subscription"
                   ]
                 },
-                "description": "ADMIN/SUPER_ADMIN - Mettre a jour le plan et la date d expiration de l abonnement hotel.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"subscriptionPlan\": \"PREMIUM\",\n  \"subscriptionExpiresAt\": \"2027-12-31T23:59:59\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+                "description": "ADMIN/SUPER_ADMIN - Mettre a jour le plan et la date d expiration de l abonnement hotel."
               },
               "response": []
             }
@@ -5445,135 +5719,381 @@
             "description": "PARTNER hotelier - Revoquer un sous-role hotel d un membre (ex: {{role}} = RECEPTIONNISTE)."
           },
           "response": []
+        },
+        {
+          "name": "Clients de mon hotel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotel/clients?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotel",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "PARTNER hotelier : Lister les clients de mon hotel (via leurs reservations)."
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Reservations",
+      "name": "Agencies",
       "item": [
         {
-          "name": "Client",
-          "item": [
-            {
-              "name": "Soumettre une reservation",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"propertyId\": \"{{property_id}}\",\n  \"checkInDate\": \"2026-06-10\",\n  \"checkOutDate\": \"2026-06-15\",\n  \"guestCount\": 2,\n  \"notes\": \"Chambre avec vue si possible\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
+          "name": "Lister les agences disponibles (Mobile)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/agencies?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "agencies"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
                 },
-                "url": {
-                  "raw": "{{base_url}}/v1/reservations",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "reservations"
-                  ]
+                {
+                  "key": "size",
+                  "value": "20"
                 },
-                "description": "CLIENT - Soumettre une demande de reservation hoteliere."
-              },
-              "response": []
-            },
-            {
-              "name": "Mes reservations",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_url}}/v1/reservations/mine?page=0&size=20",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "reservations",
-                    "mine"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "0"
-                    },
-                    {
-                      "key": "size",
-                      "value": "20"
-                    }
-                  ]
-                },
-                "description": "CLIENT - Liste paginee des reservations du client connecte."
-              },
-              "response": []
-            },
-            {
-              "name": "Detail reservation",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "reservations",
-                    "{{reservation_id}}"
-                  ]
-                },
-                "description": "CLIENT ou PARTNER - Detail complet d une reservation."
-              },
-              "response": []
-            },
-            {
-              "name": "Annuler ma reservation",
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "reservations",
-                    "{{reservation_id}}"
-                  ]
-                },
-                "description": "CLIENT - Annuler une reservation PENDING uniquement.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Changement de plans\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
+                {
+                  "key": "city",
+                  "value": "Dakar",
+                  "disabled": true
                 }
-              },
-              "response": []
-            }
-          ]
+              ]
+            },
+            "description": "CLIENT/OWNER/PARTNER/ADMIN : Lister les agences actives. Filtre optionnel ?city= (insensible a la casse).\nUtilise dans le flux mobile avant POST /v1/bailleur/apply."
+          },
+          "response": []
         }
-      ]
+      ],
+      "description": "Consultation des agences disponibles — utilisé depuis l'application mobile dans le flux adhésion bailleur"
+    },
+    {
+      "name": "Favoris",
+      "item": [
+        {
+          "name": "Ajouter un bien aux favoris",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Idempotent — pas d erreur si deja favori"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/favorites/{{property_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "favorites",
+                "{{property_id}}"
+              ]
+            },
+            "description": "CLIENT/OWNER : Ajouter un bien aux favoris. Idempotent — retourne le favori existant sans erreur si deja present."
+          },
+          "response": []
+        },
+        {
+          "name": "Retirer un bien des favoris",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/favorites/{{property_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "favorites",
+                "{{property_id}}"
+              ]
+            },
+            "description": "CLIENT/OWNER : Retirer un bien de la liste des favoris. 404 si le favori n existe pas."
+          },
+          "response": []
+        },
+        {
+          "name": "Mes biens favoris",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/favorites/mine?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "favorites",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "CLIENT/OWNER : Liste paginee des biens favoris, triee du plus recemment ajoute. Retourne des PropertyResponse complets avec coverPhotoUrl."
+          },
+          "response": []
+        }
+      ],
+      "description": "📱 Favoris immobiliers — CLIENT / OWNER uniquement. Ajout idempotent (pas de 409). Retourne PropertyResponse complet."
+    },
+    {
+      "name": "Techniciens SAV",
+      "item": [
+        {
+          "name": "Creer un technicien",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.data && json.data.id) {",
+                  "        pm.environment.set('technician_id', json.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Mamadou\",\n  \"lastName\": \"Kone\",\n  \"phone\": \"+221771234567\",\n  \"email\": \"mamadou.kone@gmail.com\",\n  \"profession\": \"PLOMBIER\",\n  \"address\": \"Plateau, Dakar\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/technicians",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "technicians"
+              ]
+            },
+            "description": "PARTNER : Creer un technicien externe rattache a votre structure.\nProfessions (GET /v1/code-list/type/TECHNICIEN_PROFESSION) : PLOMBIER, ELECTRICIEN, SERRURIER, MENUISIER, MACON, PEINTRE, CLIMATISATION, VITRERIE, JARDINAGE, NETTOYAGE, DESINSECTISATION, AUTRE\nL ID est sauvegarde dans {{technician_id}}."
+          },
+          "response": []
+        },
+        {
+          "name": "Lister les techniciens",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/technicians?page=0&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "technicians"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "available",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "PARTNER : Liste paginee des techniciens de la structure (agence ou hotel). Filtre optionnel ?available=true."
+          },
+          "response": []
+        },
+        {
+          "name": "Detail d un technicien",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/technicians/{{technician_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "technicians",
+                "{{technician_id}}"
+              ]
+            },
+            "description": "PARTNER : Detail complet d un technicien de votre structure."
+          },
+          "response": []
+        },
+        {
+          "name": "Modifier un technicien",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Mamadou\",\n  \"lastName\": \"Kone\",\n  \"phone\": \"+221771234567\",\n  \"profession\": \"ELECTRICIEN\",\n  \"address\": \"Almadies, Dakar\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/technicians/{{technician_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "technicians",
+                "{{technician_id}}"
+              ]
+            },
+            "description": "PARTNER : Mettre a jour les informations d un technicien."
+          },
+          "response": []
+        },
+        {
+          "name": "Basculer disponibilite",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/technicians/{{technician_id}}/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "technicians",
+                "{{technician_id}}",
+                "availability"
+              ]
+            },
+            "description": "PARTNER : Basculer la disponibilite du technicien (disponible <-> indisponible). Pas de body requis."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload avatar technicien",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Photo du technicien (JPEG, PNG, WEBP — max 5 MB)",
+                  "value": null
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/technicians/{{technician_id}}/avatar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "technicians",
+                "{{technician_id}}",
+                "avatar"
+              ]
+            },
+            "description": "PARTNER : Uploader ou remplacer la photo du technicien. Formats : JPEG, PNG, WEBP — max 5 Mo.\nL agent gere cette operation car les techniciens n ont pas de compte sur la plateforme."
+          },
+          "response": []
+        },
+        {
+          "name": "Supprimer un technicien",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/technicians/{{technician_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "technicians",
+                "{{technician_id}}"
+              ]
+            },
+            "description": "PARTNER : Supprimer un technicien (soft delete). Il n apparaitra plus dans les listes."
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des prestataires / techniciens externes (PARTNER agence ou hotel).\nLes techniciens n ont pas de compte sur la plateforme. Assignables aux tickets SAV via technicienId dans PATCH /v1/tickets/{id}/schedule."
     },
     {
       "name": "Health & Monitoring",

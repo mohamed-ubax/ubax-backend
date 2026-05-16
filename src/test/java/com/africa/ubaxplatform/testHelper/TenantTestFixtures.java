@@ -61,8 +61,8 @@ public final class TenantTestFixtures {
   }
 
   /**
-   * Dossier complet — satisfait {@code isDossierComplete()} et peut passer à PENDING_REVIEW.
-   * Contient idDocumentUrl, idDocumentNumber, idDocumentExpiry et incomeProofUrl.
+   * Dossier complet — satisfait {@code isDossierComplete()} (idDocumentUrl + idDocumentNumber +
+   * idDocumentExpiry). incomeProofUrl est optionnel (travailleurs informels).
    */
   public static Tenant buildCompleteTenant(UUID id, TenantStatus status, User user) {
     Tenant tenant =
@@ -86,7 +86,19 @@ public final class TenantTestFixtures {
 
   public static TenantCreateRequest buildCreateRequest() {
     return new TenantCreateRequest(
-        "EMPLOYEE", "Société Ivoirienne", BigDecimal.valueOf(500_000), false, null, null, null);
+        "EMPLOYEE",
+        "Société Ivoirienne",
+        BigDecimal.valueOf(500_000),
+        false,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 
   public static TenantCreateRequest buildCreateRequestWithGuarantor() {
@@ -97,7 +109,31 @@ public final class TenantTestFixtures {
         true,
         "Papa Koné",
         "+2250722334455",
-        "papa.kone@example.ci");
+        "papa.kone@example.ci",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /** Dossier créé avec pièce d'identité — doit déclencher PENDING_REVIEW dès la création. */
+  public static TenantCreateRequest buildCreateRequestWithDocuments() {
+    return new TenantCreateRequest(
+        "SELF_EMPLOYED",
+        null,
+        BigDecimal.valueOf(300_000),
+        false,
+        null,
+        null,
+        null,
+        "https://minio/tenant-documents/id-card.pdf",
+        "CNI",
+        "CI-2024-001",
+        LocalDate.now().plusYears(2).toString(),
+        null, // incomeProofUrl — optionnel (travailleur informel sans justificatif)
+        null);
   }
 
   /** Mise à jour partielle — uniquement les champs KYC pour compléter le dossier. */
