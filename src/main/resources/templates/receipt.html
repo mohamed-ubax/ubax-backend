@@ -32,7 +32,9 @@
 
   <div class="amount-box">
     <div class="amount-label">Montant encaissé</div>
-    <div class="amount-value" th:text="${#numbers.formatDecimal(payment.amountPaid != null ? payment.amountPaid : payment.amount, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</div>
+    <div class="amount-value"
+         th:with="totalAmt=(payment.amountPaid != null ? payment.amountPaid : payment.amount)"
+         th:text="${#numbers.formatDecimal(totalAmt, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</div>
   </div>
 
   <table>

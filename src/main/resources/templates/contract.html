@@ -39,7 +39,14 @@
     </div>
   </div>
 
-  <h1 th:text="'Contrat de ' + (contract.contractType == 'LEASE' ? 'Location' : contract.contractType == 'SALE' ? 'Vente' : contract.contractType == 'RESERVATION' ? 'Réservation' : 'Mandat')">Contrat</h1>
+  <h1>
+    <span th:switch="${contract.contractType}">
+      <span th:case="'LEASE'">Contrat de Location</span>
+      <span th:case="'SALE'">Contrat de Vente</span>
+      <span th:case="'RESERVATION'">Contrat de R&#233;servation</span>
+      <span th:case="*">Contrat de Mandat</span>
+    </span>
+  </h1>
 
   <!-- Parties -->
   <h2>1. Parties</h2>
