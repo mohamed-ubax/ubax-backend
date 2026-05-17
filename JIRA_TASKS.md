@@ -2110,6 +2110,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
   - `SALE` → afficher `salePrice`
   - `RENT_TO_OWN` → afficher `salePrice` (prix total), `monthlyInstallment` (mensualité), `endDate` (fin du programme) + indicateur de progression (mois écoulés / durée totale)
   - `RESERVATION` → afficher `reservationDeposit`, `reservationDurationDays`
+  - `MANDATE` → afficher `agencyCommissionRate` (taux %) + `endDate` (optionnel) + `specialClauses` + `terminationConditions`
 - [ ] Bouton « Télécharger le contrat PDF » si `fileUrl` non null (URL privée — presign de lecture)
 - [ ] Badge statut coloré
 - [ ] Boutons d'action contextuels selon statut et rôle (identiques à UBAX-FE-1001)
@@ -2167,23 +2168,40 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 }
 ```
 
+**Request body — MANDATE :**
+```json
+{
+  "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
+  "ownerId": "uuid-du-propriétaire",
+  "contractType": "MANDATE",
+  "startDate": "2026-06-01",
+  "endDate": "2027-06-01",
+  "agencyCommissionRate": 10.00,
+  "specialClauses": "L'agence est autorisée à signer les baux au nom du propriétaire pour une durée maximale de 12 mois.",
+  "terminationConditions": "Résiliable avec préavis de 30 jours par l'une ou l'autre des parties."
+}
+```
+
 > **`contractType` disponibles :** `LEASE` · `SALE` · `RENT_TO_OWN` · `RESERVATION` · `MANDATE`  
 > **`ownerId` :** UUID de l'entité `Owner` (propriétaire du bien) — différent de l'`userId` Keycloak  
 > **`tenantId` :** UUID du dossier `Tenant` (KYC), pas l'`userId` — requis pour `LEASE` et `RENT_TO_OWN`  
-> **`endDate` :** optionnel pour `LEASE`, **obligatoire pour `RENT_TO_OWN`** (détermine la durée du programme)
+> **`endDate` :** optionnel pour `LEASE` et `MANDATE` (reconduction tacite si absent), **obligatoire pour `RENT_TO_OWN`**
 
 **Champs par type de contrat :**
 
-| Champ | `LEASE` | `SALE` | `RENT_TO_OWN` | `RESERVATION` |
-|-------|---------|--------|---------------|---------------|
-| `tenantId` | ✅ requis | — | ✅ requis | — |
-| `monthlyRent` | ✅ | — | — | — |
-| `salePrice` | — | ✅ | ✅ prix total | — |
-| `monthlyInstallment` | — | — | ✅ mensualité | — |
-| `depositAmount` | ✅ caution | — | ✅ apport | — |
-| `endDate` | optionnel | — | ✅ obligatoire | — |
-| `reservationDeposit` | — | — | — | ✅ |
-| `reservationDurationDays` | — | — | — | ✅ |
+| Champ | `LEASE` | `SALE` | `RENT_TO_OWN` | `RESERVATION` | `MANDATE` |
+|-------|---------|--------|---------------|---------------|-----------|
+| `tenantId` | ✅ requis | — | ✅ requis | — | — |
+| `monthlyRent` | ✅ | — | — | — | — |
+| `salePrice` | — | ✅ | ✅ prix total | — | — |
+| `monthlyInstallment` | — | — | ✅ mensualité | — | — |
+| `depositAmount` | ✅ caution | — | ✅ apport | — | — |
+| `endDate` | optionnel | — | ✅ obligatoire | — | optionnel |
+| `reservationDeposit` | — | — | — | ✅ | — |
+| `reservationDurationDays` | — | — | — | ✅ | — |
+| `agencyCommissionRate` | optionnel | — | — | — | ✅ taux % |
+| `specialClauses` | optionnel | optionnel | optionnel | optionnel | ✅ |
+| `terminationConditions` | optionnel | — | optionnel | — | ✅ |
 
 **Response `201` :**
 ```json
@@ -2221,7 +2239,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
   - `SALE` → afficher `salePrice` uniquement
   - `RENT_TO_OWN` → afficher `salePrice` (prix total du bien), `monthlyInstallment` (mensualité), `endDate` (**obligatoire**), `depositAmount`, `paymentDay`
   - `RESERVATION` → afficher `reservationDeposit`, `reservationDurationDays`
-  - `MANDATE` → champs minimalistes (dates, commission)
+  - `MANDATE` → afficher `agencyCommissionRate` (%), `endDate` (optionnel), `specialClauses`, `terminationConditions` ; masquer tous les champs financiers locataires
 - [ ] Pour `RENT_TO_OWN` : afficher un récapitulatif indicatif — ex. « 200 000 XOF/mois × 60 mois = 12 000 000 XOF »
 - [ ] Champs de dates avec date-picker (start, end)
 - [ ] Champ `paymentDay` (1–28) pour le jour d'échéance mensuel
