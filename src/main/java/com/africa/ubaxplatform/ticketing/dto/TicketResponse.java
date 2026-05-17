@@ -3,6 +3,7 @@ package com.africa.ubaxplatform.ticketing.dto;
 import com.africa.ubaxplatform.ticketing.codeList.TicketStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,6 +33,7 @@ import java.util.UUID;
  * @param ratingComment commentaire libre du locataire lors de la clôture
  * @param createdAt date de création
  * @param updatedAt date de dernière modification
+ * @param attachmentUrls URLs des pièces jointes (renseigné uniquement sur le détail du ticket)
  */
 public record TicketResponse(
     UUID id,
@@ -61,4 +63,5 @@ public record TicketResponse(
     Integer rating,
     String ratingComment,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt) {}
+    LocalDateTime updatedAt,
+    List<String> attachmentUrls) {}

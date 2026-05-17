@@ -163,7 +163,11 @@ public class TicketServiceImpl implements TicketService {
         throw new UnAuthorizedException("Vous n'êtes pas le déclarant de ce ticket");
       }
     }
-    return TicketMapper.toResponse(ticket);
+    List<String> attachmentUrls =
+        attachmentRepo.findByTicketIdOrderByCreatedAtAsc(ticketId).stream()
+            .map(a -> a.getFileUrl())
+            .toList();
+    return TicketMapper.toResponse(ticket, attachmentUrls);
   }
 
   @Override
