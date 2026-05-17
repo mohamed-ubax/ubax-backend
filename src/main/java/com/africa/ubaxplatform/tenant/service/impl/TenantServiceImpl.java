@@ -172,7 +172,8 @@ public class TenantServiceImpl implements TenantService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<TenantResponse> list(String keycloakId, TenantStatus status, Pageable pageable)
+  public Page<TenantResponse> list(
+      String keycloakId, TenantStatus status, UUID propertyId, Pageable pageable)
       throws CustomException {
     User caller = resolveUser(keycloakId);
 
@@ -185,6 +186,16 @@ public class TenantServiceImpl implements TenantService {
     // Partenaire agence → uniquement les locataires liés à leurs contrats
     if (caller.getAgency() != null) {
       UUID agencyId = caller.getAgency().getId();
+      if (propertyId != null && status != null) {
+        return tenantRepo
+            .findByAgencyIdAndPropertyIdAndStatus(agencyId, propertyId, status, pageable)
+            .map(this::toResponse);
+      }
+      if (propertyId != null) {
+        return tenantRepo
+            .findByAgencyIdAndPropertyId(agencyId, propertyId, pageable)
+            .map(this::toResponse);
+      }
       if (status != null) {
         return tenantRepo.findByAgencyIdAndStatus(agencyId, status, pageable).map(this::toResponse);
       }
@@ -192,6 +203,14 @@ public class TenantServiceImpl implements TenantService {
     }
 
     // Admin / Super Admin → tous les dossiers non archivés
+    if (propertyId != null && status != null) {
+      return tenantRepo
+          .findByPropertyIdAndStatus(propertyId, status, pageable)
+          .map(this::toResponse);
+    }
+    if (propertyId != null) {
+      return tenantRepo.findByPropertyId(propertyId, pageable).map(this::toResponse);
+    }
     if (status != null) {
       return tenantRepo.findByStatusAndDeletedAtIsNull(status, pageable).map(this::toResponse);
     }
@@ -203,6 +222,12 @@ public class TenantServiceImpl implements TenantService {
   public TenantResponse qualify(UUID id, String reviewerKeycloakId) throws CustomException {
     User reviewer = resolveUser(reviewerKeycloakId);
     Tenant tenant = resolveTenant(id);
+
+    // PARTNER : vérifier que le dossier est lié à un contrat de son agence
+    if (reviewer.getAgency() != null
+        && !tenantRepo.isLinkedToAgency(id, reviewer.getAgency().getId())) {
+      throw new UnAuthorizedException("Ce dossier locataire n'est pas rattaché à votre agence");
+    }
 
     if (tenant.getStatus() != TenantStatus.PENDING_REVIEW) {
       throw new CustomException(
@@ -223,8 +248,16 @@ public class TenantServiceImpl implements TenantService {
 
   @Override
   @Transactional
-  public TenantResponse reject(UUID id, String reason) throws CustomException {
+  public TenantResponse reject(UUID id, String reason, String callerKeycloakId)
+      throws CustomException {
+    User caller = resolveUser(callerKeycloakId);
     Tenant tenant = resolveTenant(id);
+
+    // PARTNER : vérifier que le dossier est lié à un contrat de son agence
+    if (caller.getAgency() != null
+        && !tenantRepo.isLinkedToAgency(id, caller.getAgency().getId())) {
+      throw new UnAuthorizedException("Ce dossier locataire n'est pas rattaché à votre agence");
+    }
 
     if (reason == null || reason.isBlank()) {
       throw new CustomException(
