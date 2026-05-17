@@ -9,6 +9,7 @@ import com.africa.ubaxplatform.ticketing.dto.TicketResponse;
 import com.africa.ubaxplatform.ticketing.entity.Ticket;
 import com.africa.ubaxplatform.ticketing.entity.TicketAttachment;
 import com.africa.ubaxplatform.ticketing.entity.TicketMessage;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
@@ -38,6 +39,10 @@ public class TicketMapper {
    * @return DTO de réponse complet
    */
   public static TicketResponse toResponse(Ticket t) {
+    return toResponse(t, null);
+  }
+
+  public static TicketResponse toResponse(Ticket t, List<String> attachmentUrls) {
     Contract contract = t.getContract();
     User reporter = t.getReporter();
     User assignedTo = t.getAssignedTo();
@@ -70,7 +75,8 @@ public class TicketMapper {
         t.getRating(),
         t.getRatingComment(),
         t.getCreatedAt(),
-        t.getUpdatedAt());
+        t.getUpdatedAt(),
+        attachmentUrls);
   }
 
   /**

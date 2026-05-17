@@ -2182,6 +2182,18 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 }
 ```
 
+**Request body — RESERVATION :**
+```json
+{
+  "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
+  "ownerId": "uuid-du-propriétaire",
+  "contractType": "RESERVATION",
+  "startDate": "2026-06-01",
+  "reservationDeposit": 500000,
+  "reservationDurationDays": 30
+}
+```
+
 > **`contractType` disponibles :** `LEASE` · `SALE` · `RENT_TO_OWN` · `RESERVATION` · `MANDATE`  
 > **`ownerId` :** UUID de l'entité `Owner` (propriétaire du bien) — différent de l'`userId` Keycloak  
 > **`tenantId` :** UUID du dossier `Tenant` (KYC), pas l'`userId` — requis pour `LEASE` et `RENT_TO_OWN`  
@@ -3028,3 +3040,300 @@ L'agence enregistre et suit les paiements reçus de ses locataires (loyers, caut
 | `404` | Ressource introuvable | Page vide avec message « Introuvable » |
 | `409` | Conflit | Toast avec le message retourné par le backend |
 | `500` | Erreur serveur | Toast « Une erreur est survenue, réessayez » |
+
+---
+
+## MODULE 12 — TICKETING SAV · PORTAIL AGENCE / CLIENT
+
+**Epic :** `UBAX-FE-TICKETING`  
+**Rôle requis (JWT) :** `UBAX_PARTNER` · `UBAX_CLIENT` · `UBAX_OWNER` · `UBAX_ADMIN`
+
+### Objectif
+
+Le module de ticketing SAV permet aux clients et propriétaires de déclarer des incidents (pannes, fuites, problèmes structurels…) directement depuis l'application mobile. L'agence réceptionne les tickets, les assigne à un agent et planifie une intervention avec un technicien.
+
+**Flux principal :**
+1. `CLIENT` ou `OWNER` crée un ticket avec photos (`POST /v1/tickets`) — pièces jointes pré-uploadées via URL présignée.
+2. Le `PARTNER` (agent SAV) consulte la liste des tickets de l'agence et assigne un agent (`PATCH …/assign`).
+3. L'agent planifie une intervention (`PATCH …/schedule`) avec technicien (interne ou libre).
+4. Une fois le problème résolu, l'agent clôture (`PATCH …/status` → `CLOSED`).
+5. Le client peut consulter l'état de son ticket et échangez via messages (`POST …/messages`).
+
+| Tâche | Action | Acteur |
+|-------|--------|--------|
+| UBAX-FE-1201 — Créer un ticket | Écriture | `CLIENT` · `OWNER` · `PARTNER` |
+| UBAX-FE-1202 — Mes tickets | Lecture | `CLIENT` · `OWNER` · `PARTNER` |
+| UBAX-FE-1203 — Détail d'un ticket | Lecture | `CLIENT/OWNER` (reporter) · `PARTNER/ADMIN` |
+| UBAX-FE-1204 — Liste tickets agence | Lecture | `PARTNER` · `ADMIN` |
+| UBAX-FE-1205 — Assigner un ticket | Écriture | `PARTNER` · `ADMIN` |
+| UBAX-FE-1206 — Planifier une intervention | Écriture | `PARTNER` · `ADMIN` |
+| UBAX-FE-1207 — Mettre à jour le statut | Écriture | `PARTNER` · `ADMIN` |
+| UBAX-FE-1208 — Messages du ticket | Lecture + Écriture | Authentifié |
+
+---
+
+### UBAX-FE-1201 · Créer un ticket
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `POST /v1/tickets` |
+| **Auth** | Bearer token · `UBAX_PARTNER`, `UBAX_CLIENT`, `UBAX_OWNER` |
+| **Content-Type** | `application/json` |
+
+**Request body :**
+```json
+{
+  "contractId": "uuid-du-contrat",
+  "category": "LEAK",
+  "priority": "HIGH",
+  "title": "Fuite d'eau dans la salle de bain",
+  "description": "Une fuite importante sous le lavabo depuis ce matin.",
+  "attachments": [
+    {
+      "fileUrl": "https://minio.ubax.africa/ticket-attachments/agency-slug/fuite1.jpg",
+      "fileName": "fuite1.jpg",
+      "fileSize": 204800,
+      "mimeType": "image/jpeg",
+      "attachmentType": "INCIDENT_PHOTO",
+      "caption": "Vue d'ensemble"
+    }
+  ]
+}
+```
+
+> **Upload préalable :** obtenir une URL présignée via `GET /v1/storage/presign/ticket-attachment`, uploader le fichier, puis inclure l'URL retournée dans `attachments[].fileUrl`.  
+> **`attachments` :** tableau optionnel — omis si pas de photo.
+
+**Response `201` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 201,
+  "message": "TICKET_CREATE_SUCCESS",
+  "data": {
+    "id": "uuid-ticket",
+    "contractId": "uuid-du-contrat",
+    "reporterId": "uuid-reporter",
+    "reporterName": "Salle Diop",
+    "category": "LEAK",
+    "title": "Fuite d'eau dans la salle de bain",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "createdAt": "2026-05-17T09:00:00",
+    "updatedAt": "2026-05-17T09:00:00",
+    "attachmentUrls": null
+  }
+}
+```
+
+**Critères d'acceptation :**
+- [ ] Formulaire : sélecteur de catégorie (LEAK, ELECTRICAL, LOCK, PLUMBING, APPLIANCE, STRUCTURE, PEST, COMMON_AREA, OTHER), priorité (LOW, NORMAL, HIGH, URGENT), titre, description
+- [ ] Upload photos : `GET /v1/storage/presign/ticket-attachment` → upload → ajouter `fileUrl` dans le tableau `attachments`
+- [ ] Jusqu'à 5 photos autorisées
+- [ ] Toast de succès après création, redirection vers détail du ticket
+
+---
+
+### UBAX-FE-1202 · Mes tickets
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/tickets/mine` |
+| **Auth** | Bearer token · `UBAX_CLIENT`, `UBAX_OWNER`, `UBAX_PARTNER` |
+
+**Response `200` :**
+```json
+{
+  "data": {
+    "content": [
+      {
+        "id": "uuid-ticket",
+        "title": "Fuite d'eau dans la salle de bain",
+        "category": "LEAK",
+        "priority": "HIGH",
+        "status": "IN_ANALYSIS",
+        "createdAt": "2026-05-17T09:00:00",
+        "attachmentUrls": null
+      }
+    ],
+    "totalElements": 3
+  }
+}
+```
+
+> **`attachmentUrls`** est `null` sur la liste — les URLs sont disponibles uniquement via le détail (`GET /v1/tickets/{id}`).
+
+**Critères d'acceptation :**
+- [ ] Liste paginée triée par `createdAt DESC`
+- [ ] Badge coloré par statut (OPEN = gris, IN_ANALYSIS = bleu, IN_PROGRESS = orange, RESOLVED = vert, CLOSED = noir)
+- [ ] Tap sur une ligne → détail du ticket
+
+---
+
+### UBAX-FE-1203 · Détail d'un ticket
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/tickets/{id}` |
+| **Auth** | Bearer token · `CLIENT/OWNER` (reporter uniquement) · `PARTNER/ADMIN` |
+
+> **Restriction CLIENT/OWNER :** le backend retourne `403` si le caller n'est pas le reporter du ticket.
+
+**Response `200` :**
+```json
+{
+  "data": {
+    "id": "uuid-ticket",
+    "contractId": "uuid-contrat",
+    "reporterId": "uuid-reporter",
+    "reporterName": "Salle Diop",
+    "assignedToId": "uuid-agent",
+    "assignedToName": "Fatou Ndiaye",
+    "category": "LEAK",
+    "title": "Fuite d'eau dans la salle de bain",
+    "description": "Une fuite importante sous le lavabo depuis ce matin.",
+    "priority": "HIGH",
+    "status": "IN_ANALYSIS",
+    "technicienId": "uuid-technicien",
+    "technicienProfession": "PLOMBIER",
+    "technicianName": "Ibrahima Sow",
+    "technicianPhone": "+221771234567",
+    "interventionPrice": 35000,
+    "interventionScheduledAt": "2026-05-20T10:00:00",
+    "resolvedAt": null,
+    "closedAt": null,
+    "repairCost": null,
+    "costImputedTo": null,
+    "resolutionNote": null,
+    "rating": null,
+    "ratingComment": null,
+    "createdAt": "2026-05-17T09:00:00",
+    "updatedAt": "2026-05-17T09:30:00",
+    "attachmentUrls": [
+      "https://minio.ubax.africa/ticket-attachments/agency-slug/fuite1.jpg",
+      "https://minio.ubax.africa/ticket-attachments/agency-slug/fuite2.jpg"
+    ]
+  }
+}
+```
+
+> **`attachmentUrls`** : liste des URLs des photos attachées au ticket — présente uniquement sur cet endpoint (liste retourne `null`).  
+> Utiliser directement dans `<img src>` — bucket `ticket-attachments` est privé, URLs directement accessibles via MinIO (pas de présignature nécessaire à l'affichage si le bucket est public, sinon utiliser la présignature `GET /v1/storage/presign`).
+
+**Critères d'acceptation :**
+- [ ] Afficher toutes les informations du ticket (statut, catégorie, reporter, agent assigné, technicien)
+- [ ] Galerie photo à partir de `attachmentUrls` (swipeable si plusieurs photos)
+- [ ] Afficher les dates d'intervention planifiée, de résolution, de clôture si renseignées
+- [ ] Afficher `repairCost` et `costImputedTo` si définis
+- [ ] Pour `CLIENT/OWNER` : masquer les champs internes (assignedTo, interventionPrice, repairCost)
+
+---
+
+### UBAX-FE-1204 · Liste des tickets agence
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/tickets` |
+| **Auth** | Bearer token · `UBAX_PARTNER`, `UBAX_ADMIN` |
+| **Paramètres** | `?status=OPEN&assignedToId=uuid&page=0&size=20` |
+
+**Critères d'acceptation :**
+- [ ] Tableau paginé filtrable par statut et par agent assigné
+- [ ] Indicateur visuel de priorité (couleur ou icône)
+- [ ] Colonne « Assigné à » avec avatar ou initiales
+
+---
+
+### UBAX-FE-1205 · Assigner un ticket
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/tickets/{id}/assign` |
+| **Auth** | Bearer token · `UBAX_PARTNER`, `UBAX_ADMIN` |
+
+**Request body :**
+```json
+{ "assignedToId": "uuid-agent-sav" }
+```
+
+**Critères d'acceptation :**
+- [ ] Dropdown des membres de l'agence ayant le sous-rôle `AGENT_SAV`
+- [ ] Toast de confirmation après assignation
+
+---
+
+### UBAX-FE-1206 · Planifier une intervention
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/tickets/{id}/schedule` |
+| **Auth** | Bearer token · `UBAX_PARTNER`, `UBAX_ADMIN` |
+
+**Request body (technicien plateforme) :**
+```json
+{
+  "technicienId": "uuid-technicien",
+  "interventionScheduledAt": "2026-05-20T10:00:00",
+  "interventionPrice": 35000
+}
+```
+
+**Request body (technicien libre — sans compte) :**
+```json
+{
+  "technicianName": "Ibrahima Sow",
+  "technicianPhone": "+221771234567",
+  "interventionScheduledAt": "2026-05-20T10:00:00",
+  "interventionPrice": 35000
+}
+```
+
+> `technicienId` et `technicianName` sont mutuellement exclusifs. Si `technicienId` est fourni, le nom/téléphone sont ignorés.
+
+**Critères d'acceptation :**
+- [ ] Switch « Technicien plateforme / Technicien libre »
+- [ ] Si plateforme : liste déroulante `GET /v1/technicians?available=true`
+- [ ] Date-picker + heure pour `interventionScheduledAt`
+- [ ] Champ montant pour `interventionPrice`
+
+---
+
+### UBAX-FE-1207 · Mettre à jour le statut
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/tickets/{id}/status` |
+| **Auth** | Bearer token · `UBAX_PARTNER`, `UBAX_ADMIN` |
+
+**Request body :**
+```json
+{ "status": "IN_PROGRESS" }
+```
+
+**Statuts disponibles :** `OPEN` → `IN_ANALYSIS` → `IN_PROGRESS` → `RESOLVED` → `CLOSED`
+
+**Critères d'acceptation :**
+- [ ] Bouton ou sélecteur de statut contextuel selon la valeur actuelle
+- [ ] Confirmation avant passage à `CLOSED`
+- [ ] Toast de succès après mise à jour
+
+---
+
+### UBAX-FE-1208 · Messages du ticket
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint lecture** | `GET /v1/tickets/{id}/messages` |
+| **Endpoint écriture** | `POST /v1/tickets/{id}/messages` |
+| **Auth** | Bearer token · Authentifié |
+
+**Request body (nouveau message) :**
+```json
+{ "message": "L'intervention est planifiée pour demain matin." }
+```
+
+**Critères d'acceptation :**
+- [ ] Fil de discussion style chat (messages triés par `createdAt ASC`)
+- [ ] Distinguer les messages AGENT vs CLIENT via `messageType`
+- [ ] Champ de saisie en bas avec bouton Envoyer
+- [ ] Rafraîchissement automatique ou pull-to-refresh
