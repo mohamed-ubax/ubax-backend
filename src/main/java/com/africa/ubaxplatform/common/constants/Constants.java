@@ -178,6 +178,7 @@ public class Constants {
 
       public static final String LEASE = "LEASE";
       public static final String SALE = "SALE";
+      public static final String RENT_TO_OWN = "RENT_TO_OWN";
       public static final String RESERVATION = "RESERVATION";
       public static final String MANDATE = "MANDATE";
     }

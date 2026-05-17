@@ -237,15 +237,49 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
 | **Sous-rôle DB** | `DIRECTEUR_AGENCE` · `COMMERCIAL` |
 | **Content-Type** | `application/json` |
 
-**Request body :**
+**Champs obligatoires :** `title`, `propertyType`, `transactionType`, `price` (≥ 0), `city`
+
+**`propertyType` — Biens agence :**
+
+| Valeur | Libellé |
+|--------|---------|
+| `APARTMENT` | Appartement |
+| `VILLA` | Villa |
+| `HOUSE` | Maison |
+| `LAND` | Terrain |
+| `OFFICE` | Bureau |
+| `WAREHOUSE` | Entrepôt |
+| `STORE` | Boutique |
+| `STUDIO` | Studio |
+
+**`propertyType` — Espaces hôteliers :**
+
+| Valeur | Libellé |
+|--------|---------|
+| `ROOM` | Chambre |
+| `SUITE` | Suite |
+| `CONFERENCE_ROOM` | Salle de conférence |
+
+> Valeurs récupérables dynamiquement via `GET /v1/code-list/type/PROPERTY_TYPE`
+
+**`transactionType` :**
+
+| Valeur | Contexte | `price` représente |
+|--------|----------|--------------------|
+| `SALE` | Vente (agence) | Prix de cession |
+| `RENT` | Location vide mensuelle (agence) | Loyer mensuel |
+| `RENT_FURNISHED` | Location meublée mensuelle (agence) | Loyer mensuel |
+| `SHORT_STAY` | Courte durée / nuitée (hôtel) | Tarif par nuit |
+
+**Request body — bien agence (villa à vendre) :**
 ```json
 {
-  "title": "string (requis, non vide)",
-  "description": "string (optionnel)",
-  "propertyType": "VILLA (requis — valeur code list PROPERTY_TYPE)",
-  "transactionType": "SALE (requis — SALE | RENT | RENT_FURNISHED)",
+  "title": "Villa F5 aux Almadies",
+  "description": "Belle villa avec piscine et jardin",
+  "propertyType": "VILLA",
+  "transactionType": "SALE",
   "price": 85000000,
-  "condition": "GOOD (optionnel — NEW | GOOD | RENOVATE)",
+  "condition": "GOOD",
   "yearBuilt": 2018,
   "surfaceTotal": 450.0,
   "surfaceLiving": 320.0,
@@ -253,44 +287,74 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
   "bedrooms": 5,
   "bathrooms": 3,
   "balconies": 2,
-  "floor": null,
   "totalFloors": 2,
-  "address": "string",
-  "city": "DAKAR (requis — valeur code list CITY)",
+  "city": "Dakar",
   "district": "Almadies",
-  "street": "Rue 10",
+  "street": "Rue des Almadies",
   "latitude": 14.7495,
   "longitude": -17.4942,
   "amenities": [
     { "code": "POOL" },
-    { "code": "GENERATOR" },
-    { "code": "WATER_TANK" },
-    { "code": "AC" },
-    { "code": "SECURITY" },
     { "code": "PARKING" },
+    { "code": "SECURITY" },
     { "code": "GARDEN" }
   ],
   "ownerId": null
 }
 ```
 
-> **Champs obligatoires :** `title`, `propertyType`, `transactionType`, `price` (≥ 0), `city`  
-> **`amenities`** : liste de commodités standard (`code`) ou personnalisées (`customValue` + `customDescription` optionnelle). `null` = aucune commodité. Codes disponibles via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`  
-> **`ownerId`** : UUID du bailleur propriétaire réel si l'agence gère pour un tiers (sinon `null`)
+**Request body — bien agence (appartement à louer) :**
+```json
+{
+  "title": "Appartement F3 Plateau",
+  "propertyType": "APARTMENT",
+  "transactionType": "RENT",
+  "price": 350000,
+  "rooms": 3,
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "city": "Dakar",
+  "district": "Plateau",
+  "amenities": [
+    { "code": "AC" },
+    { "code": "FURNISHED" }
+  ]
+}
+```
 
-**Valeurs `propertyType` :** récupérables via `GET /v1/code-list/type/PROPERTY_TYPE`  
-Exemples : `APARTMENT` · `VILLA` · `HOUSE` · `LAND` · `OFFICE` · `WAREHOUSE` · `STORE` · `STUDIO` · `ROOM`
+**Request body — espace hôtelier (chambre) :**
+```json
+{
+  "title": "Chambre Deluxe Vue Mer",
+  "propertyType": "ROOM",
+  "transactionType": "SHORT_STAY",
+  "price": 45000,
+  "city": "Dakar",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "bedType": "KING",
+  "maxOccupancy": 2,
+  "mealPlan": "BREAKFAST",
+  "paymentFrequency": "NIGHTLY"
+}
+```
 
-**Response `201` :** _(objet `PropertyResponse` avec `status: "DRAFT"`)_
+> **`amenities`** : codes standard via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`. Commodité personnalisée : `{ "customValue": "Jacuzzi", "customDescription": "Jacuzzi extérieur" }`  
+> **`ownerId`** : UUID du bailleur si l'agence gère pour un tiers — `null` si l'appelant est lui-même propriétaire  
+> **Champs hôtel** (`bedType`, `maxOccupancy`, `mealPlan`, `paymentFrequency`) : ignorés pour les biens agence
+
+**Response `201` :** objet `PropertyResponse` avec `status: "DRAFT"`
 
 **Erreurs possibles :**
-- `400 Bad Request` — champ obligatoire manquant ou valeur invalide
+- `400 Bad Request` — champ obligatoire manquant (`title`, `propertyType`, `transactionType`, `price`, `city`) ou `price` < 0
 - `401 Unauthorized` — token absent
 - `403 Forbidden` — rôle insuffisant
 
 **Critères d'acceptation :**
-- [ ] Formulaire multi-étapes : Étape 1 (infos générales), Étape 2 (surfaces & pièces), Étape 3 (localisation), Étape 4 (équipements)
-- [ ] Les listes `propertyType` et `city` chargées depuis `GET /v1/code-list/type/PROPERTY_TYPE` et `GET /v1/code-list/type/CITY`
+- [ ] Formulaire multi-étapes : Étape 1 (infos générales + type), Étape 2 (surfaces & pièces), Étape 3 (localisation), Étape 4 (équipements)
+- [ ] `propertyType` chargé depuis `GET /v1/code-list/type/PROPERTY_TYPE` — filtrer les types agence vs hôtel selon le contexte
+- [ ] `transactionType` pré-sélectionné à `SHORT_STAY` et non modifiable pour les espaces hôteliers
+- [ ] `city` chargée depuis `GET /v1/code-list/type/CITY`
 - [ ] Carte interactive optionnelle pour saisir `latitude` / `longitude`
 - [ ] Validation frontend avant envoi (champs requis, `price` ≥ 0)
 - [ ] Après création : rediriger vers la fiche du bien en mode édition (ou vers l'upload de médias)
@@ -1979,13 +2043,13 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 
 **Types de contrat supportés :**
 
-| `contractType` | Description | Champs clés |
-|----------------|-------------|-------------|
-| `LEASE` | Bail de location | `monthlyRent`, `depositAmount`, `tenantId` |
-| `SALE` | Acte de vente | `salePrice` |
-| `RENT_TO_OWN` | Location-vente — mensualités imputées sur le prix d'achat | `salePrice` (prix total), `monthlyInstallment` (mensualité), `endDate` (**obligatoire**), `tenantId` |
-| `RESERVATION` | Contrat de réservation | `reservationDeposit`, `reservationDurationDays` |
-| `MANDATE` | Mandat de gestion locative | — |
+| `contractType` | Description | Champs obligatoires (validés backend) | Notes |
+|----------------|-------------|---------------------------------------|-------|
+| `LEASE` | Bail de location | `tenantId`, `monthlyRent` | `depositAmount` recommandé (`monthlyRent × 2`) · `endDate` optionnel (reconduction tacite) · active → 1er loyer créé |
+| `SALE` | Acte de vente | `salePrice` | Pas de locataire, pas de loyer récurrent · contrat one-shot |
+| `RENT_TO_OWN` | Location-vente | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` | `endDate` **obligatoire** (durée du programme) · `depositAmount` recommandé (`monthlyInstallment × 6`) · afficher récap *"X XOF × N mois = Y XOF"* |
+| `RESERVATION` | Réservation | `reservationDeposit` | `reservationDurationDays` recommandé (défaut 30 j) · bloque le bien le temps de confirmer |
+| `MANDATE` | Mandat de gestion | aucun champ financier | `agencyCommissionRate` (défaut 10 %) · `endDate` optionnel · **masquer** `tenantId`, `monthlyRent`, `depositAmount` |
 
 **Points d'attention :**
 - Le PDF de contrat est généré automatiquement à la soumission (`/submit`) — afficher un lien de téléchargement depuis la réponse.
@@ -2238,9 +2302,70 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 }
 ```
 
+**Validations backend par type (`400` si champ manquant) :**
+
+| Type | Champs obligatoires vérifiés par le backend |
+|------|---------------------------------------------|
+| `LEASE` | `tenantId`, `monthlyRent` |
+| `SALE` | `salePrice` |
+| `RENT_TO_OWN` | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` |
+| `RESERVATION` | `reservationDeposit` |
+| `MANDATE` | aucun champ financier obligatoire |
+
 **Erreurs possibles :**
 - `400 Bad Request` — champ obligatoire manquant, `contractType` invalide ou dates invalides
 - `404 Not Found` — bien, locataire ou propriétaire introuvable
+
+---
+
+#### Auto-remplissage du formulaire depuis l'API
+
+**Étape 1 — Sélection du bien** → `GET /v1/properties/{id}`
+
+Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulaire :
+
+| Champ `PropertyResponse` | Utilisation dans le formulaire |
+|--------------------------|-------------------------------|
+| `ownerId` | → `ownerId` (auto-rempli, non modifiable) |
+| `price` | → `salePrice` si `transactionType = SALE`<br>→ `monthlyRent` si `transactionType = RENT` ou `RENT_FURNISHED`<br>→ valeur de base pour le calcul `reservationDeposit` (`price × 5%`) |
+| `transactionType` | → aide à pré-sélectionner le `contractType` recommandé |
+
+> ⚠️ `PropertyResponse` n'a pas de champs `monthly_rent_estimate` ni `deposit_amount_estimate` séparés — `price` est le seul champ prix. Appliquer les calculs dérivés décrits ci-dessous.
+
+**Étape 2 — Valeurs pré-remplies par type de contrat**
+
+| Type | Champ | Source / Calcul |
+|------|-------|-----------------|
+| **LEASE** | `ownerId` | `property.ownerId` |
+| | `monthlyRent` | `property.price` (si `transactionType = RENT`) |
+| | `depositAmount` | `monthlyRent × 2` (calcul frontend) |
+| | `startDate` | Date du jour |
+| | `endDate` | `startDate + 1 an` (optionnel, modifiable) |
+| | `paymentDay` | `5` (défaut métier) |
+| **SALE** | `ownerId` | `property.ownerId` |
+| | `salePrice` | `property.price` (si `transactionType = SALE`) |
+| | `startDate` | Date du jour |
+| **RENT_TO_OWN** | `ownerId` | `property.ownerId` |
+| | `salePrice` | `property.price` (prix total du bien) |
+| | `monthlyInstallment` | `salePrice ÷ 60` (5 ans, modifiable) |
+| | `depositAmount` | `monthlyInstallment × 6` (modifiable) |
+| | `startDate` | Date du jour |
+| | `endDate` | `startDate + 5 ans` (**obligatoire**, modifiable) |
+| | `paymentDay` | `5` (défaut) |
+| **RESERVATION** | `ownerId` | `property.ownerId` |
+| | `reservationDeposit` | `property.price × 5%` (modifiable) |
+| | `reservationDurationDays` | `30` (défaut) |
+| **MANDATE** | `ownerId` | `property.ownerId` |
+| | `startDate` | Date du jour |
+| | `endDate` | `startDate + 1 an` (optionnel) |
+| | `agencyCommissionRate` | `10.00` (défaut %) |
+
+> **Pour `RENT_TO_OWN`** — afficher un récapitulatif indicatif recalculé à la volée :  
+> *« 200 000 XOF/mois × 60 mois = 12 000 000 XOF »* → recalculer si `monthlyInstallment` ou `endDate` changent.
+
+> **Pour `MANDATE`** — masquer tous les champs financiers liés au locataire (`tenantId`, `monthlyRent`, `depositAmount`).
+
+> **Règle de non-écrasement** : une fois qu'un champ a été modifié manuellement par l'utilisateur, ne plus l'écraser lors d'un changement de type de contrat. Stocker un flag `userEdited` par champ dans l'état local du formulaire.
 
 **Critères d'acceptation :**
 - [ ] Formulaire multi-étapes : bien → locataire (pré-rempli depuis dossier KYC) → type → conditions

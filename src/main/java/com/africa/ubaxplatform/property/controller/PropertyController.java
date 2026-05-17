@@ -58,7 +58,38 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/v1/properties")
 @RequiredArgsConstructor
-@Tag(name = "Property", description = "Gestion des biens immobiliers UBAX")
+@Tag(
+    name = "Property",
+    description =
+        "Gestion des biens immobiliers UBAX (agence et hôtel).\n\n"
+            + "**Champs obligatoires à la création :** `title`, `propertyType`, `transactionType`,"
+            + " `price` (≥ 0), `city`\n\n"
+            + "**`propertyType` — Biens agence :**\n\n"
+            + "| Valeur | Libellé |\n"
+            + "|--------|---------|\n"
+            + "| `APARTMENT` | Appartement |\n"
+            + "| `VILLA` | Villa |\n"
+            + "| `HOUSE` | Maison |\n"
+            + "| `LAND` | Terrain |\n"
+            + "| `OFFICE` | Bureau |\n"
+            + "| `WAREHOUSE` | Entrepôt |\n"
+            + "| `STORE` | Boutique |\n"
+            + "| `STUDIO` | Studio |\n\n"
+            + "**`propertyType` — Espaces hôteliers :**\n\n"
+            + "| Valeur | Libellé |\n"
+            + "|--------|---------|\n"
+            + "| `ROOM` | Chambre |\n"
+            + "| `SUITE` | Suite |\n"
+            + "| `CONFERENCE_ROOM` | Salle de conférence |\n\n"
+            + "**`transactionType` :**\n\n"
+            + "| Valeur | Contexte | `price` = |\n"
+            + "|--------|----------|----------|\n"
+            + "| `SALE` | Vente (agence) | Prix de cession |\n"
+            + "| `RENT` | Location vide (agence) | Loyer mensuel |\n"
+            + "| `RENT_FURNISHED` | Location meublée / mensuelle | Loyer mensuel |\n"
+            + "| `SHORT_STAY` | Courte durée / nuitée (hôtel) | Tarif par nuit |\n\n"
+            + "> Les valeurs `propertyType` et `city` sont récupérables dynamiquement via"
+            + " `GET /v1/code-list/type/PROPERTY_TYPE` et `GET /v1/code-list/type/CITY`.")
 public class PropertyController {
 
   private final PropertyService propertyService;
@@ -387,8 +418,66 @@ public class PropertyController {
   @Operation(
       summary = "Créer un bien (brouillon)",
       description =
-          "🏢 **Rôles requis :** `AGENCY` · `OWNER` · `AGENT` · `PARTNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
-              + "Crée un bien en statut `DRAFT`. Le bien doit ensuite être soumis via `PATCH /{id}/submit` pour passer en modération.",
+          "Crée un bien en statut `DRAFT`. Le bien doit ensuite être soumis via"
+              + " `PATCH /{id}/submit` pour passer en modération.\n\n"
+              + "**Champs obligatoires :** `title`, `propertyType`, `transactionType`,"
+              + " `price` (≥ 0), `city`\n\n"
+              + "**Exemple — bien agence (VILLA à vendre) :**\n"
+              + "```json\n"
+              + "{\n"
+              + "  \"title\": \"Villa F5 aux Almadies\",\n"
+              + "  \"description\": \"Belle villa avec piscine et jardin\",\n"
+              + "  \"propertyType\": \"VILLA\",\n"
+              + "  \"transactionType\": \"SALE\",\n"
+              + "  \"price\": 85000000,\n"
+              + "  \"condition\": \"GOOD\",\n"
+              + "  \"yearBuilt\": 2018,\n"
+              + "  \"surfaceTotal\": 450.0,\n"
+              + "  \"surfaceLiving\": 320.0,\n"
+              + "  \"rooms\": 7,\n"
+              + "  \"bedrooms\": 5,\n"
+              + "  \"bathrooms\": 3,\n"
+              + "  \"city\": \"Dakar\",\n"
+              + "  \"district\": \"Almadies\",\n"
+              + "  \"latitude\": 14.7495,\n"
+              + "  \"longitude\": -17.4942,\n"
+              + "  \"amenities\": [\n"
+              + "    { \"code\": \"POOL\" },\n"
+              + "    { \"code\": \"PARKING\" },\n"
+              + "    { \"code\": \"SECURITY\" }\n"
+              + "  ]\n"
+              + "}\n"
+              + "```\n\n"
+              + "**Exemple — bien agence (appartement à louer) :**\n"
+              + "```json\n"
+              + "{\n"
+              + "  \"title\": \"Appartement F3 Plateau\",\n"
+              + "  \"propertyType\": \"APARTMENT\",\n"
+              + "  \"transactionType\": \"RENT\",\n"
+              + "  \"price\": 350000,\n"
+              + "  \"rooms\": 3,\n"
+              + "  \"bedrooms\": 2,\n"
+              + "  \"bathrooms\": 1,\n"
+              + "  \"city\": \"Dakar\",\n"
+              + "  \"district\": \"Plateau\"\n"
+              + "}\n"
+              + "```\n\n"
+              + "**Exemple — espace hôtelier (chambre) :**\n"
+              + "```json\n"
+              + "{\n"
+              + "  \"title\": \"Chambre Deluxe Vue Mer\",\n"
+              + "  \"propertyType\": \"ROOM\",\n"
+              + "  \"transactionType\": \"SHORT_STAY\",\n"
+              + "  \"price\": 45000,\n"
+              + "  \"city\": \"Dakar\",\n"
+              + "  \"bedrooms\": 1,\n"
+              + "  \"bathrooms\": 1,\n"
+              + "  \"bedType\": \"KING\",\n"
+              + "  \"maxOccupancy\": 2,\n"
+              + "  \"mealPlan\": \"BREAKFAST\",\n"
+              + "  \"paymentFrequency\": \"NIGHTLY\"\n"
+              + "}\n"
+              + "```",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(
