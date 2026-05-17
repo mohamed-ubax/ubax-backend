@@ -4,6 +4,7 @@ import com.africa.ubaxplatform.auth.entity.Agency;
 import com.africa.ubaxplatform.auth.entity.Hotel;
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import com.africa.ubaxplatform.property.entity.Property;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import com.africa.ubaxplatform.tenant.dto.TenantCreateRequest;
 import com.africa.ubaxplatform.tenant.dto.TenantUpdateRequest;
@@ -85,6 +86,12 @@ public final class TenantTestFixtures {
     return user;
   }
 
+  public static Property buildProperty() {
+    Property p = Property.builder().title("Villa Test Cocody").build();
+    injectId(p, PROPERTY_ID);
+    return p;
+  }
+
   /** Dossier INCOMPLETE minimal — champs obligatoires uniquement. */
   public static Tenant buildTenant(UUID id, TenantStatus status, User user) {
     Tenant tenant =
@@ -126,6 +133,7 @@ public final class TenantTestFixtures {
 
   public static TenantCreateRequest buildCreateRequest() {
     return new TenantCreateRequest(
+        PROPERTY_ID,
         "EMPLOYEE",
         "Société Ivoirienne",
         BigDecimal.valueOf(500_000),
@@ -143,6 +151,7 @@ public final class TenantTestFixtures {
 
   public static TenantCreateRequest buildCreateRequestWithGuarantor() {
     return new TenantCreateRequest(
+        PROPERTY_ID,
         "STUDENT",
         null,
         BigDecimal.valueOf(150_000),
@@ -161,6 +170,7 @@ public final class TenantTestFixtures {
   /** Dossier créé avec pièce d'identité — doit déclencher PENDING_REVIEW dès la création. */
   public static TenantCreateRequest buildCreateRequestWithDocuments() {
     return new TenantCreateRequest(
+        PROPERTY_ID,
         "SELF_EMPLOYED",
         null,
         BigDecimal.valueOf(300_000),
@@ -179,6 +189,7 @@ public final class TenantTestFixtures {
   /** Mise à jour partielle — uniquement les champs KYC pour compléter le dossier. */
   public static TenantUpdateRequest buildCompleteUpdateRequest() {
     return new TenantUpdateRequest(
+        null, // propertyId — non modifié
         null,
         null,
         null,
@@ -197,6 +208,7 @@ public final class TenantTestFixtures {
   /** Mise à jour partielle — uniquement la situation professionnelle. */
   public static TenantUpdateRequest buildPartialUpdateRequest() {
     return new TenantUpdateRequest(
+        null, // propertyId — non modifié
         "SELF_EMPLOYED",
         "Mon Entreprise",
         BigDecimal.valueOf(750_000),

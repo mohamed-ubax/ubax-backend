@@ -296,8 +296,9 @@ public class ModuleController {
 
 | V048 | `update_ticket_category_code_lists.sql` | Mise à jour code lists catégories tickets |
 | V049 | `create_property_favorites.sql` | Table `property_favorites` (user_id FK, property_id FK, contrainte unique) |
+| V050 | `add_property_id_to_tenants.sql` | Colonne `property_id UUID` (nullable, FK → `properties.id`) sur `tenants` — bien ciblé à la soumission du dossier |
 
-Prochaine version disponible : **V050**
+Prochaine version disponible : **V051**
 
 ---
 
