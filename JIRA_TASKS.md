@@ -237,15 +237,49 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
 | **Sous-rôle DB** | `DIRECTEUR_AGENCE` · `COMMERCIAL` |
 | **Content-Type** | `application/json` |
 
-**Request body :**
+**Champs obligatoires :** `title`, `propertyType`, `transactionType`, `price` (≥ 0), `city`
+
+**`propertyType` — Biens agence :**
+
+| Valeur | Libellé |
+|--------|---------|
+| `APARTMENT` | Appartement |
+| `VILLA` | Villa |
+| `HOUSE` | Maison |
+| `LAND` | Terrain |
+| `OFFICE` | Bureau |
+| `WAREHOUSE` | Entrepôt |
+| `STORE` | Boutique |
+| `STUDIO` | Studio |
+
+**`propertyType` — Espaces hôteliers :**
+
+| Valeur | Libellé |
+|--------|---------|
+| `ROOM` | Chambre |
+| `SUITE` | Suite |
+| `CONFERENCE_ROOM` | Salle de conférence |
+
+> Valeurs récupérables dynamiquement via `GET /v1/code-list/type/PROPERTY_TYPE`
+
+**`transactionType` :**
+
+| Valeur | Contexte | `price` représente |
+|--------|----------|--------------------|
+| `SALE` | Vente (agence) | Prix de cession |
+| `RENT` | Location vide mensuelle (agence) | Loyer mensuel |
+| `RENT_FURNISHED` | Location meublée mensuelle (agence) | Loyer mensuel |
+| `SHORT_STAY` | Courte durée / nuitée (hôtel) | Tarif par nuit |
+
+**Request body — bien agence (villa à vendre) :**
 ```json
 {
-  "title": "string (requis, non vide)",
-  "description": "string (optionnel)",
-  "propertyType": "VILLA (requis — valeur code list PROPERTY_TYPE)",
-  "transactionType": "SALE (requis — SALE | RENT | RENT_FURNISHED)",
+  "title": "Villa F5 aux Almadies",
+  "description": "Belle villa avec piscine et jardin",
+  "propertyType": "VILLA",
+  "transactionType": "SALE",
   "price": 85000000,
-  "condition": "GOOD (optionnel — NEW | GOOD | RENOVATE)",
+  "condition": "GOOD",
   "yearBuilt": 2018,
   "surfaceTotal": 450.0,
   "surfaceLiving": 320.0,
@@ -253,44 +287,74 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
   "bedrooms": 5,
   "bathrooms": 3,
   "balconies": 2,
-  "floor": null,
   "totalFloors": 2,
-  "address": "string",
-  "city": "DAKAR (requis — valeur code list CITY)",
+  "city": "Dakar",
   "district": "Almadies",
-  "street": "Rue 10",
+  "street": "Rue des Almadies",
   "latitude": 14.7495,
   "longitude": -17.4942,
   "amenities": [
     { "code": "POOL" },
-    { "code": "GENERATOR" },
-    { "code": "WATER_TANK" },
-    { "code": "AC" },
-    { "code": "SECURITY" },
     { "code": "PARKING" },
+    { "code": "SECURITY" },
     { "code": "GARDEN" }
   ],
   "ownerId": null
 }
 ```
 
-> **Champs obligatoires :** `title`, `propertyType`, `transactionType`, `price` (≥ 0), `city`  
-> **`amenities`** : liste de commodités standard (`code`) ou personnalisées (`customValue` + `customDescription` optionnelle). `null` = aucune commodité. Codes disponibles via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`  
-> **`ownerId`** : UUID du bailleur propriétaire réel si l'agence gère pour un tiers (sinon `null`)
+**Request body — bien agence (appartement à louer) :**
+```json
+{
+  "title": "Appartement F3 Plateau",
+  "propertyType": "APARTMENT",
+  "transactionType": "RENT",
+  "price": 350000,
+  "rooms": 3,
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "city": "Dakar",
+  "district": "Plateau",
+  "amenities": [
+    { "code": "AC" },
+    { "code": "FURNISHED" }
+  ]
+}
+```
 
-**Valeurs `propertyType` :** récupérables via `GET /v1/code-list/type/PROPERTY_TYPE`  
-Exemples : `APARTMENT` · `VILLA` · `HOUSE` · `LAND` · `OFFICE` · `WAREHOUSE` · `STORE` · `STUDIO` · `ROOM`
+**Request body — espace hôtelier (chambre) :**
+```json
+{
+  "title": "Chambre Deluxe Vue Mer",
+  "propertyType": "ROOM",
+  "transactionType": "SHORT_STAY",
+  "price": 45000,
+  "city": "Dakar",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "bedType": "KING",
+  "maxOccupancy": 2,
+  "mealPlan": "BREAKFAST",
+  "paymentFrequency": "NIGHTLY"
+}
+```
 
-**Response `201` :** _(objet `PropertyResponse` avec `status: "DRAFT"`)_
+> **`amenities`** : codes standard via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`. Commodité personnalisée : `{ "customValue": "Jacuzzi", "customDescription": "Jacuzzi extérieur" }`  
+> **`ownerId`** : UUID du bailleur si l'agence gère pour un tiers — `null` si l'appelant est lui-même propriétaire  
+> **Champs hôtel** (`bedType`, `maxOccupancy`, `mealPlan`, `paymentFrequency`) : ignorés pour les biens agence
+
+**Response `201` :** objet `PropertyResponse` avec `status: "DRAFT"`
 
 **Erreurs possibles :**
-- `400 Bad Request` — champ obligatoire manquant ou valeur invalide
+- `400 Bad Request` — champ obligatoire manquant (`title`, `propertyType`, `transactionType`, `price`, `city`) ou `price` < 0
 - `401 Unauthorized` — token absent
 - `403 Forbidden` — rôle insuffisant
 
 **Critères d'acceptation :**
-- [ ] Formulaire multi-étapes : Étape 1 (infos générales), Étape 2 (surfaces & pièces), Étape 3 (localisation), Étape 4 (équipements)
-- [ ] Les listes `propertyType` et `city` chargées depuis `GET /v1/code-list/type/PROPERTY_TYPE` et `GET /v1/code-list/type/CITY`
+- [ ] Formulaire multi-étapes : Étape 1 (infos générales + type), Étape 2 (surfaces & pièces), Étape 3 (localisation), Étape 4 (équipements)
+- [ ] `propertyType` chargé depuis `GET /v1/code-list/type/PROPERTY_TYPE` — filtrer les types agence vs hôtel selon le contexte
+- [ ] `transactionType` pré-sélectionné à `SHORT_STAY` et non modifiable pour les espaces hôteliers
+- [ ] `city` chargée depuis `GET /v1/code-list/type/CITY`
 - [ ] Carte interactive optionnelle pour saisir `latitude` / `longitude`
 - [ ] Validation frontend avant envoi (champs requis, `price` ≥ 0)
 - [ ] Après création : rediriger vers la fiche du bien en mode édition (ou vers l'upload de médias)
