@@ -62,8 +62,16 @@ public interface TenantService {
    * @param pageable pagination
    * @return page de dossiers
    */
+  /**
+   * @param withoutContract si {@code true} et {@code propertyId} fourni : exclut les dossiers ayant
+   *     déjà un contrat pour ce bien (candidatures en attente de décision)
+   */
   Page<TenantResponse> list(
-      String keycloakId, TenantStatus status, UUID propertyId, Pageable pageable)
+      String keycloakId,
+      TenantStatus status,
+      UUID propertyId,
+      Boolean withoutContract,
+      Pageable pageable)
       throws CustomException;
 
   /**

@@ -422,7 +422,8 @@ class TenantServiceImplTest {
           .thenReturn(page);
 
       Page<TenantResponse> result =
-          service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, null, pageable);
+          service.list(
+              TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, null, null, pageable);
 
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().getFirst().status()).isEqualTo(TenantStatus.PENDING_REVIEW);
@@ -448,7 +449,7 @@ class TenantServiceImplTest {
 
       Page<TenantResponse> result =
           service.list(
-              TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, pageable);
+              TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, null, pageable);
 
       assertThat(result.getContent()).hasSize(1);
       verify(tenantRepo).findByPropertyId(TenantTestFixtures.PROPERTY_ID, pageable);
@@ -471,6 +472,7 @@ class TenantServiceImplTest {
           TenantTestFixtures.KEYCLOAK_ID,
           TenantStatus.PENDING_REVIEW,
           TenantTestFixtures.PROPERTY_ID,
+          null,
           pageable);
 
       verify(tenantRepo)
@@ -489,7 +491,7 @@ class TenantServiceImplTest {
           .thenReturn(Optional.of(partner));
       when(tenantRepo.findByAgencyId(TenantTestFixtures.AGENCY_ID, pageable)).thenReturn(page);
 
-      service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, pageable);
+      service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, null, pageable);
 
       verify(tenantRepo).findByAgencyId(TenantTestFixtures.AGENCY_ID, pageable);
     }
@@ -507,7 +509,8 @@ class TenantServiceImplTest {
               TenantTestFixtures.AGENCY_ID, TenantStatus.PENDING_REVIEW, pageable))
           .thenReturn(page);
 
-      service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, null, pageable);
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID, TenantStatus.PENDING_REVIEW, null, null, pageable);
 
       verify(tenantRepo)
           .findByAgencyIdAndStatus(
@@ -527,7 +530,8 @@ class TenantServiceImplTest {
               TenantTestFixtures.AGENCY_ID, TenantTestFixtures.PROPERTY_ID, pageable))
           .thenReturn(page);
 
-      service.list(TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, pageable);
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, null, pageable);
 
       verify(tenantRepo)
           .findByAgencyIdAndPropertyId(
@@ -556,6 +560,7 @@ class TenantServiceImplTest {
           TenantTestFixtures.KEYCLOAK_ID,
           TenantStatus.PENDING_REVIEW,
           TenantTestFixtures.PROPERTY_ID,
+          null,
           pageable);
 
       verify(tenantRepo)
@@ -575,8 +580,130 @@ class TenantServiceImplTest {
           .thenReturn(Optional.of(hotelPartner));
 
       assertThatThrownBy(
-              () -> service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, PageRequest.of(0, 10)))
+              () ->
+                  service.list(
+                      TenantTestFixtures.KEYCLOAK_ID, null, null, null, PageRequest.of(0, 10)))
           .isInstanceOf(UnAuthorizedException.class);
+    }
+
+    @Test
+    @DisplayName("Admin – withoutContract + propertyId → findByPropertyIdWithoutContract")
+    void list_adminWithoutContract_callsFindByPropertyIdWithoutContract() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByPropertyIdWithoutContract(TenantTestFixtures.PROPERTY_ID, pageable))
+          .thenReturn(page);
+
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, true, pageable);
+
+      verify(tenantRepo).findByPropertyIdWithoutContract(TenantTestFixtures.PROPERTY_ID, pageable);
+      verify(tenantRepo, never()).findByPropertyId(any(), any());
+    }
+
+    @Test
+    @DisplayName(
+        "Admin – withoutContract + propertyId + status → findByPropertyIdAndStatusWithoutContract")
+    void list_adminWithoutContractAndStatus_callsFindByPropertyIdAndStatusWithoutContract()
+        throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByPropertyIdAndStatusWithoutContract(
+              TenantTestFixtures.PROPERTY_ID, TenantStatus.PENDING_REVIEW, pageable))
+          .thenReturn(page);
+
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID,
+          TenantStatus.PENDING_REVIEW,
+          TenantTestFixtures.PROPERTY_ID,
+          true,
+          pageable);
+
+      verify(tenantRepo)
+          .findByPropertyIdAndStatusWithoutContract(
+              TenantTestFixtures.PROPERTY_ID, TenantStatus.PENDING_REVIEW, pageable);
+    }
+
+    @Test
+    @DisplayName(
+        "PARTNER agence – withoutContract + propertyId → findByAgencyIdAndPropertyIdWithoutContract")
+    void list_partnerWithoutContract_callsFindByAgencyIdAndPropertyIdWithoutContract()
+        throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyIdAndPropertyIdWithoutContract(
+              TenantTestFixtures.AGENCY_ID, TenantTestFixtures.PROPERTY_ID, pageable))
+          .thenReturn(page);
+
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID, null, TenantTestFixtures.PROPERTY_ID, true, pageable);
+
+      verify(tenantRepo)
+          .findByAgencyIdAndPropertyIdWithoutContract(
+              TenantTestFixtures.AGENCY_ID, TenantTestFixtures.PROPERTY_ID, pageable);
+    }
+
+    @Test
+    @DisplayName(
+        "PARTNER agence – withoutContract + propertyId + status → findByAgencyIdAndPropertyIdAndStatusWithoutContract")
+    void
+        list_partnerWithoutContractAndStatus_callsFindByAgencyIdAndPropertyIdAndStatusWithoutContract()
+            throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyIdAndPropertyIdAndStatusWithoutContract(
+              TenantTestFixtures.AGENCY_ID,
+              TenantTestFixtures.PROPERTY_ID,
+              TenantStatus.PENDING_REVIEW,
+              pageable))
+          .thenReturn(page);
+
+      service.list(
+          TenantTestFixtures.KEYCLOAK_ID,
+          TenantStatus.PENDING_REVIEW,
+          TenantTestFixtures.PROPERTY_ID,
+          true,
+          pageable);
+
+      verify(tenantRepo)
+          .findByAgencyIdAndPropertyIdAndStatusWithoutContract(
+              TenantTestFixtures.AGENCY_ID,
+              TenantTestFixtures.PROPERTY_ID,
+              TenantStatus.PENDING_REVIEW,
+              pageable);
+    }
+
+    @Test
+    @DisplayName("withoutContract=true sans propertyId → ignoré, retourne findByDeletedAtIsNull")
+    void list_withoutContractWithoutPropertyId_ignoredFallsBackToAll() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByDeletedAtIsNull(pageable)).thenReturn(page);
+
+      service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, true, pageable);
+
+      verify(tenantRepo).findByDeletedAtIsNull(pageable);
+      verify(tenantRepo, never()).findByPropertyIdWithoutContract(any(), any());
     }
 
     @Test
@@ -596,7 +723,8 @@ class TenantServiceImplTest {
           .thenReturn(Optional.of(admin));
       when(tenantRepo.findByDeletedAtIsNull(pag)).thenReturn(page);
 
-      Page<TenantResponse> result = service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, pag);
+      Page<TenantResponse> result =
+          service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, null, pag);
 
       assertThat(result.getContent()).hasSize(2);
       verify(tenantRepo).findByDeletedAtIsNull(pag);

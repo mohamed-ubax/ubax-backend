@@ -205,11 +205,15 @@ public class TenantController {
   @Operation(
       summary = "Lister les dossiers locataires",
       description =
-          "Retourne une page de dossiers locataires, filtrables par statut et/ou bien immobilier. "
+          "Retourne une page de dossiers locataires, filtrables par statut, bien et/ou présence de contrat. "
               + "Pagination par défaut : 20 éléments triés par `createdAt` décroissant.\n\n"
               + "**Filtres disponibles :**\n"
               + "- `status` — filtre par statut (`INCOMPLETE`, `PENDING_REVIEW`, `QUALIFIED`, `REJECTED`, `BLACKLISTED`)\n"
-              + "- `propertyId` — filtre par `property_id` (lien direct sur le dossier — inclut les candidatures sans contrat)\n\n"
+              + "- `propertyId` — filtre par bien ciblé (lien direct `property_id` sur le dossier)\n"
+              + "- `withoutContract` — si `true` + `propertyId` fourni : retourne **uniquement** les dossiers "
+              + "sans aucun contrat pour ce bien (candidatures en attente de décision agence)\n\n"
+              + "**Cas d'usage typique :**\n"
+              + "`GET /v1/tenants?propertyId=xxx&withoutContract=true` → tous les candidats à statuer pour le bien `xxx`\n\n"
               + "**Comportement par rôle :**\n"
               + "- `ADMIN` / `SUPER_ADMIN` : tous les dossiers non archivés\n"
               + "- `PARTNER` agence : uniquement les dossiers dont le bien ciblé appartient à son agence\n"
@@ -241,6 +245,11 @@ public class TenantController {
       @Parameter(description = "Filtre par bien immobilier (UUID). Omis = tous les biens.")
           @RequestParam(required = false)
           UUID propertyId,
+      @Parameter(
+              description =
+                  "Si `true` et `propertyId` fourni : retourne uniquement les dossiers sans contrat pour ce bien.")
+          @RequestParam(required = false)
+          Boolean withoutContract,
       @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
           Pageable pageable,
       HttpServletRequest httpRequest)
@@ -252,7 +261,8 @@ public class TenantController {
             UserRole.ADMIN,
             UserRole.SUPER_ADMIN,
             UserRole.PARTNER);
-    Page<TenantResponse> page = tenantService.list(caller.getSub(), status, propertyId, pageable);
+    Page<TenantResponse> page =
+        tenantService.list(caller.getSub(), status, propertyId, withoutContract, pageable);
     return ResponseEntity.ok(
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
