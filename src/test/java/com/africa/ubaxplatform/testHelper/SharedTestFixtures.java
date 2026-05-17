@@ -38,6 +38,7 @@ public final class SharedTestFixtures {
   public static final UUID TICKET_ID = UUID.randomUUID();
   public static final UUID CONTRACT_ID = UUID.randomUUID();
   public static final UUID PROPERTY_ID = UUID.randomUUID();
+  public static final UUID TENANT_ID = UUID.randomUUID();
   public static final UUID SUB_ROLE_ID = UUID.randomUUID();
 
   public static Agency buildAgency() {

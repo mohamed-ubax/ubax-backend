@@ -24,6 +24,7 @@ import com.africa.ubaxplatform.payment.repository.PaymentRepository;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
 import com.africa.ubaxplatform.property.entity.Property;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
+import com.africa.ubaxplatform.tenant.entity.Tenant;
 import com.africa.ubaxplatform.tenant.repository.TenantRepository;
 import com.africa.ubaxplatform.testHelper.SharedTestFixtures;
 import java.math.BigDecimal;
@@ -98,6 +99,17 @@ class ContractServiceImplTest {
     req.setContractType("LEASE");
     req.setStartDate(LocalDate.now());
     req.setMonthlyRent(BigDecimal.valueOf(300_000));
+    req.setTenantId(SharedTestFixtures.TENANT_ID);
+    return req;
+  }
+
+  private CreateContractRequest buildRequestWithoutTenant() {
+    CreateContractRequest req = new CreateContractRequest();
+    req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
+    req.setOwnerId(SharedTestFixtures.USER_ID);
+    req.setContractType("LEASE");
+    req.setStartDate(LocalDate.now());
+    req.setMonthlyRent(BigDecimal.valueOf(300_000));
     return req;
   }
 
@@ -106,12 +118,16 @@ class ContractServiceImplTest {
   class Create {
 
     @Test
-    @DisplayName("Succès – contrat LEASE créé sans locataire")
-    void create_leaseWithoutTenant_success() throws CustomException {
+    @DisplayName("Succès – contrat LEASE créé avec locataire")
+    void create_lease_success() throws CustomException {
+      Tenant tenant = new Tenant();
+      SharedTestFixtures.injectId(tenant, SharedTestFixtures.TENANT_ID);
+
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
       when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
+      when(tenantRepo.findById(SharedTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
               inv -> {
@@ -125,6 +141,20 @@ class ContractServiceImplTest {
       assertThat(resp).isNotNull();
       assertThat(resp.contractType()).isEqualTo("LEASE");
       assertThat(resp.status()).isEqualTo(ContractStatus.DRAFT);
+    }
+
+    @Test
+    @DisplayName("Echec – LEASE sans tenantId → CONTRACT_CREATE_FAILURE")
+    void create_leaseWithoutTenant_throwsContractCreateFailure() {
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
+      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
+
+      assertThatThrownBy(
+              () -> service.create(SharedTestFixtures.KEYCLOAK_ID, buildRequestWithoutTenant()))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.CONTRACT_CREATE_FAILURE);
     }
 
     @Test
