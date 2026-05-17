@@ -2238,9 +2238,70 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 }
 ```
 
+**Validations backend par type (`400` si champ manquant) :**
+
+| Type | Champs obligatoires vérifiés par le backend |
+|------|---------------------------------------------|
+| `LEASE` | `tenantId`, `monthlyRent` |
+| `SALE` | `salePrice` |
+| `RENT_TO_OWN` | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` |
+| `RESERVATION` | `reservationDeposit` |
+| `MANDATE` | aucun champ financier obligatoire |
+
 **Erreurs possibles :**
 - `400 Bad Request` — champ obligatoire manquant, `contractType` invalide ou dates invalides
 - `404 Not Found` — bien, locataire ou propriétaire introuvable
+
+---
+
+#### Auto-remplissage du formulaire depuis l'API
+
+**Étape 1 — Sélection du bien** → `GET /v1/properties/{id}`
+
+Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulaire :
+
+| Champ `PropertyResponse` | Utilisation dans le formulaire |
+|--------------------------|-------------------------------|
+| `ownerId` | → `ownerId` (auto-rempli, non modifiable) |
+| `price` | → `salePrice` si `transactionType = SALE`<br>→ `monthlyRent` si `transactionType = RENT` ou `RENT_FURNISHED`<br>→ valeur de base pour le calcul `reservationDeposit` (`price × 5%`) |
+| `transactionType` | → aide à pré-sélectionner le `contractType` recommandé |
+
+> ⚠️ `PropertyResponse` n'a pas de champs `monthly_rent_estimate` ni `deposit_amount_estimate` séparés — `price` est le seul champ prix. Appliquer les calculs dérivés décrits ci-dessous.
+
+**Étape 2 — Valeurs pré-remplies par type de contrat**
+
+| Type | Champ | Source / Calcul |
+|------|-------|-----------------|
+| **LEASE** | `ownerId` | `property.ownerId` |
+| | `monthlyRent` | `property.price` (si `transactionType = RENT`) |
+| | `depositAmount` | `monthlyRent × 2` (calcul frontend) |
+| | `startDate` | Date du jour |
+| | `endDate` | `startDate + 1 an` (optionnel, modifiable) |
+| | `paymentDay` | `5` (défaut métier) |
+| **SALE** | `ownerId` | `property.ownerId` |
+| | `salePrice` | `property.price` (si `transactionType = SALE`) |
+| | `startDate` | Date du jour |
+| **RENT_TO_OWN** | `ownerId` | `property.ownerId` |
+| | `salePrice` | `property.price` (prix total du bien) |
+| | `monthlyInstallment` | `salePrice ÷ 60` (5 ans, modifiable) |
+| | `depositAmount` | `monthlyInstallment × 6` (modifiable) |
+| | `startDate` | Date du jour |
+| | `endDate` | `startDate + 5 ans` (**obligatoire**, modifiable) |
+| | `paymentDay` | `5` (défaut) |
+| **RESERVATION** | `ownerId` | `property.ownerId` |
+| | `reservationDeposit` | `property.price × 5%` (modifiable) |
+| | `reservationDurationDays` | `30` (défaut) |
+| **MANDATE** | `ownerId` | `property.ownerId` |
+| | `startDate` | Date du jour |
+| | `endDate` | `startDate + 1 an` (optionnel) |
+| | `agencyCommissionRate` | `10.00` (défaut %) |
+
+> **Pour `RENT_TO_OWN`** — afficher un récapitulatif indicatif recalculé à la volée :  
+> *« 200 000 XOF/mois × 60 mois = 12 000 000 XOF »* → recalculer si `monthlyInstallment` ou `endDate` changent.
+
+> **Pour `MANDATE`** — masquer tous les champs financiers liés au locataire (`tenantId`, `monthlyRent`, `depositAmount`).
+
+> **Règle de non-écrasement** : une fois qu'un champ a été modifié manuellement par l'utilisateur, ne plus l'écraser lors d'un changement de type de contrat. Stocker un flag `userEdited` par champ dans l'état local du formulaire.
 
 **Critères d'acceptation :**
 - [ ] Formulaire multi-étapes : bien → locataire (pré-rempli depuis dossier KYC) → type → conditions

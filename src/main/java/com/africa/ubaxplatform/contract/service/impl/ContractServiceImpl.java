@@ -73,6 +73,7 @@ public class ContractServiceImpl implements ContractService {
                           ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND));
     }
 
+    validateByType(req);
     int paymentDay = req.getPaymentDay() != null ? req.getPaymentDay() : 5;
 
     Contract contract =
@@ -437,6 +438,37 @@ public class ContractServiceImpl implements ContractService {
 
   private void checkWriteAccess(User caller, Contract contract) throws CustomException {
     checkReadAccess(caller, contract);
+  }
+
+  private void validateByType(CreateContractRequest req) throws CustomException {
+    String type = req.getContractType();
+    switch (type) {
+      case Constants.CodeList.ContractType.LEASE -> {
+        requireField(req.getTenantId(), "tenantId est requis pour un bail LEASE");
+        requireField(req.getMonthlyRent(), "monthlyRent est requis pour un bail LEASE");
+      }
+      case Constants.CodeList.ContractType.SALE ->
+          requireField(req.getSalePrice(), "salePrice est requis pour un acte de vente SALE");
+      case Constants.CodeList.ContractType.RENT_TO_OWN -> {
+        requireField(req.getTenantId(), "tenantId est requis pour un contrat RENT_TO_OWN");
+        requireField(req.getSalePrice(), "salePrice (prix total) est requis pour RENT_TO_OWN");
+        requireField(req.getMonthlyInstallment(), "monthlyInstallment est requis pour RENT_TO_OWN");
+        requireField(req.getEndDate(), "endDate est obligatoire pour RENT_TO_OWN");
+      }
+      case Constants.CodeList.ContractType.RESERVATION ->
+          requireField(
+              req.getReservationDeposit(), "reservationDeposit est requis pour une RESERVATION");
+      default -> {
+        // MANDATE : aucun champ financier obligatoire
+      }
+    }
+  }
+
+  private void requireField(Object value, String message) throws CustomException {
+    if (value == null) {
+      throw new CustomException(
+          new BadRequestException(message), ResponseMessageConstants.CONTRACT_CREATE_FAILURE);
+    }
   }
 
   private String generateReference(Contract c) {
