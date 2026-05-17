@@ -1979,13 +1979,13 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 
 **Types de contrat supportés :**
 
-| `contractType` | Description | Champs clés |
-|----------------|-------------|-------------|
-| `LEASE` | Bail de location | `monthlyRent`, `depositAmount`, `tenantId` |
-| `SALE` | Acte de vente | `salePrice` |
-| `RENT_TO_OWN` | Location-vente — mensualités imputées sur le prix d'achat | `salePrice` (prix total), `monthlyInstallment` (mensualité), `endDate` (**obligatoire**), `tenantId` |
-| `RESERVATION` | Contrat de réservation | `reservationDeposit`, `reservationDurationDays` |
-| `MANDATE` | Mandat de gestion locative | — |
+| `contractType` | Description | Champs obligatoires (validés backend) | Notes |
+|----------------|-------------|---------------------------------------|-------|
+| `LEASE` | Bail de location | `tenantId`, `monthlyRent` | `depositAmount` recommandé (`monthlyRent × 2`) · `endDate` optionnel (reconduction tacite) · active → 1er loyer créé |
+| `SALE` | Acte de vente | `salePrice` | Pas de locataire, pas de loyer récurrent · contrat one-shot |
+| `RENT_TO_OWN` | Location-vente | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` | `endDate` **obligatoire** (durée du programme) · `depositAmount` recommandé (`monthlyInstallment × 6`) · afficher récap *"X XOF × N mois = Y XOF"* |
+| `RESERVATION` | Réservation | `reservationDeposit` | `reservationDurationDays` recommandé (défaut 30 j) · bloque le bien le temps de confirmer |
+| `MANDATE` | Mandat de gestion | aucun champ financier | `agencyCommissionRate` (défaut 10 %) · `endDate` optionnel · **masquer** `tenantId`, `monthlyRent`, `depositAmount` |
 
 **Points d'attention :**
 - Le PDF de contrat est généré automatiquement à la soumission (`/submit`) — afficher un lien de téléchargement depuis la réponse.
