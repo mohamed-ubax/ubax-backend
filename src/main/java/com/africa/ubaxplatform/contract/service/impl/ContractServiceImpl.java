@@ -88,6 +88,7 @@ public class ContractServiceImpl implements ContractService {
             .monthlyCharges(req.getMonthlyCharges())
             .depositAmount(req.getDepositAmount())
             .salePrice(req.getSalePrice())
+            .monthlyInstallment(req.getMonthlyInstallment())
             .reservationDeposit(req.getReservationDeposit())
             .reservationDurationDays(req.getReservationDurationDays())
             .agencyCommissionRate(req.getAgencyCommissionRate())

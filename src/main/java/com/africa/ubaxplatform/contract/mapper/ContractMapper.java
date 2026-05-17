@@ -38,6 +38,7 @@ public class ContractMapper {
         c.getDepositAmount(),
         c.isDepositReturned(),
         c.getSalePrice(),
+        c.getMonthlyInstallment(),
         c.getReservationDeposit(),
         c.getReservationDurationDays(),
         c.getAgencyCommissionRate(),
