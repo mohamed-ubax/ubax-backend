@@ -54,8 +54,11 @@ public class CreateContractRequest {
   @Schema(description = "Montant de la caution (XOF)")
   private BigDecimal depositAmount;
 
-  @Schema(description = "Prix de vente (XOF) — SALE uniquement")
+  @Schema(description = "Prix de vente (XOF) — SALE et RENT_TO_OWN : prix total du bien")
   private BigDecimal salePrice;
+
+  @Schema(description = "Mensualité versée vers l'acquisition (XOF) — RENT_TO_OWN uniquement")
+  private BigDecimal monthlyInstallment;
 
   @Schema(description = "Acompte de réservation (XOF) — RESERVATION uniquement")
   private BigDecimal reservationDeposit;

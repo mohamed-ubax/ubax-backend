@@ -28,6 +28,7 @@ public record ContractResponse(
     BigDecimal depositAmount,
     boolean depositReturned,
     BigDecimal salePrice,
+    BigDecimal monthlyInstallment,
     BigDecimal reservationDeposit,
     Integer reservationDurationDays,
     BigDecimal agencyCommissionRate,

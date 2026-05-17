@@ -169,9 +169,17 @@ public class Contract extends BaseEntity {
   @Builder.Default
   private boolean depositReturned = false;
 
-  /** Prix de vente total en XOF (applicable aux contrats {@code SALE}). */
+  /** Prix de vente total en XOF (applicable aux contrats {@code SALE} et {@code RENT_TO_OWN}). */
   @Column(name = "sale_price", precision = 15, scale = 2)
   private BigDecimal salePrice;
+
+  /**
+   * Mensualité versée vers l'acquisition du bien en XOF. Applicable aux contrats {@code
+   * RENT_TO_OWN} uniquement. La durée du programme est déterminée par {@code startDate} et {@code
+   * endDate}.
+   */
+  @Column(name = "monthly_installment", precision = 15, scale = 2)
+  private BigDecimal monthlyInstallment;
 
   /**
    * Montant de l'acompte versé lors d'une réservation (XOF). Applicable aux contrats {@code
