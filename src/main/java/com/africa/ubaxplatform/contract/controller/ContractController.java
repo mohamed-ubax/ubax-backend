@@ -42,18 +42,59 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/contracts")
 @RequiredArgsConstructor
-@Tag(name = "Contracts", description = "Gestion des contrats (bail, vente, réservation, mandat)")
+@Tag(
+    name = "Contracts",
+    description =
+        "Gestion des contrats immobiliers.\n\n"
+            + "**Types supportés :**\n"
+            + "| Type | Description | Champs clés |\n"
+            + "|------|-------------|-------------|\n"
+            + "| `LEASE` | Bail de location | `monthlyRent`, `depositAmount`, `tenantId` |\n"
+            + "| `SALE` | Acte de vente | `salePrice` |\n"
+            + "| `RENT_TO_OWN` | Location-vente | `salePrice`, `monthlyInstallment`, `endDate` (obligatoire), `tenantId` |\n"
+            + "| `RESERVATION` | Contrat de réservation | `reservationDeposit`, `reservationDurationDays` |\n"
+            + "| `MANDATE` | Mandat de gestion locative | — |")
 public class ContractController {
 
   private final ContractService contractService;
   private final RequestHeaderParser requestHeaderParser;
 
   @PostMapping
-  @Operation(summary = "Créer un contrat", security = @SecurityRequirement(name = "bearerAuth"))
+  @Operation(
+      summary = "Créer un contrat",
+      description =
+          "Crée un contrat en statut **DRAFT**. Les champs requis varient selon le `contractType` :\n\n"
+              + "**LEASE** — Bail de location :\n"
+              + "```json\n"
+              + "{ \"contractType\": \"LEASE\", \"propertyId\": \"...\", \"ownerId\": \"...\","
+              + " \"tenantId\": \"...\", \"startDate\": \"2026-06-01\","
+              + " \"monthlyRent\": 250000, \"depositAmount\": 500000, \"paymentDay\": 5 }\n"
+              + "```\n\n"
+              + "**SALE** — Acte de vente :\n"
+              + "```json\n"
+              + "{ \"contractType\": \"SALE\", \"propertyId\": \"...\", \"ownerId\": \"...\","
+              + " \"startDate\": \"2026-06-01\", \"salePrice\": 25000000 }\n"
+              + "```\n\n"
+              + "**RENT_TO_OWN** — Location-vente :\n"
+              + "```json\n"
+              + "{ \"contractType\": \"RENT_TO_OWN\", \"propertyId\": \"...\", \"ownerId\": \"...\","
+              + " \"tenantId\": \"...\", \"startDate\": \"2026-06-01\", \"endDate\": \"2031-06-01\","
+              + " \"salePrice\": 12000000, \"monthlyInstallment\": 200000,"
+              + " \"depositAmount\": 1200000 }\n"
+              + "```\n\n"
+              + "**RESERVATION** — Contrat de réservation :\n"
+              + "```json\n"
+              + "{ \"contractType\": \"RESERVATION\", \"propertyId\": \"...\", \"ownerId\": \"...\","
+              + " \"startDate\": \"2026-06-01\","
+              + " \"reservationDeposit\": 500000, \"reservationDurationDays\": 30 }\n"
+              + "```",
+      security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
-    @ApiResponse(responseCode = "201", description = "Contrat créé"),
-    @ApiResponse(responseCode = "400", description = "Requête invalide"),
-    @ApiResponse(responseCode = "404", description = "Bien ou propriétaire introuvable"),
+    @ApiResponse(responseCode = "201", description = "Contrat créé en DRAFT"),
+    @ApiResponse(responseCode = "400", description = "Champs manquants ou contractType invalide"),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Bien, propriétaire ou dossier locataire introuvable"),
   })
   public ResponseEntity<CustomResponse> create(
       @RequestBody @Valid CreateContractRequest request, HttpServletRequest httpRequest)
