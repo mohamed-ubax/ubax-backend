@@ -64,6 +64,41 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
       @Param("status") TenantStatus status,
       Pageable pageable);
 
+  // ── Dossiers sans contrat actif – pas de filtre par bien (création de contrat) ───────────────
+
+  /** Locataires qualifiés sans aucun contrat DRAFT/PENDING_SIGNATURE/ACTIVE (toutes agences). */
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.TERMINATED"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.CANCELLED)")
+  Page<Tenant> findWithoutActiveContract(Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.TERMINATED"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.CANCELLED)")
+  Page<Tenant> findByStatusWithoutActiveContract(
+      @Param("status") TenantStatus status, Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.property.agency.id = :agencyId"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.TERMINATED"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.CANCELLED)")
+  Page<Tenant> findByAgencyIdWithoutActiveContract(
+      @Param("agencyId") UUID agencyId, Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
+          + " AND t.property.agency.id = :agencyId"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.TERMINATED"
+          + " AND c.status <> com.africa.ubaxplatform.contract.codeList.ContractStatus.CANCELLED)")
+  Page<Tenant> findByAgencyIdAndStatusWithoutActiveContract(
+      @Param("agencyId") UUID agencyId, @Param("status") TenantStatus status, Pageable pageable);
+
   // ── Dossiers sans contrat pour un bien (candidatures en attente) ──────────
 
   @Query(

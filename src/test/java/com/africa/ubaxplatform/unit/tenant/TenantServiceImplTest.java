@@ -690,20 +690,84 @@ class TenantServiceImplTest {
     }
 
     @Test
-    @DisplayName("withoutContract=true sans propertyId → ignoré, retourne findByDeletedAtIsNull")
-    void list_withoutContractWithoutPropertyId_ignoredFallsBackToAll() throws CustomException {
+    @DisplayName("Admin – withoutContract=true sans propertyId → findWithoutActiveContract")
+    void list_adminWithoutContractNoPropertyId_callsFindWithoutActiveContract()
+        throws CustomException {
       User admin = TenantTestFixtures.buildUser();
       Pageable pageable = PageRequest.of(0, 10);
       Page<Tenant> page = new PageImpl<>(List.of());
 
       when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(admin));
-      when(tenantRepo.findByDeletedAtIsNull(pageable)).thenReturn(page);
+      when(tenantRepo.findWithoutActiveContract(pageable)).thenReturn(page);
 
       service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, true, pageable);
 
-      verify(tenantRepo).findByDeletedAtIsNull(pageable);
-      verify(tenantRepo, never()).findByPropertyIdWithoutContract(any(), any());
+      verify(tenantRepo).findWithoutActiveContract(pageable);
+      verify(tenantRepo, never()).findByDeletedAtIsNull(any());
+    }
+
+    @Test
+    @DisplayName(
+        "Admin – withoutContract=true + status sans propertyId → findByStatusWithoutActiveContract")
+    void list_adminWithoutContractAndStatusNoPropertyId_callsFindByStatusWithoutActiveContract()
+        throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findByStatusWithoutActiveContract(TenantStatus.QUALIFIED, pageable))
+          .thenReturn(page);
+
+      service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.QUALIFIED, null, true, pageable);
+
+      verify(tenantRepo).findByStatusWithoutActiveContract(TenantStatus.QUALIFIED, pageable);
+    }
+
+    @Test
+    @DisplayName(
+        "PARTNER agence – withoutContract=true sans propertyId → findByAgencyIdWithoutActiveContract")
+    void list_partnerWithoutContractNoPropertyId_callsFindByAgencyIdWithoutActiveContract()
+        throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyIdWithoutActiveContract(TenantTestFixtures.AGENCY_ID, pageable))
+          .thenReturn(page);
+
+      service.list(TenantTestFixtures.KEYCLOAK_ID, null, null, true, pageable);
+
+      verify(tenantRepo)
+          .findByAgencyIdWithoutActiveContract(TenantTestFixtures.AGENCY_ID, pageable);
+      verify(tenantRepo, never()).findByAgencyId(any(), any());
+    }
+
+    @Test
+    @DisplayName(
+        "PARTNER agence – withoutContract=true + status sans propertyId → findByAgencyIdAndStatusWithoutActiveContract")
+    void
+        list_partnerWithoutContractAndStatusNoPropertyId_callsFindByAgencyIdAndStatusWithoutActiveContract()
+            throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Pageable pageable = PageRequest.of(0, 10);
+      Page<Tenant> page = new PageImpl<>(List.of());
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findByAgencyIdAndStatusWithoutActiveContract(
+              TenantTestFixtures.AGENCY_ID, TenantStatus.QUALIFIED, pageable))
+          .thenReturn(page);
+
+      service.list(TenantTestFixtures.KEYCLOAK_ID, TenantStatus.QUALIFIED, null, true, pageable);
+
+      verify(tenantRepo)
+          .findByAgencyIdAndStatusWithoutActiveContract(
+              TenantTestFixtures.AGENCY_ID, TenantStatus.QUALIFIED, pageable);
     }
 
     @Test

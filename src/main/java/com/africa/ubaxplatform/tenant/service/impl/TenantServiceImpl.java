@@ -204,13 +204,14 @@ public class TenantServiceImpl implements TenantService {
           "Les partenaires hôteliers n'ont pas accès aux dossiers locataires");
     }
 
-    boolean noContract = Boolean.TRUE.equals(withoutContract) && propertyId != null;
+    boolean noContract = Boolean.TRUE.equals(withoutContract);
 
     // Partenaire agence
     if (caller.getAgency() != null) {
       UUID agencyId = caller.getAgency().getId();
 
-      if (noContract) {
+      if (noContract && propertyId != null) {
+        // Candidatures pour un bien précis — sans contrat pour ce bien
         if (status != null) {
           return tenantRepo
               .findByAgencyIdAndPropertyIdAndStatusWithoutContract(
@@ -219,6 +220,18 @@ public class TenantServiceImpl implements TenantService {
         }
         return tenantRepo
             .findByAgencyIdAndPropertyIdWithoutContract(agencyId, propertyId, pageable)
+            .map(this::toResponse);
+      }
+
+      if (noContract) {
+        // Sélection locataire pour création contrat — sans contrat actif (toutes propriétés)
+        if (status != null) {
+          return tenantRepo
+              .findByAgencyIdAndStatusWithoutActiveContract(agencyId, status, pageable)
+              .map(this::toResponse);
+        }
+        return tenantRepo
+            .findByAgencyIdWithoutActiveContract(agencyId, pageable)
             .map(this::toResponse);
       }
 
@@ -239,13 +252,20 @@ public class TenantServiceImpl implements TenantService {
     }
 
     // Admin / Super Admin
-    if (noContract) {
+    if (noContract && propertyId != null) {
       if (status != null) {
         return tenantRepo
             .findByPropertyIdAndStatusWithoutContract(propertyId, status, pageable)
             .map(this::toResponse);
       }
       return tenantRepo.findByPropertyIdWithoutContract(propertyId, pageable).map(this::toResponse);
+    }
+
+    if (noContract) {
+      if (status != null) {
+        return tenantRepo.findByStatusWithoutActiveContract(status, pageable).map(this::toResponse);
+      }
+      return tenantRepo.findWithoutActiveContract(pageable).map(this::toResponse);
     }
 
     if (propertyId != null && status != null) {
