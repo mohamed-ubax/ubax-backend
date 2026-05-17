@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.tenant.entity;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.common.base.BaseEntity;
+import com.africa.ubaxplatform.property.entity.Property;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -66,6 +67,11 @@ public class Tenant extends BaseEntity {
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_tenant_user"))
   private User user;
+
+  /** Bien immobilier visé par ce dossier. Renseigné à la soumission du dossier. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "property_id", foreignKey = @ForeignKey(name = "fk_tenant_property"))
+  private Property property;
 
   /**
    * Situation professionnelle du locataire. Valeurs : {@code EMPLOYEE | SELF_EMPLOYED | STUDENT |

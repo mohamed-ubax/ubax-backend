@@ -25,28 +25,26 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
   Page<Tenant> findByStatusAndDeletedAtIsNull(TenantStatus status, Pageable pageable);
 
-  // ── Partenaire agence : dossiers liés via contrats de l'agence ───────────
+  // ── Partenaire agence : dossiers liés via le bien ciblé ─────────────────
 
-  @Query(
-      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
-          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId)")
+  @Query("SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.property.agency.id = :agencyId")
   Page<Tenant> findByAgencyId(@Param("agencyId") UUID agencyId, Pageable pageable);
 
   @Query(
       "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
-          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId)")
+          + " AND t.property.agency.id = :agencyId")
   Page<Tenant> findByAgencyIdAndStatus(
       @Param("agencyId") UUID agencyId, @Param("status") TenantStatus status, Pageable pageable);
 
   @Query(
       "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
-          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId AND c.property.id = :propertyId)")
+          + " AND t.property.id = :propertyId AND t.property.agency.id = :agencyId")
   Page<Tenant> findByAgencyIdAndPropertyId(
       @Param("agencyId") UUID agencyId, @Param("propertyId") UUID propertyId, Pageable pageable);
 
   @Query(
       "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
-          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId AND c.property.id = :propertyId)")
+          + " AND t.property.id = :propertyId AND t.property.agency.id = :agencyId")
   Page<Tenant> findByAgencyIdAndPropertyIdAndStatus(
       @Param("agencyId") UUID agencyId,
       @Param("propertyId") UUID propertyId,
@@ -55,14 +53,12 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
   // ── Admin : filtre par bien ───────────────────────────────────────────────
 
-  @Query(
-      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
-          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+  @Query("SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.property.id = :propertyId")
   Page<Tenant> findByPropertyId(@Param("propertyId") UUID propertyId, Pageable pageable);
 
   @Query(
       "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
-          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+          + " AND t.property.id = :propertyId")
   Page<Tenant> findByPropertyIdAndStatus(
       @Param("propertyId") UUID propertyId,
       @Param("status") TenantStatus status,
@@ -72,6 +68,6 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
   @Query(
       "SELECT COUNT(t) > 0 FROM Tenant t WHERE t.id = :tenantId AND t.deletedAt IS NULL"
-          + " AND EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.agency.id = :agencyId)")
+          + " AND t.property.agency.id = :agencyId")
   boolean isLinkedToAgency(@Param("tenantId") UUID tenantId, @Param("agencyId") UUID agencyId);
 }

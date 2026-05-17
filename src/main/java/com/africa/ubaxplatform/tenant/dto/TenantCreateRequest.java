@@ -1,11 +1,16 @@
 package com.africa.ubaxplatform.tenant.dto;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.UUID;
 
-/** Corps de la requête de création d'un dossier locataire. Tous les champs sont optionnels. */
+/** Corps de la requête de création d'un dossier locataire. */
 public record TenantCreateRequest(
+
+    // ── Bien ciblé ────────────────────────────────────────────────
+    @NotNull UUID propertyId,
 
     // ── Situation professionnelle ─────────────────────────────────
     @Size(max = 50) String employmentStatus,

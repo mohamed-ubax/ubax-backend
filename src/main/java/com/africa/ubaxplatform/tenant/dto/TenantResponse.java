@@ -10,6 +10,9 @@ import java.util.UUID;
 public record TenantResponse(
     UUID id,
 
+    // ── Bien ciblé ────────────────────────────────────────────────
+    UUID propertyId,
+
     // ── Identité utilisateur ──────────────────────────────────────
     UUID userId,
     String fullName,

@@ -81,9 +81,12 @@ public class TenantController {
   @Operation(
       summary = "Soumettre un dossier locataire",
       description =
-          "Crée le dossier locataire de l'utilisateur connecté (situation professionnelle, garant). "
-              + "Le dossier est initialisé avec le statut **INCOMPLETE**. "
-              + "Il passe automatiquement en **PENDING_REVIEW** dès que les documents KYC sont fournis via `PATCH /profile`.\n\n"
+          "Crée le dossier locataire (KYC) de l'utilisateur connecté pour un bien ciblé.\n\n"
+              + "**`propertyId` est obligatoire** — le dossier est rattaché au bien immobilier visé dès la création. "
+              + "Un seul dossier par client (unicité sur `userId`). "
+              + "Pour cibler un autre bien ultérieurement, utiliser `PATCH /profile` avec `propertyId`.\n\n"
+              + "Le statut initial est **INCOMPLETE**. Il passe automatiquement en **PENDING_REVIEW** "
+              + "dès que `idDocumentUrl` + `idDocumentNumber` + `idDocumentExpiry` sont renseignés.\n\n"
               + "**Rôles autorisés :** `CLIENT`",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
@@ -95,12 +98,20 @@ public class TenantController {
                 mediaType = "application/json",
                 schema = @Schema(implementation = TenantResponse.class))),
     @ApiResponse(
+        responseCode = "400",
+        description = "Données invalides ou `propertyId` manquant",
+        content = @Content),
+    @ApiResponse(
         responseCode = "401",
         description = "Token JWT absent ou invalide",
         content = @Content),
     @ApiResponse(
         responseCode = "403",
         description = "Rôle insuffisant — CLIENT requis",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Bien (`propertyId`) introuvable",
         content = @Content),
     @ApiResponse(
         responseCode = "409",
@@ -158,16 +169,22 @@ public class TenantController {
   @Operation(
       summary = "Mettre à jour mon dossier locataire",
       description =
-          "Mise à jour partielle du dossier locataire (seuls les champs non-null sont modifiés). "
-              + "Permet en particulier de renseigner les URLs des documents KYC uploadés via MinIO (bucket `tenant-documents`). "
-              + "Le statut passe automatiquement de **INCOMPLETE** à **PENDING_REVIEW** dès que la pièce d'identité et le justificatif de revenus sont fournis.\n\n"
+          "Mise à jour partielle du dossier locataire (seuls les champs non-null sont modifiés).\n\n"
+              + "**Cas d'usage principaux :**\n"
+              + "- Renseigner les URLs des documents KYC après upload MinIO (bucket `tenant-documents`)\n"
+              + "- **Changer le bien ciblé** : passer `propertyId` pour pointer vers un autre bien "
+              + "(le client n'a qu'un seul dossier réutilisable — inutile d'en recréer un)\n\n"
+              + "Le statut passe automatiquement de **INCOMPLETE** ou **REJECTED** à **PENDING_REVIEW** "
+              + "dès que `idDocumentUrl` + `idDocumentNumber` + `idDocumentExpiry` sont tous renseignés.\n\n"
               + "**Rôles autorisés :** tout utilisateur authentifié",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Dossier mis à jour avec succès"),
     @ApiResponse(responseCode = "400", description = "Données invalides"),
     @ApiResponse(responseCode = "401", description = "Token JWT absent ou invalide"),
-    @ApiResponse(responseCode = "404", description = "Dossier locataire introuvable")
+    @ApiResponse(
+        responseCode = "404",
+        description = "Dossier introuvable ou bien (`propertyId`) introuvable")
   })
   public ResponseEntity<CustomResponse> updateMyProfile(
       @RequestBody @Valid TenantUpdateRequest request, HttpServletRequest httpRequest)
@@ -191,12 +208,12 @@ public class TenantController {
           "Retourne une page de dossiers locataires, filtrables par statut et/ou bien immobilier. "
               + "Pagination par défaut : 20 éléments triés par `createdAt` décroissant.\n\n"
               + "**Filtres disponibles :**\n"
-              + "- `status` — filtre par statut du dossier (`INCOMPLETE`, `PENDING_REVIEW`, `QUALIFIED`, `REJECTED`, `BLACKLISTED`)\n"
-              + "- `propertyId` — filtre les dossiers liés à un bien spécifique via les contrats\n\n"
+              + "- `status` — filtre par statut (`INCOMPLETE`, `PENDING_REVIEW`, `QUALIFIED`, `REJECTED`, `BLACKLISTED`)\n"
+              + "- `propertyId` — filtre par `property_id` (lien direct sur le dossier — inclut les candidatures sans contrat)\n\n"
               + "**Comportement par rôle :**\n"
-              + "- `ADMIN` / `SUPER_ADMIN` : tous les dossiers non archivés (toutes agences)\n"
-              + "- `PARTNER` agence : uniquement les dossiers liés aux contrats de son agence\n"
-              + "- `PARTNER` hôtel : accès refusé (403) — les hôtels gèrent des réservations, pas des dossiers KYC\n\n"
+              + "- `ADMIN` / `SUPER_ADMIN` : tous les dossiers non archivés\n"
+              + "- `PARTNER` agence : uniquement les dossiers dont le bien ciblé appartient à son agence\n"
+              + "- `PARTNER` hôtel : accès refusé (403)\n\n"
               + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`, `PARTNER` (agence uniquement)",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({

@@ -8,6 +8,8 @@ import com.africa.ubaxplatform.common.exception.ConflictException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
+import com.africa.ubaxplatform.property.entity.Property;
+import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import com.africa.ubaxplatform.tenant.dto.TenantCreateRequest;
 import com.africa.ubaxplatform.tenant.dto.TenantResponse;
@@ -33,6 +35,7 @@ public class TenantServiceImpl implements TenantService {
 
   private final TenantRepository tenantRepo;
   private final UserRepository userRepo;
+  private final PropertyRepository propertyRepo;
 
   // Helpers
 
@@ -44,6 +47,16 @@ public class TenantServiceImpl implements TenantService {
                 new CustomException(
                     new NotFoundException("Utilisateur introuvable"),
                     ResponseMessageConstants.USER_NOT_FOUND));
+  }
+
+  private Property resolveProperty(UUID propertyId) throws CustomException {
+    return propertyRepo
+        .findById(propertyId)
+        .orElseThrow(
+            () ->
+                new CustomException(
+                    new NotFoundException("Bien introuvable"),
+                    ResponseMessageConstants.PROPERTY_GET_FAILURE_NOT_FOUND));
   }
 
   private Tenant resolveTenant(UUID id) throws CustomException {
@@ -74,9 +87,12 @@ public class TenantServiceImpl implements TenantService {
           ResponseMessageConstants.TENANT_CREATE_FAILURE);
     }
 
+    Property property = resolveProperty(request.propertyId());
+
     Tenant tenant =
         Tenant.builder()
             .user(user)
+            .property(property)
             .employmentStatus(request.employmentStatus())
             .employerName(request.employerName())
             .monthlyIncome(request.monthlyIncome())
@@ -134,6 +150,7 @@ public class TenantServiceImpl implements TenantService {
                         new NotFoundException("Dossier locataire introuvable"),
                         ResponseMessageConstants.TENANT_UPDATE_FAILURE_NOT_FOUND));
 
+    if (request.propertyId() != null) tenant.setProperty(resolveProperty(request.propertyId()));
     if (request.employmentStatus() != null) tenant.setEmploymentStatus(request.employmentStatus());
     if (request.employerName() != null) tenant.setEmployerName(request.employerName());
     if (request.monthlyIncome() != null) tenant.setMonthlyIncome(request.monthlyIncome());

@@ -35,6 +35,7 @@ public class TenantMapper {
     User u = t.getUser();
     return new TenantResponse(
         t.getId(),
+        t.getProperty() != null ? t.getProperty().getId() : null,
         u != null ? u.getId() : null,
         t.getFullName(),
         u != null ? u.getEmail() : null,

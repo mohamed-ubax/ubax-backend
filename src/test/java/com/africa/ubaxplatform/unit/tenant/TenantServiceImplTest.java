@@ -12,6 +12,8 @@ import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
+import com.africa.ubaxplatform.property.entity.Property;
+import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import com.africa.ubaxplatform.tenant.codeList.TenantStatus;
 import com.africa.ubaxplatform.tenant.dto.TenantCreateRequest;
 import com.africa.ubaxplatform.tenant.dto.TenantResponse;
@@ -43,6 +45,7 @@ class TenantServiceImplTest {
 
   @Mock private TenantRepository tenantRepo;
   @Mock private UserRepository userRepo;
+  @Mock private PropertyRepository propertyRepo;
 
   @InjectMocks private TenantServiceImpl service;
 
@@ -54,10 +57,12 @@ class TenantServiceImplTest {
     @DisplayName("Succès – dossier créé avec statut INCOMPLETE")
     void create_success_returnsTenantWithIncompleteStatus() throws CustomException {
       User user = TenantTestFixtures.buildUser();
+      Property property = TenantTestFixtures.buildProperty();
       TenantCreateRequest req = TenantTestFixtures.buildCreateRequest();
 
       when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.of(user));
       when(tenantRepo.existsByUserId(TenantTestFixtures.USER_ID)).thenReturn(false);
+      when(propertyRepo.findById(TenantTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
       when(tenantRepo.save(any(Tenant.class)))
           .thenAnswer(
               inv -> {
@@ -82,10 +87,12 @@ class TenantServiceImplTest {
     @DisplayName("Succès – dossier avec garant, champs garant persistés")
     void create_withGuarantor_persistsGuarantorFields() throws CustomException {
       User user = TenantTestFixtures.buildUser();
+      Property property = TenantTestFixtures.buildProperty();
       TenantCreateRequest req = TenantTestFixtures.buildCreateRequestWithGuarantor();
 
       when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.of(user));
       when(tenantRepo.existsByUserId(TenantTestFixtures.USER_ID)).thenReturn(false);
+      when(propertyRepo.findById(TenantTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
       when(tenantRepo.save(any(Tenant.class)))
           .thenAnswer(
               inv -> {
@@ -105,10 +112,12 @@ class TenantServiceImplTest {
     @DisplayName("Succès – dossier créé avec documents → statut PENDING_REVIEW immédiat")
     void create_withDocuments_transitionsToPendingReview() throws CustomException {
       User user = TenantTestFixtures.buildUser();
+      Property property = TenantTestFixtures.buildProperty();
       TenantCreateRequest req = TenantTestFixtures.buildCreateRequestWithDocuments();
 
       when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.of(user));
       when(tenantRepo.existsByUserId(TenantTestFixtures.USER_ID)).thenReturn(false);
+      when(propertyRepo.findById(TenantTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
       when(tenantRepo.save(any(Tenant.class)))
           .thenAnswer(
               inv -> {
@@ -153,6 +162,25 @@ class TenantServiceImplTest {
                       TenantTestFixtures.KEYCLOAK_ID, TenantTestFixtures.buildCreateRequest()))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.TENANT_CREATE_FAILURE);
+
+      verify(tenantRepo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Échec – bien introuvable → CustomException PROPERTY_GET_FAILURE_NOT_FOUND")
+    void create_propertyNotFound_throwsCustomException() {
+      User user = TenantTestFixtures.buildUser();
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.of(user));
+      when(tenantRepo.existsByUserId(TenantTestFixtures.USER_ID)).thenReturn(false);
+      when(propertyRepo.findById(TenantTestFixtures.PROPERTY_ID)).thenReturn(Optional.empty());
+
+      assertThatThrownBy(
+              () ->
+                  service.create(
+                      TenantTestFixtures.KEYCLOAK_ID, TenantTestFixtures.buildCreateRequest()))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PROPERTY_GET_FAILURE_NOT_FOUND);
 
       verify(tenantRepo, never()).save(any());
     }
