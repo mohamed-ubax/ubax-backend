@@ -46,14 +46,19 @@ import org.springframework.web.bind.annotation.RestController;
     name = "Contracts",
     description =
         "Gestion des contrats immobiliers.\n\n"
-            + "**Types supportés :**\n"
-            + "| Type | Description | Champs clés |\n"
-            + "|------|-------------|-------------|\n"
-            + "| `LEASE` | Bail de location | `monthlyRent`, `depositAmount`, `tenantId` |\n"
-            + "| `SALE` | Acte de vente | `salePrice` |\n"
-            + "| `RENT_TO_OWN` | Location-vente | `salePrice`, `monthlyInstallment`, `endDate` (obligatoire), `tenantId` |\n"
-            + "| `RESERVATION` | Contrat de réservation | `reservationDeposit`, `reservationDurationDays` |\n"
-            + "| `MANDATE` | Mandat de gestion locative | — |")
+            + "**Types supportés et champs obligatoires (validés backend) :**\n\n"
+            + "| Type | Description | Obligatoires | Notes |\n"
+            + "|------|-------------|--------------|-------|\n"
+            + "| `LEASE` | Bail de location | `tenantId`, `monthlyRent` |"
+            + " `depositAmount` recommandé (`monthlyRent × 2`) · `endDate` optionnel (reconduction tacite)"
+            + " · activation → 1er loyer créé |\n"
+            + "| `SALE` | Acte de vente | `salePrice` | Pas de locataire, pas de loyer récurrent |\n"
+            + "| `RENT_TO_OWN` | Location-vente | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` |"
+            + " `endDate` **obligatoire** · `depositAmount` recommandé (`monthlyInstallment × 6`) |\n"
+            + "| `RESERVATION` | Contrat de réservation | `reservationDeposit` |"
+            + " `reservationDurationDays` recommandé (défaut 30 j) |\n"
+            + "| `MANDATE` | Mandat de gestion locative | aucun champ financier |"
+            + " `agencyCommissionRate` défaut 10 % · masquer `tenantId`, `monthlyRent`, `depositAmount` |")
 public class ContractController {
 
   private final ContractService contractService;
@@ -63,35 +68,78 @@ public class ContractController {
   @Operation(
       summary = "Créer un contrat",
       description =
-          "Crée un contrat en statut **DRAFT**. Les champs requis varient selon le `contractType` :\n\n"
+          "Crée un contrat en statut **DRAFT**. Le backend valide les champs obligatoires selon le"
+              + " `contractType` — une `400` est retournée si un champ requis est absent.\n\n"
               + "**LEASE** — Bail de location :\n"
               + "```json\n"
-              + "{ \"contractType\": \"LEASE\", \"propertyId\": \"...\", \"ownerId\": \"...\","
-              + " \"tenantId\": \"...\", \"startDate\": \"2026-06-01\","
-              + " \"monthlyRent\": 250000, \"depositAmount\": 500000, \"paymentDay\": 5 }\n"
+              + "{\n"
+              + "  \"contractType\": \"LEASE\",\n"
+              + "  \"propertyId\": \"uuid-du-bien\",\n"
+              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
+              + "  \"tenantId\": \"uuid-dossier-locataire\",\n"
+              + "  \"startDate\": \"2026-06-01\",\n"
+              + "  \"monthlyRent\": 250000,\n"
+              + "  \"depositAmount\": 500000,\n"
+              + "  \"paymentDay\": 5\n"
+              + "}\n"
               + "```\n\n"
               + "**SALE** — Acte de vente :\n"
               + "```json\n"
-              + "{ \"contractType\": \"SALE\", \"propertyId\": \"...\", \"ownerId\": \"...\","
-              + " \"startDate\": \"2026-06-01\", \"salePrice\": 25000000 }\n"
+              + "{\n"
+              + "  \"contractType\": \"SALE\",\n"
+              + "  \"propertyId\": \"uuid-du-bien\",\n"
+              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
+              + "  \"startDate\": \"2026-06-01\",\n"
+              + "  \"salePrice\": 25000000\n"
+              + "}\n"
               + "```\n\n"
-              + "**RENT_TO_OWN** — Location-vente :\n"
+              + "**RENT_TO_OWN** — Location-vente (`endDate` obligatoire) :\n"
               + "```json\n"
-              + "{ \"contractType\": \"RENT_TO_OWN\", \"propertyId\": \"...\", \"ownerId\": \"...\","
-              + " \"tenantId\": \"...\", \"startDate\": \"2026-06-01\", \"endDate\": \"2031-06-01\","
-              + " \"salePrice\": 12000000, \"monthlyInstallment\": 200000,"
-              + " \"depositAmount\": 1200000 }\n"
+              + "{\n"
+              + "  \"contractType\": \"RENT_TO_OWN\",\n"
+              + "  \"propertyId\": \"uuid-du-bien\",\n"
+              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
+              + "  \"tenantId\": \"uuid-dossier-locataire\",\n"
+              + "  \"startDate\": \"2026-06-01\",\n"
+              + "  \"endDate\": \"2031-06-01\",\n"
+              + "  \"salePrice\": 12000000,\n"
+              + "  \"monthlyInstallment\": 200000,\n"
+              + "  \"depositAmount\": 1200000\n"
+              + "}\n"
               + "```\n\n"
               + "**RESERVATION** — Contrat de réservation :\n"
               + "```json\n"
-              + "{ \"contractType\": \"RESERVATION\", \"propertyId\": \"...\", \"ownerId\": \"...\","
-              + " \"startDate\": \"2026-06-01\","
-              + " \"reservationDeposit\": 500000, \"reservationDurationDays\": 30 }\n"
+              + "{\n"
+              + "  \"contractType\": \"RESERVATION\",\n"
+              + "  \"propertyId\": \"uuid-du-bien\",\n"
+              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
+              + "  \"startDate\": \"2026-06-01\",\n"
+              + "  \"reservationDeposit\": 500000,\n"
+              + "  \"reservationDurationDays\": 30\n"
+              + "}\n"
+              + "```\n\n"
+              + "**MANDATE** — Mandat de gestion locative :\n"
+              + "```json\n"
+              + "{\n"
+              + "  \"contractType\": \"MANDATE\",\n"
+              + "  \"propertyId\": \"uuid-du-bien\",\n"
+              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
+              + "  \"startDate\": \"2026-06-01\",\n"
+              + "  \"endDate\": \"2027-06-01\",\n"
+              + "  \"agencyCommissionRate\": 10.00,\n"
+              + "  \"specialClauses\": \"...\",\n"
+              + "  \"terminationConditions\": \"...\"\n"
+              + "}\n"
               + "```",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "201", description = "Contrat créé en DRAFT"),
-    @ApiResponse(responseCode = "400", description = "Champs manquants ou contractType invalide"),
+    @ApiResponse(
+        responseCode = "400",
+        description =
+            "Champ obligatoire manquant pour le type (tenantId/monthlyRent pour LEASE,"
+                + " salePrice pour SALE, salePrice+monthlyInstallment+endDate+tenantId pour"
+                + " RENT_TO_OWN, reservationDeposit pour RESERVATION) · ou contractType invalide"),
     @ApiResponse(
         responseCode = "404",
         description = "Bien, propriétaire ou dossier locataire introuvable"),
