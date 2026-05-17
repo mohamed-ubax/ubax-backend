@@ -64,6 +64,40 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
       @Param("status") TenantStatus status,
       Pageable pageable);
 
+  // ── Dossiers sans contrat pour un bien (candidatures en attente) ──────────
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.property.id = :propertyId"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+  Page<Tenant> findByPropertyIdWithoutContract(
+      @Param("propertyId") UUID propertyId, Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
+          + " AND t.property.id = :propertyId"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+  Page<Tenant> findByPropertyIdAndStatusWithoutContract(
+      @Param("propertyId") UUID propertyId,
+      @Param("status") TenantStatus status,
+      Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL"
+          + " AND t.property.id = :propertyId AND t.property.agency.id = :agencyId"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+  Page<Tenant> findByAgencyIdAndPropertyIdWithoutContract(
+      @Param("agencyId") UUID agencyId, @Param("propertyId") UUID propertyId, Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NULL AND t.status = :status"
+          + " AND t.property.id = :propertyId AND t.property.agency.id = :agencyId"
+          + " AND NOT EXISTS (SELECT 1 FROM Contract c WHERE c.tenant = t AND c.property.id = :propertyId)")
+  Page<Tenant> findByAgencyIdAndPropertyIdAndStatusWithoutContract(
+      @Param("agencyId") UUID agencyId,
+      @Param("propertyId") UUID propertyId,
+      @Param("status") TenantStatus status,
+      Pageable pageable);
+
   // ── Vérification appartenance agence (pour qualify/reject PARTNER) ────────
 
   @Query(

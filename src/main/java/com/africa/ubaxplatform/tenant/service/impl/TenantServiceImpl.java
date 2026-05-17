@@ -190,19 +190,38 @@ public class TenantServiceImpl implements TenantService {
   @Override
   @Transactional(readOnly = true)
   public Page<TenantResponse> list(
-      String keycloakId, TenantStatus status, UUID propertyId, Pageable pageable)
+      String keycloakId,
+      TenantStatus status,
+      UUID propertyId,
+      Boolean withoutContract,
+      Pageable pageable)
       throws CustomException {
     User caller = resolveUser(keycloakId);
 
-    // Partenaire hôtel → accès refusé (pas de dossiers KYC pour les hôtels)
+    // Partenaire hôtel → accès refusé
     if (caller.getHotel() != null && caller.getAgency() == null) {
       throw new UnAuthorizedException(
           "Les partenaires hôteliers n'ont pas accès aux dossiers locataires");
     }
 
-    // Partenaire agence → uniquement les locataires liés à leurs contrats
+    boolean noContract = Boolean.TRUE.equals(withoutContract) && propertyId != null;
+
+    // Partenaire agence
     if (caller.getAgency() != null) {
       UUID agencyId = caller.getAgency().getId();
+
+      if (noContract) {
+        if (status != null) {
+          return tenantRepo
+              .findByAgencyIdAndPropertyIdAndStatusWithoutContract(
+                  agencyId, propertyId, status, pageable)
+              .map(this::toResponse);
+        }
+        return tenantRepo
+            .findByAgencyIdAndPropertyIdWithoutContract(agencyId, propertyId, pageable)
+            .map(this::toResponse);
+      }
+
       if (propertyId != null && status != null) {
         return tenantRepo
             .findByAgencyIdAndPropertyIdAndStatus(agencyId, propertyId, status, pageable)
@@ -219,7 +238,16 @@ public class TenantServiceImpl implements TenantService {
       return tenantRepo.findByAgencyId(agencyId, pageable).map(this::toResponse);
     }
 
-    // Admin / Super Admin → tous les dossiers non archivés
+    // Admin / Super Admin
+    if (noContract) {
+      if (status != null) {
+        return tenantRepo
+            .findByPropertyIdAndStatusWithoutContract(propertyId, status, pageable)
+            .map(this::toResponse);
+      }
+      return tenantRepo.findByPropertyIdWithoutContract(propertyId, pageable).map(this::toResponse);
+    }
+
     if (propertyId != null && status != null) {
       return tenantRepo
           .findByPropertyIdAndStatus(propertyId, status, pageable)
