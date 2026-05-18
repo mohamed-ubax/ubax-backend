@@ -244,12 +244,23 @@ public class TicketController {
   @Operation(
       summary = "Planifier une intervention",
       description =
-          "Enregistre le technicien mandaté et la date d'intervention. Passe le ticket en TECHNICIAN_SENT.",
+          "Enregistre le technicien mandaté et la date d'intervention planifiée. "
+              + "Passe automatiquement le ticket en `TECHNICIAN_SENT`.\n\n"
+              + "**Deux modes mutuellement exclusifs :**\n\n"
+              + "- **Mode plateforme** (`technicienId` fourni) : nom et téléphone récupérés depuis le profil du technicien — champs requis : `technicienId` + `interventionScheduledAt`.\n"
+              + "- **Mode libre** (`technicienId` absent) : prestataire ponctuel non référencé — champs requis : `technicianName` + `technicianPhone` + `interventionScheduledAt`.\n\n"
+              + "`interventionPrice` est optionnel dans les deux modes (≥ 0). "
+              + "`interventionScheduledAt` doit être dans le futur.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Intervention planifiée"),
-    @ApiResponse(responseCode = "400", description = "Transition invalide"),
-    @ApiResponse(responseCode = "404", description = "Ticket introuvable")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Intervention planifiée — ticket passé en TECHNICIAN_SENT"),
+    @ApiResponse(
+        responseCode = "400",
+        description =
+            "Transition invalide · `interventionScheduledAt` dans le passé · mode libre sans `technicianName` ou `technicianPhone`"),
+    @ApiResponse(responseCode = "404", description = "Ticket ou technicien introuvable")
   })
   public ResponseEntity<CustomResponse> scheduleIntervention(
       @PathVariable UUID ticketId,

@@ -3434,11 +3434,51 @@ Le module de ticketing SAV permet aux clients et propriétaires de déclarer des
 
 **Request body :**
 ```json
-{ "assignedToId": "uuid-agent-sav" }
+{ "assignedToId": "uuid-db-agent-sav" }
 ```
 
+> **`assignedToId`** : UUID **base de données** de l'agent (`user.id`), **pas** le Keycloak ID — utiliser le champ `id` retourné par `GET /v1/agency/team`.  
+> **Effet sur le statut** : l'assignation ne change **pas** le statut du ticket — c'est `PATCH /status` → `IN_ANALYSIS` qui formalise la prise en charge.
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "TICKET_UPDATE_SUCCESS",
+  "data": {
+    "id": "uuid-ticket",
+    "contractId": "uuid-contrat",
+    "reporterId": "uuid-reporter",
+    "reporterName": "Salle Diop",
+    "assignedToId": "uuid-db-agent-sav",
+    "assignedToName": "Fatou Ndiaye",
+    "category": "LEAK",
+    "title": "Fuite d'eau dans la salle de bain",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "technicienId": null,
+    "technicianName": null,
+    "technicianPhone": null,
+    "interventionPrice": null,
+    "interventionScheduledAt": null,
+    "createdAt": "2026-05-17T09:00:00",
+    "updatedAt": "2026-05-17T09:45:00",
+    "attachmentUrls": null
+  }
+}
+```
+
+> **`status` reste `OPEN`** après assignation — c'est `assignedToId` / `assignedToName` qui reflètent le changement dans la réponse.
+
+**Erreurs possibles :**
+- `404 Not Found` — ticket introuvable
+- `404 Not Found` — agent introuvable (`assignedToId` ne correspond à aucun utilisateur en base)
+
 **Critères d'acceptation :**
-- [ ] Dropdown des membres de l'agence ayant le sous-rôle `AGENT_SAV`
+- [ ] Dropdown des membres de l'agence ayant le sous-rôle `AGENT_SAV` — source : `GET /v1/agency/team`, filtrer sur `subRole = AGENT_SAV`
+- [ ] Envoyer `user.id` (UUID DB) dans `assignedToId`, pas `user.keycloakId`
+- [ ] Après assignation : mettre à jour `assignedToName` dans l'UI depuis la réponse sans rechargement complet
 - [ ] Toast de confirmation après assignation
 
 ---
@@ -3450,32 +3490,45 @@ Le module de ticketing SAV permet aux clients et propriétaires de déclarer des
 | **Endpoint** | `PATCH /v1/tickets/{id}/schedule` |
 | **Auth** | Bearer token · `UBAX_PARTNER`, `UBAX_ADMIN` |
 
-**Request body (technicien plateforme) :**
+**Champs obligatoires par mode :**
+
+| Champ | Mode plateforme | Mode libre | Notes |
+|-------|:--------------:|:----------:|-------|
+| `technicienId` | ✅ obligatoire | — | UUID du technicien enregistré |
+| `technicianName` | — | ✅ obligatoire | Ignoré si `technicienId` présent |
+| `technicianPhone` | — | ✅ obligatoire | Format `+XXX…` · Ignoré si `technicienId` présent |
+| `interventionScheduledAt` | ✅ obligatoire | ✅ obligatoire | Doit être dans le futur (`@Future`) |
+| `interventionPrice` | optionnel | optionnel | ≥ 0 XOF |
+
+**Request body minimal — mode plateforme :**
 ```json
 {
   "technicienId": "uuid-technicien",
-  "interventionScheduledAt": "2026-05-20T10:00:00",
-  "interventionPrice": 35000
+  "interventionScheduledAt": "2026-05-20T10:00:00"
 }
 ```
 
-**Request body (technicien libre — sans compte) :**
+**Request body minimal — mode libre :**
 ```json
 {
   "technicianName": "Ibrahima Sow",
   "technicianPhone": "+221771234567",
-  "interventionScheduledAt": "2026-05-20T10:00:00",
-  "interventionPrice": 35000
+  "interventionScheduledAt": "2026-05-20T10:00:00"
 }
 ```
 
-> `technicienId` et `technicianName` sont mutuellement exclusifs. Si `technicienId` est fourni, le nom/téléphone sont ignorés.
+> **Mode plateforme** : nom et téléphone sont récupérés automatiquement depuis le profil du technicien — ne pas les renvoyer.  
+> **Mode libre** : `technicianName` **ET** `technicianPhone` sont tous les deux obligatoires — `400` si l'un manque.  
+> **Effet automatique sur le statut** : `PATCH /schedule` force le ticket vers `TECHNICIAN_SENT` — **ne pas appeler** `PATCH /status` séparément après planification.  
+> **`interventionScheduledAt`** doit être dans le futur — le backend retourne `400` sinon.
 
 **Critères d'acceptation :**
-- [ ] Switch « Technicien plateforme / Technicien libre »
-- [ ] Si plateforme : liste déroulante `GET /v1/technicians?available=true`
-- [ ] Date-picker + heure pour `interventionScheduledAt`
-- [ ] Champ montant pour `interventionPrice`
+- [ ] Switch UI « Technicien plateforme / Technicien libre »
+- [ ] Mode plateforme : liste déroulante `GET /v1/technicians?available=true` — afficher nom + profession
+- [ ] Mode libre : deux champs texte `Nom complet` + `Téléphone` (format international `+XXX…`) — les deux obligatoires
+- [ ] Date-picker + heure pour `interventionScheduledAt` — bloquer les dates passées (validation `@Future` backend)
+- [ ] Champ montant pour `interventionPrice` (optionnel, ≥ 0)
+- [ ] Après succès : le ticket passe automatiquement en `TECHNICIAN_SENT` — mettre à jour le badge statut dans l'UI sans appel supplémentaire
 
 ---
 
@@ -3488,14 +3541,30 @@ Le module de ticketing SAV permet aux clients et propriétaires de déclarer des
 
 **Request body :**
 ```json
-{ "status": "IN_PROGRESS" }
+{
+  "status": "IN_ANALYSIS",
+  "resolutionNote": "Note obligatoire pour RESOLVED et CLOSED"
+}
 ```
 
-**Statuts disponibles :** `OPEN` → `IN_ANALYSIS` → `IN_PROGRESS` → `RESOLVED` → `CLOSED`
+**Transitions autorisées (backend) :**
+
+| Depuis | Vers (valeurs autorisées) |
+|--------|--------------------------|
+| `OPEN` | `IN_ANALYSIS` · `CANCELLED` |
+| `IN_ANALYSIS` | `TECHNICIAN_SENT`* · `RESOLVED` · `CANCELLED` |
+| `TECHNICIAN_SENT` | `RESOLVED` · `CANCELLED` |
+| `RESOLVED` | `CLOSED` |
+| `CLOSED` · `CANCELLED` | aucune transition possible |
+
+> *`TECHNICIAN_SENT` est positionné **automatiquement** par `PATCH /schedule` — ne pas l'envoyer manuellement via `/status`.  
+> **`resolutionNote`** est **obligatoire** (non vide) pour les transitions vers `RESOLVED` et `CLOSED` — le backend retourne `400` sinon.
 
 **Critères d'acceptation :**
-- [ ] Bouton ou sélecteur de statut contextuel selon la valeur actuelle
-- [ ] Confirmation avant passage à `CLOSED`
+- [ ] Boutons d'action contextuels selon le statut courant — afficher uniquement les transitions autorisées (tableau ci-dessus)
+- [ ] Champ `resolutionNote` (textarea) affiché et **obligatoire** lors du passage à `RESOLVED` ou `CLOSED`
+- [ ] Bouton « Annuler le ticket » (`CANCELLED`) visible depuis `OPEN`, `IN_ANALYSIS` et `TECHNICIAN_SENT` — masqué depuis `RESOLVED` et `CLOSED`
+- [ ] Modal de confirmation avant passage à `CLOSED` ou `CANCELLED`
 - [ ] Toast de succès après mise à jour
 
 ---
