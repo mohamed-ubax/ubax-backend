@@ -250,16 +250,19 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
 | `OFFICE` | Bureau |
 | `WAREHOUSE` | Entrepôt |
 | `STORE` | Boutique |
-| `STUDIO` | Studio |
 
-**`propertyType` — Espaces hôteliers :**
+**`propertyType` — Espaces hôteliers (`transactionType` = `SHORT_STAY` obligatoire) :**
 
 | Valeur | Libellé |
 |--------|---------|
-| `ROOM` | Chambre |
-| `SUITE` | Suite |
+| `HOTEL_ROOM` | Chambre d'hôtel |
+| `HOTEL_SUITE` | Suite hôtelière |
+| `HOTEL_STUDIO` | Studio / chambre avec kitchenette |
+| `EVENT_SPACE` | Salle événementielle |
 | `CONFERENCE_ROOM` | Salle de conférence |
+| `RESTAURANT_SPACE` | Espace restaurant / bar |
 
+> ⚠️ **Cohérence** : types hôteliers → `SHORT_STAY` **uniquement** ; types agence → `SHORT_STAY` **interdit**. Le backend retourne `400` sinon.  
 > Valeurs récupérables dynamiquement via `GET /v1/code-list/type/PROPERTY_TYPE`
 
 **`transactionType` :**
@@ -322,26 +325,29 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
 }
 ```
 
-**Request body — espace hôtelier (chambre) :**
+**Request body — espace hôtelier (chambre SHORT_STAY) :**
 ```json
 {
   "title": "Chambre Deluxe Vue Mer",
-  "propertyType": "ROOM",
+  "propertyType": "HOTEL_ROOM",
   "transactionType": "SHORT_STAY",
   "price": 45000,
-  "city": "Dakar",
+  "city": "DAKAR",
+  "district": "Almadies",
   "bedrooms": 1,
   "bathrooms": 1,
-  "bedType": "KING",
+  "surfaceLiving": 28.0,
+  "paymentFrequency": "NIGHTLY",
   "maxOccupancy": 2,
-  "mealPlan": "BREAKFAST",
-  "paymentFrequency": "NIGHTLY"
+  "bedType": "KING",
+  "mealPlan": "BREAKFAST"
 }
 ```
 
 > **`amenities`** : codes standard via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`. Commodité personnalisée : `{ "customValue": "Jacuzzi", "customDescription": "Jacuzzi extérieur" }`  
 > **`ownerId`** : UUID du bailleur si l'agence gère pour un tiers — `null` si l'appelant est lui-même propriétaire  
-> **Champs hôtel** (`bedType`, `maxOccupancy`, `mealPlan`, `paymentFrequency`) : ignorés pour les biens agence
+> **Champs hôteliers (requis pour `SHORT_STAY`) :** `paymentFrequency` (`NIGHTLY`·`WEEKLY`·`MONTHLY`) · `maxOccupancy` (≥ 1 personne). `bedType` (`SINGLE`·`DOUBLE`·`TWIN`·`KING`·`QUEEN`·`BUNK`) et `mealPlan` (`ROOM_ONLY`·`BREAKFAST`·`HALF_BOARD`·`FULL_BOARD`·`ALL_INCLUSIVE`) sont recommandés.  
+> **Champs hôtel ignorés pour biens agence** — envoyer `null` ou omettre.
 
 **Response `201` :** objet `PropertyResponse` avec `status: "DRAFT"`
 
@@ -778,11 +784,11 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 | UBAX-FE-711 — Détail d'un espace (espace hôtel) | Lecture + actions contextuelles | Tout membre `PARTNER` (hôtel) |
 
 **Points d'attention :**
-- Le `price` représente le **tarif par nuit en XOF** — l'afficher avec l'unité « /nuit » dans toutes les vues.
-- `transactionType` est toujours `RENT_FURNISHED` pour les espaces hôteliers — le champ doit être pré-sélectionné et non modifiable dans le formulaire.
+- Le `price` représente le **tarif unitaire en XOF** — afficher « /nuit » (NIGHTLY), « /semaine » (WEEKLY) ou « /mois » (MONTHLY) selon `paymentFrequency`. Le backend calcule le `totalAmount` de la réservation en conséquence.
+- `transactionType` est toujours `SHORT_STAY` pour les espaces hôteliers — le champ doit être pré-sélectionné et non modifiable dans le formulaire.
 - Les médias du bucket `properties-media` sont **publics** — utiliser directement `fileUrl` dans `<img src>`.
 - Le statut `PUBLISHED` est **exclusivement** accordé par un admin UBAX — le bouton côté hôtel est « Soumettre », pas « Publier ».
-- Les `propertyType` hôteliers sont : `ROOM` · `SUITE` · `CONFERENCE_ROOM` · `APARTMENT` — ne pas afficher les types agence dans ce contexte.
+- Les `propertyType` hôteliers sont : `HOTEL_ROOM` · `HOTEL_SUITE` · `HOTEL_STUDIO` · `EVENT_SPACE` · `CONFERENCE_ROOM` · `RESTAURANT_SPACE` — ne pas afficher les types agence dans ce contexte.
 
 ---
 
@@ -801,9 +807,9 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 | `status` | `string` | Défaut `PUBLISHED` | `PUBLISHED` |
 | `propertyType` | `string` | Filtrer par type d'espace | `ROOM` |
 | `city` | `string` | Code ville (code list `CITY`) | `ABIDJAN` |
-| `transactionType` | `string` | Toujours `RENT_FURNISHED` pour hôtels | `RENT_FURNISHED` |
-| `minPrice` | `number` | Tarif min par nuit | `30000` |
-| `maxPrice` | `number` | Tarif max par nuit | `500000` |
+| `transactionType` | `string` | Toujours `SHORT_STAY` pour hôtels | `SHORT_STAY` |
+| `minPrice` | `number` | Tarif min (nuit/semaine/mois selon `paymentFrequency`) | `30000` |
+| `maxPrice` | `number` | Tarif max | `500000` |
 | `page` | `int` | Numéro de page (défaut `0`) | `0` |
 | `size` | `int` | Taille de page (défaut `20`) | `20` |
 | `sort` | `string` | Tri | `publishedAt,desc` |
@@ -824,8 +830,8 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
         "agencyName": "Hôtel La Teranga",
         "title": "Suite Présidentielle vue mer",
         "description": "Suite luxueuse avec jacuzzi privatif et terrasse panoramique",
-        "propertyType": "SUITE",
-        "transactionType": "RENT_FURNISHED",
+        "propertyType": "HOTEL_SUITE",
+        "transactionType": "SHORT_STAY",
         "price": 150000,
         "condition": "NEW",
         "surfaceLiving": 85.0,
@@ -889,14 +895,16 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
     "id": "uuid",
     "agencyName": "Hôtel La Teranga",
     "title": "Suite Présidentielle vue mer",
-    "propertyType": "SUITE",
-    "transactionType": "RENT_FURNISHED",
+    "propertyType": "HOTEL_SUITE",
+    "transactionType": "SHORT_STAY",
     "price": 150000,
     "surfaceLiving": 85.0,
     "bedrooms": 1,
     "bathrooms": 2,
-    "hasAc": true,
-    "furnished": true,
+    "paymentFrequency": "NIGHTLY",
+    "maxOccupancy": 2,
+    "bedType": "KING",
+    "mealPlan": "BREAKFAST",
     "city": "DAKAR",
     "district": "Plateau",
     "latitude": 14.6937,
@@ -950,9 +958,13 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
       {
         "id": "uuid",
         "title": "Suite Présidentielle vue mer",
-        "propertyType": "SUITE",
-        "transactionType": "RENT_FURNISHED",
+        "propertyType": "HOTEL_SUITE",
+        "transactionType": "SHORT_STAY",
         "price": 150000,
+        "paymentFrequency": "NIGHTLY",
+        "maxOccupancy": 2,
+        "bedType": "KING",
+        "mealPlan": "BREAKFAST",
         "city": "DAKAR",
         "status": "PUBLISHED",
         "boosted": false,
@@ -995,11 +1007,10 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 {
   "title": "Suite Présidentielle avec vue mer",
   "description": "Suite luxueuse avec jacuzzi privatif, salon et terrasse panoramique",
-  "propertyType": "SUITE",
-  "transactionType": "RENT_FURNISHED",
+  "propertyType": "HOTEL_SUITE",
+  "transactionType": "SHORT_STAY",
   "price": 150000,
   "condition": "NEW",
-  "surfaceTotal": null,
   "surfaceLiving": 85.0,
   "rooms": 1,
   "bedrooms": 1,
@@ -1010,24 +1021,25 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
   "address": "Avenue du Président Léopold Sédar Senghor",
   "city": "DAKAR",
   "district": "Plateau",
-  "street": null,
   "latitude": 14.6937,
   "longitude": -17.4441,
+  "paymentFrequency": "NIGHTLY",
+  "maxOccupancy": 2,
+  "bedType": "KING",
+  "mealPlan": "BREAKFAST",
   "amenities": [
-    { "code": "GENERATOR" },
     { "code": "AC" },
     { "code": "SECURITY" },
     { "code": "PARKING" },
-    { "code": "ELEVATOR" },
-    { "code": "FURNISHED" }
-  ],
-  "ownerId": null
+    { "code": "ELEVATOR" }
+  ]
 }
 ```
 
 > **Champs obligatoires :** `title`, `propertyType`, `transactionType`, `price` (≥ 0), `city`  
-> **`propertyType` disponibles pour hôtels :** `ROOM` · `SUITE` · `CONFERENCE_ROOM` · `APARTMENT`  
-> **`transactionType` :** toujours `RENT_FURNISHED` — le prix = tarif par nuit en XOF  
+> **`propertyType` disponibles pour hôtels :** `HOTEL_ROOM` · `HOTEL_SUITE` · `HOTEL_STUDIO` · `EVENT_SPACE` · `CONFERENCE_ROOM` · `RESTAURANT_SPACE`  
+> **`transactionType` :** toujours `SHORT_STAY` pour les espaces hôteliers  
+> **Champs hôteliers requis pour `SHORT_STAY` :** `paymentFrequency` (`NIGHTLY`/`WEEKLY`/`MONTHLY`) · `maxOccupancy` (≥ 1)  
 > **`amenities`** : codes disponibles via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`
 
 **Response `201` :**
@@ -1040,8 +1052,12 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
     "id": "uuid",
     "title": "Suite Présidentielle avec vue mer",
     "propertyType": "SUITE",
-    "transactionType": "RENT_FURNISHED",
+    "transactionType": "SHORT_STAY",
     "price": 150000,
+    "paymentFrequency": "NIGHTLY",
+    "maxOccupancy": 2,
+    "bedType": "KING",
+    "mealPlan": "BREAKFAST",
     "city": "DAKAR",
     "status": "DRAFT",
     "createdAt": "2026-05-06T10:00:00"
@@ -1050,15 +1066,18 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 ```
 
 **Erreurs possibles :**
-- `400 Bad Request` — champ obligatoire manquant ou valeur invalide
+- `400 Bad Request` — champ obligatoire manquant ou valeur invalide (`paymentFrequency` ou `maxOccupancy` absent)
 - `401 Unauthorized` — token absent
 - `403 Forbidden` — rôle insuffisant
 
 **Critères d'acceptation :**
 - [ ] Formulaire multi-étapes : Étape 1 (informations générales), Étape 2 (capacité & surfaces), Étape 3 (localisation), Étape 4 (équipements & services)
-- [ ] `propertyType` limité aux valeurs hôtelières (`ROOM`, `SUITE`, `CONFERENCE_ROOM`, `APARTMENT`)
-- [ ] `transactionType` pré-sélectionné à `RENT_FURNISHED` et non modifiable
-- [ ] Champ `price` libellé « Tarif par nuit (XOF) »
+- [ ] `propertyType` limité aux valeurs hôtelières (`HOTEL_ROOM` · `HOTEL_SUITE` · `HOTEL_STUDIO` · `EVENT_SPACE` · `CONFERENCE_ROOM` · `RESTAURANT_SPACE`)
+- [ ] `transactionType` pré-sélectionné à `SHORT_STAY` et non modifiable
+- [ ] Champ `price` libellé « Tarif unitaire (XOF) » + sélecteur `paymentFrequency` (NIGHTLY · WEEKLY · MONTHLY)
+- [ ] Champ `maxOccupancy` (capacité max, entier ≥ 1) affiché et requis
+- [ ] Champ `bedType` code list `BED_TYPE` : `SINGLE`·`DOUBLE`·`TWIN`·`KING`·`QUEEN`·`BUNK`
+- [ ] Champ `mealPlan` code list `MEAL_PLAN` : `ROOM_ONLY`·`BREAKFAST`·`HALF_BOARD`·`FULL_BOARD`·`ALL_INCLUSIVE`
 - [ ] Ville chargée depuis `GET /v1/code-list/type/CITY`
 - [ ] Carte interactive optionnelle pour saisir `latitude` / `longitude`
 - [ ] Validation frontend avant envoi (champs requis, `price` ≥ 0)
@@ -1090,8 +1109,10 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
   "data": {
     "id": "uuid",
     "title": "Suite Présidentielle avec vue mer – Rénovée",
-    "propertyType": "SUITE",
+    "propertyType": "HOTEL_SUITE",
+    "transactionType": "SHORT_STAY",
     "price": 160000,
+    "paymentFrequency": "NIGHTLY",
     "status": "DRAFT",
     "updatedAt": "2026-05-06T11:00:00"
   }
@@ -1391,7 +1412,7 @@ Body: <binaire>
 
 **Critères d'acceptation :**
 - [ ] Galerie photo/vidéo (slider) avec la couverture en premier — `fileUrl` directement (bucket public)
-- [ ] Fiche complète : titre, tarif par nuit (XOF/nuit), ville, surface, type d'espace (`ROOM` · `SUITE` · `CONFERENCE_ROOM` · `APARTMENT`), description
+- [ ] Fiche complète : titre, tarif unitaire en XOF (libellé selon `paymentFrequency`), ville, surface, type d'espace (`HOTEL_ROOM` · `HOTEL_SUITE` · `HOTEL_STUDIO` · `EVENT_SPACE` · `CONFERENCE_ROOM` · `RESTAURANT_SPACE`), description
 - [ ] Badge statut coloré (`DRAFT` gris · `PENDING` orange · `PUBLISHED` vert · `REJECTED` rouge · `ARCHIVED` gris foncé)
 - [ ] Bandeau de rejet visible si `status = REJECTED` avec `rejectionReason` affiché
 - [ ] Bouton **« Modifier »** visible si `status = DRAFT` ou `REJECTED` → redirige vers UBAX-FE-705
@@ -2047,7 +2068,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 |----------------|-------------|---------------------------------------|-------|
 | `LEASE` | Bail de location | `tenantId`, `monthlyRent` | `depositAmount` recommandé (`monthlyRent × 2`) · `endDate` optionnel (reconduction tacite) · active → 1er loyer créé |
 | `SALE` | Acte de vente | `salePrice` | Pas de locataire, pas de loyer récurrent · contrat one-shot |
-| `RENT_TO_OWN` | Location-vente | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` | `endDate` **obligatoire** (durée du programme) · `depositAmount` recommandé (`monthlyInstallment × 6`) · afficher récap *"X XOF × N mois = Y XOF"* |
+| `RENT_TO_OWN` | Location-vente | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` OU `durationYears` | `endDate` **ou** `durationYears` (1-30 ans) **obligatoire** — le backend calcule `endDate = startDate + durationYears` si seul `durationYears` fourni · `depositAmount` recommandé (`monthlyInstallment × 6`) · afficher récap *"X XOF × N mois = Y XOF"* |
 | `RESERVATION` | Réservation | `reservationDeposit` | `reservationDurationDays` recommandé (défaut 30 j) · bloque le bien le temps de confirmer |
 | `MANDATE` | Mandat de gestion | aucun champ financier | `agencyCommissionRate` (défaut 10 %) · `endDate` optionnel · **masquer** `tenantId`, `monthlyRent`, `depositAmount` |
 
@@ -2205,7 +2226,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 }
 ```
 
-**Request body — RENT_TO_OWN :**
+**Request body — RENT_TO_OWN (avec `endDate` explicite) :**
 ```json
 {
   "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
@@ -2220,6 +2241,24 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
   "paymentDay": 5
 }
 ```
+
+**Request body — RENT_TO_OWN (avec `durationYears` — alternative à `endDate`) :**
+```json
+{
+  "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
+  "tenantId": "uuid-du-dossier-locataire",
+  "ownerId": "uuid-du-propriétaire",
+  "contractType": "RENT_TO_OWN",
+  "startDate": "2026-06-01",
+  "durationYears": 5,
+  "salePrice": 12000000,
+  "monthlyInstallment": 200000,
+  "depositAmount": 1200000,
+  "paymentDay": 5
+}
+```
+
+> **`durationYears`** : entier entre 1 et 30 — le backend calcule `endDate = startDate + durationYears` et stocke la date calculée. Passer `endDate` **ou** `durationYears`, pas les deux (si les deux sont fournis, `endDate` est prioritaire).
 
 **Request body — SALE :**
 ```json
@@ -2261,7 +2300,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 > **`contractType` disponibles :** `LEASE` · `SALE` · `RENT_TO_OWN` · `RESERVATION` · `MANDATE`  
 > **`ownerId` :** UUID de l'entité `Owner` (propriétaire du bien) — différent de l'`userId` Keycloak  
 > **`tenantId` :** UUID du dossier `Tenant` (KYC), pas l'`userId` — requis pour `LEASE` et `RENT_TO_OWN`  
-> **`endDate` :** optionnel pour `LEASE` et `MANDATE` (reconduction tacite si absent), **obligatoire pour `RENT_TO_OWN`**
+> **`endDate` :** optionnel pour `LEASE` et `MANDATE` (reconduction tacite si absent) ; pour `RENT_TO_OWN`, **`endDate` ou `durationYears` est obligatoire** (pas les deux — si les deux sont fournis, `endDate` est prioritaire)
 
 **Champs par type de contrat :**
 
@@ -2272,7 +2311,8 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 | `salePrice` | — | ✅ | ✅ prix total | — | — |
 | `monthlyInstallment` | — | — | ✅ mensualité | — | — |
 | `depositAmount` | ✅ caution | — | ✅ apport | — | — |
-| `endDate` | optionnel | — | ✅ obligatoire | — | optionnel |
+| `endDate` | optionnel | — | `endDate` OU `durationYears` | — | optionnel |
+| `durationYears` | — | — | `endDate` OU `durationYears` (1-30) | — | — |
 | `reservationDeposit` | — | — | — | ✅ | — |
 | `reservationDurationDays` | — | — | — | ✅ | — |
 | `agencyCommissionRate` | optionnel | — | — | — | ✅ taux % |
@@ -2308,7 +2348,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 |------|---------------------------------------------|
 | `LEASE` | `tenantId`, `monthlyRent` |
 | `SALE` | `salePrice` |
-| `RENT_TO_OWN` | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` |
+| `RENT_TO_OWN` | `tenantId`, `salePrice`, `monthlyInstallment`, (`endDate` OU `durationYears`) |
 | `RESERVATION` | `reservationDeposit` |
 | `MANDATE` | aucun champ financier obligatoire |
 
@@ -2350,7 +2390,8 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
 | | `monthlyInstallment` | `salePrice ÷ 60` (5 ans, modifiable) |
 | | `depositAmount` | `monthlyInstallment × 6` (modifiable) |
 | | `startDate` | Date du jour |
-| | `endDate` | `startDate + 5 ans` (**obligatoire**, modifiable) |
+| | `endDate` | `startDate + 5 ans` (modifiable — alternatif à `durationYears`) |
+| | `durationYears` | `5` (défaut — alternatif à `endDate`, 1-30 ans, modifiable) |
 | | `paymentDay` | `5` (défaut) |
 | **RESERVATION** | `ownerId` | `property.ownerId` |
 | | `reservationDeposit` | `property.price × 5%` (modifiable) |
@@ -2374,10 +2415,11 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
 - [ ] **Formulaire dynamique selon `contractType` :**
   - `LEASE` → afficher `monthlyRent`, `depositAmount`, `endDate` (optionnel), `paymentDay`
   - `SALE` → afficher `salePrice` uniquement
-  - `RENT_TO_OWN` → afficher `salePrice` (prix total du bien), `monthlyInstallment` (mensualité), `endDate` (**obligatoire**), `depositAmount`, `paymentDay`
+  - `RENT_TO_OWN` → afficher `salePrice` (prix total du bien), `monthlyInstallment` (mensualité), `endDate` **ou** `durationYears` (1-30 ans, **l'un des deux est obligatoire**), `depositAmount`, `paymentDay`
   - `RESERVATION` → afficher `reservationDeposit`, `reservationDurationDays`
   - `MANDATE` → afficher `agencyCommissionRate` (%), `endDate` (optionnel), `specialClauses`, `terminationConditions` ; masquer tous les champs financiers locataires
-- [ ] Pour `RENT_TO_OWN` : afficher un récapitulatif indicatif — ex. « 200 000 XOF/mois × 60 mois = 12 000 000 XOF »
+- [ ] Pour `RENT_TO_OWN` : afficher un récapitulatif indicatif recalculé en temps réel — ex. « 200 000 XOF/mois × 60 mois = 12 000 000 XOF » ; recalculer si `monthlyInstallment`, `endDate` ou `durationYears` changent
+- [ ] Pour `RENT_TO_OWN` : proposer deux modes de saisie de la durée — sélecteur « N années » (`durationYears`) ou date-picker explicite (`endDate`)
 - [ ] Champs de dates avec date-picker (start, end)
 - [ ] Champ `paymentDay` (1–28) pour le jour d'échéance mensuel
 - [ ] Redirection vers le détail du contrat créé après succès
