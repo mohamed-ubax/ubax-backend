@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -16,13 +17,32 @@ public record PropertyCreateRequest(
         @NotBlank
         String title,
     @Schema(description = "Description complète du bien") String description,
-    @Schema(description = "Type de bien (ex : APARTMENT, VILLA, HOTEL_ROOM…)", example = "VILLA")
+    @Schema(
+            description =
+                "Type de bien. Immobilier : APARTMENT, VILLA, HOUSE, LAND, OFFICE, WAREHOUSE, STORE."
+                    + " Hôtel : HOTEL_ROOM, HOTEL_SUITE, HOTEL_STUDIO, EVENT_SPACE,"
+                    + " CONFERENCE_ROOM, RESTAURANT_SPACE.",
+            example = "VILLA")
         @NotBlank
+        @Pattern(
+            regexp =
+                "APARTMENT|VILLA|HOUSE|LAND|OFFICE|WAREHOUSE|STORE"
+                    + "|HOTEL_ROOM|HOTEL_SUITE|HOTEL_STUDIO|EVENT_SPACE|CONFERENCE_ROOM|RESTAURANT_SPACE",
+            message =
+                "propertyType invalide. Valeurs acceptées : APARTMENT, VILLA, HOUSE, LAND, OFFICE,"
+                    + " WAREHOUSE, STORE, HOTEL_ROOM, HOTEL_SUITE, HOTEL_STUDIO, EVENT_SPACE,"
+                    + " CONFERENCE_ROOM, RESTAURANT_SPACE")
         String propertyType,
     @Schema(
-            description = "Type de transaction (SALE, RENT, RENT_FURNISHED, SHORT_STAY)",
+            description =
+                "Type de transaction. Immobilier : SALE, RENT, RENT_FURNISHED."
+                    + " Hôtel : SHORT_STAY. Un bien hôtelier doit obligatoirement être en SHORT_STAY.",
             example = "SALE")
         @NotBlank
+        @Pattern(
+            regexp = "SALE|RENT|RENT_FURNISHED|SHORT_STAY",
+            message =
+                "transactionType invalide. Valeurs acceptées : SALE, RENT, RENT_FURNISHED, SHORT_STAY")
         String transactionType,
     @Schema(description = "Prix de vente ou loyer mensuel en XOF", example = "150000000")
         @NotNull
@@ -73,6 +93,11 @@ public record PropertyCreateRequest(
             nullable = true)
         String mealPlan,
     @Schema(
-            description = "Fréquence de facturation (hôtel) : NIGHTLY, WEEKLY, MONTHLY",
+            description =
+                "Fréquence de facturation (hôtel) : NIGHTLY, WEEKLY, MONTHLY."
+                    + " Obligatoire pour un bien SHORT_STAY.",
             nullable = true)
+        @Pattern(
+            regexp = "NIGHTLY|WEEKLY|MONTHLY",
+            message = "paymentFrequency invalide. Valeurs acceptées : NIGHTLY, WEEKLY, MONTHLY")
         String paymentFrequency) {}

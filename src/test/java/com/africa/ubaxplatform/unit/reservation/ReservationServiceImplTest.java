@@ -74,9 +74,10 @@ class ReservationServiceImplTest {
     hotelProperty =
         Property.builder()
             .owner(hotelStaff)
+            .hotel(hotel)
             .title("Chambre Deluxe")
             .propertyType("HOTEL_ROOM")
-            .transactionType("RENT")
+            .transactionType("SHORT_STAY")
             .price(BigDecimal.valueOf(50_000))
             .status(PropertyStatus.PUBLISHED)
             .city("Abidjan")

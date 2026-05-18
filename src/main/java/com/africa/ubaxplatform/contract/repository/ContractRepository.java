@@ -144,9 +144,43 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
           + " WHERE c.property.agency.id = :agencyId GROUP BY c.status")
   List<Object[]> countByAgencyGroupByStatus(@Param("agencyId") UUID agencyId);
 
+  /** Recherche flexible pour un hôtel : filtre optionnel par statut et/ou mot-clé. */
+  @Query(
+      value =
+          "SELECT c FROM Contract c LEFT JOIN c.tenant t LEFT JOIN t.user tu"
+              + " WHERE c.property.hotel.id = :hotelId"
+              + " AND (:status IS NULL OR c.status = :status)"
+              + " AND (:search IS NULL OR ("
+              + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + " ))",
+      countQuery =
+          "SELECT COUNT(c) FROM Contract c LEFT JOIN c.tenant t LEFT JOIN t.user tu"
+              + " WHERE c.property.hotel.id = :hotelId"
+              + " AND (:status IS NULL OR c.status = :status)"
+              + " AND (:search IS NULL OR ("
+              + "   LOWER(c.property.title) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + "   OR LOWER(c.referenceNumber) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + "   OR LOWER(CAST(tu.firstName AS string)) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + "   OR LOWER(CAST(tu.lastName AS string)) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))"
+              + " ))")
+  Page<Contract> searchByHotel(
+      @Param("hotelId") UUID hotelId,
+      @Param("status") ContractStatus status,
+      @Param("search") String search,
+      Pageable pageable);
+
   /** Comptage par statut pour un propriétaire — utilisé par l'endpoint stats. */
   @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.owner.id = :ownerId GROUP BY c.status")
   List<Object[]> countByOwnerGroupByStatus(@Param("ownerId") UUID ownerId);
+
+  /** Comptage par statut pour un hôtel — utilisé par l'endpoint stats. */
+  @Query(
+      "SELECT c.status, COUNT(c) FROM Contract c"
+          + " WHERE c.property.hotel.id = :hotelId GROUP BY c.status")
+  List<Object[]> countByHotelGroupByStatus(@Param("hotelId") UUID hotelId);
 
   /** Comptage global par statut — réservé aux admins. */
   @Query("SELECT c.status, COUNT(c) FROM Contract c GROUP BY c.status")

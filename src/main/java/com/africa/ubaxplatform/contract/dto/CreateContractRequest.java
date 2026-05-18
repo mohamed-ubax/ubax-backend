@@ -52,11 +52,20 @@ public class CreateContractRequest {
       description =
           "Date de fin du contrat.\n"
               + "- `LEASE` : null = durée indéterminée\n"
-              + "- `RENT_TO_OWN` : **obligatoire** — détermine la durée du programme"
-              + " (ex. 2031-06-01 pour 5 ans)\n"
+              + "- `RENT_TO_OWN` : optionnel si `durationYears` est fourni\n"
               + "- `SALE` / `MANDATE` : optionnel",
       example = "2031-06-01")
   private LocalDate endDate;
+
+  @Min(1)
+  @Max(30)
+  @Schema(
+      description =
+          "Durée du programme RENT_TO_OWN en années (1-30).\n"
+              + "Alternative à `endDate` : si les deux sont fournis, `endDate` est prioritaire.\n"
+              + "Exemple : 5 ans → endDate calculée à startDate + 5 ans",
+      example = "5")
+  private Integer durationYears;
 
   @Schema(description = "Loyer mensuel hors charges (XOF) — LEASE uniquement")
   private BigDecimal monthlyRent;
