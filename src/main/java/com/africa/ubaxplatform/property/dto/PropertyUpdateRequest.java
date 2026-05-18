@@ -1,6 +1,7 @@
 package com.africa.ubaxplatform.property.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -9,10 +10,22 @@ public record PropertyUpdateRequest(
     @Schema(description = "Titre accrocheur de l'annonce", nullable = true) String title,
     @Schema(description = "Description complète du bien", nullable = true) String description,
     @Schema(description = "Type de bien (ex : APARTMENT, VILLA, HOTEL_ROOM…)", nullable = true)
+        @Pattern(
+            regexp =
+                "APARTMENT|VILLA|HOUSE|LAND|OFFICE|WAREHOUSE|STORE"
+                    + "|HOTEL_ROOM|HOTEL_SUITE|HOTEL_STUDIO|EVENT_SPACE|CONFERENCE_ROOM|RESTAURANT_SPACE",
+            message =
+                "propertyType invalide. Valeurs acceptées : APARTMENT, VILLA, HOUSE, LAND, OFFICE,"
+                    + " WAREHOUSE, STORE, HOTEL_ROOM, HOTEL_SUITE, HOTEL_STUDIO, EVENT_SPACE,"
+                    + " CONFERENCE_ROOM, RESTAURANT_SPACE")
         String propertyType,
     @Schema(
             description = "Type de transaction (SALE, RENT, RENT_FURNISHED, SHORT_STAY)",
             nullable = true)
+        @Pattern(
+            regexp = "SALE|RENT|RENT_FURNISHED|SHORT_STAY",
+            message =
+                "transactionType invalide. Valeurs acceptées : SALE, RENT, RENT_FURNISHED, SHORT_STAY")
         String transactionType,
     @Schema(description = "Prix de vente ou loyer mensuel en XOF", nullable = true)
         BigDecimal price,
@@ -45,5 +58,10 @@ public record PropertyUpdateRequest(
     @Schema(description = "Capacité maximale d'accueil (hôtel)", nullable = true)
         Integer maxOccupancy,
     @Schema(description = "Formule repas (hôtel)", nullable = true) String mealPlan,
-    @Schema(description = "Fréquence de facturation (hôtel)", nullable = true)
+    @Schema(
+            description = "Fréquence de facturation (hôtel) : NIGHTLY, WEEKLY, MONTHLY",
+            nullable = true)
+        @Pattern(
+            regexp = "NIGHTLY|WEEKLY|MONTHLY",
+            message = "paymentFrequency invalide. Valeurs acceptées : NIGHTLY, WEEKLY, MONTHLY")
         String paymentFrequency) {}

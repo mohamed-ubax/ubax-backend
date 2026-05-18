@@ -15,6 +15,7 @@ import com.africa.ubaxplatform.contract.dto.CreateContractRequest;
 import com.africa.ubaxplatform.contract.dto.TerminateContractRequest;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.africa.ubaxplatform.contract.mapper.ContractMapper;
+import com.africa.ubaxplatform.contract.mapper.PropertyToContractMapper;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
 import com.africa.ubaxplatform.contract.service.interfaces.ContractService;
 import com.africa.ubaxplatform.document.service.interfaces.DocumentService;
@@ -73,8 +74,36 @@ public class ContractServiceImpl implements ContractService {
                           ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND));
     }
 
+    // ── Auto-fill & validation cohérence ──────────────────────────────────────
+    // Valider la cohérence entre le transactionType du bien et le contractType proposé
+    validatePropertyToContractCoherence(property, req.getContractType());
+
+    // Auto-remplir les champs manquants depuis la propriété
+    autoFillFromProperty(req, property);
+
     validateByType(req);
-    int paymentDay = req.getPaymentDay() != null ? req.getPaymentDay() : 5;
+
+    // RENT_TO_OWN : si endDate absent, le calculer depuis durationYears
+    LocalDate resolvedEndDate = req.getEndDate();
+    if (resolvedEndDate == null
+        && req.getDurationYears() != null
+        && Constants.CodeList.ContractType.RENT_TO_OWN.equals(req.getContractType())) {
+      resolvedEndDate = req.getStartDate().plusYears(req.getDurationYears());
+      log.debug(
+          "RENT_TO_OWN : endDate calculée depuis durationYears={} → {}",
+          req.getDurationYears(),
+          resolvedEndDate);
+    }
+
+    // Pour un bail LEASE, le paymentDay est le jour du mois d'entrée du locataire
+    // (ex: entrée le 14 → loyer dû le 14 de chaque mois). L'agent ne le saisit pas.
+    int paymentDay;
+    if (Constants.CodeList.ContractType.LEASE.equals(req.getContractType())
+        || Constants.CodeList.ContractType.RENT_TO_OWN.equals(req.getContractType())) {
+      paymentDay = req.getStartDate().getDayOfMonth();
+    } else {
+      paymentDay = req.getPaymentDay() != null ? req.getPaymentDay() : 5;
+    }
 
     Contract contract =
         Contract.builder()
@@ -84,7 +113,7 @@ public class ContractServiceImpl implements ContractService {
             .createdBy(caller)
             .contractType(req.getContractType())
             .startDate(req.getStartDate())
-            .endDate(req.getEndDate())
+            .endDate(resolvedEndDate)
             .monthlyRent(req.getMonthlyRent())
             .monthlyCharges(req.getMonthlyCharges())
             .depositAmount(req.getDepositAmount())
@@ -124,15 +153,15 @@ public class ContractServiceImpl implements ContractService {
           .map(ContractMapper::toResponse);
     }
 
-    if (caller.getHotel() == null) {
+    if (caller.getHotel() != null) {
       return contractRepo
-          .searchByOwner(caller.getId(), status, normalizedSearch, pageable)
+          .searchByHotel(caller.getHotel().getId(), status, normalizedSearch, pageable)
           .map(ContractMapper::toResponse);
     }
 
-    throw new CustomException(
-        new BadRequestException("Aucune agence ou hôtel associé au compte"),
-        ResponseMessageConstants.CONTRACT_GET_FAILURE_NOT_FOUND);
+    return contractRepo
+        .searchByOwner(caller.getId(), status, normalizedSearch, pageable)
+        .map(ContractMapper::toResponse);
   }
 
   @Override
@@ -152,10 +181,10 @@ public class ContractServiceImpl implements ContractService {
     List<Object[]> rows;
     if (caller.getAgency() != null) {
       rows = contractRepo.countByAgencyGroupByStatus(caller.getAgency().getId());
-    } else if (caller.getHotel() == null) {
-      rows = contractRepo.countByOwnerGroupByStatus(caller.getId());
+    } else if (caller.getHotel() != null) {
+      rows = contractRepo.countByHotelGroupByStatus(caller.getHotel().getId());
     } else {
-      rows = contractRepo.countAllGroupByStatus();
+      rows = contractRepo.countByOwnerGroupByStatus(caller.getId());
     }
 
     return buildStats(rows);
@@ -292,29 +321,24 @@ public class ContractServiceImpl implements ContractService {
   /**
    * Crée le premier loyer d'un bail à l'activation du contrat.
    *
-   * <p>La date d'échéance = premier {@code paymentDay} survenant APRÈS la {@code startDate}. Cela
-   * garantit au moins un cycle complet avant la première échéance, quel que soit le jour d'entrée.
+   * <p>La date d'échéance = {@code startDate + 1 mois}, conformément au droit locatif UEMOA : le
+   * locataire dispose d'un mois complet avant sa première échéance, quel que soit le jour d'entrée.
    *
    * <p>Exemples :
    *
    * <ul>
-   *   <li>Entrée le 15 mars, paymentDay = 15 → échéance le 15 avril
-   *   <li>Entrée le 15 mars, paymentDay = 5 → le 5 mars est déjà passé → échéance le 5 avril
-   *   <li>Entrée le 3 mars, paymentDay = 10 → échéance le 10 mars (dans le même mois, 7 jours)
+   *   <li>Entrée le 14 novembre → premier loyer le 14 décembre
+   *   <li>Entrée le 3 mars → premier loyer le 3 avril
+   *   <li>Entrée le 31 janvier → premier loyer le 28 février (dernier jour du mois)
    * </ul>
    *
    * <p>Idempotent : si un paiement existe déjà pour cette échéance, rien n'est créé.
    */
   private void createFirstRentPayment(Contract contract) {
     LocalDate start = contract.getStartDate();
-    int payDay = Math.min(contract.getPaymentDay(), start.lengthOfMonth());
 
-    // Première échéance : le prochain paymentDay strictement après startDate
-    LocalDate dueDate = start.withDayOfMonth(payDay);
-    if (!dueDate.isAfter(start)) {
-      LocalDate next = start.plusMonths(1);
-      dueDate = next.withDayOfMonth(Math.min(contract.getPaymentDay(), next.lengthOfMonth()));
-    }
+    // Premier loyer = 1 mois après l'entrée (Java gère automatiquement les mois courts)
+    LocalDate dueDate = start.plusMonths(1);
 
     if (paymentRepo.existsByContractIdAndDueDate(contract.getId(), dueDate)) {
       log.debug("Premier loyer déjà existant pour contrat {}, ignoré.", contract.getId());
@@ -453,7 +477,12 @@ public class ContractServiceImpl implements ContractService {
         requireField(req.getTenantId(), "tenantId est requis pour un contrat RENT_TO_OWN");
         requireField(req.getSalePrice(), "salePrice (prix total) est requis pour RENT_TO_OWN");
         requireField(req.getMonthlyInstallment(), "monthlyInstallment est requis pour RENT_TO_OWN");
-        requireField(req.getEndDate(), "endDate est obligatoire pour RENT_TO_OWN");
+        if (req.getEndDate() == null && req.getDurationYears() == null) {
+          requireField(
+              null,
+              "endDate ou durationYears est obligatoire pour RENT_TO_OWN"
+                  + " (ex: 5 ans → durationYears=5)");
+        }
       }
       case Constants.CodeList.ContractType.RESERVATION ->
           requireField(
@@ -468,6 +497,65 @@ public class ContractServiceImpl implements ContractService {
     if (value == null) {
       throw new CustomException(
           new BadRequestException(message), ResponseMessageConstants.CONTRACT_CREATE_FAILURE);
+    }
+  }
+
+  /**
+   * Valide la cohérence entre le transactionType du bien et le contractType proposé.
+   *
+   * <p>Permet de détecter les incohérences métier : par exemple, un bien en SALE ne peut pas être
+   * contracté en LEASE.
+   *
+   * @param property le bien immobilier lié au contrat
+   * @param contractType le type de contrat proposé
+   * @throws CustomException si incohérence détectée
+   */
+  private void validatePropertyToContractCoherence(Property property, String contractType)
+      throws CustomException {
+    String propTransactionType = property.getTransactionType();
+
+    if (!PropertyToContractMapper.isCoherent(propTransactionType, contractType)) {
+      String message =
+          "Incohérence métier : bien en "
+              + propTransactionType
+              + " ne peut pas être contracté en "
+              + contractType;
+      throw new CustomException(
+          new BadRequestException(message), ResponseMessageConstants.CONTRACT_CREATE_FAILURE);
+    }
+  }
+
+  /**
+   * Auto-remplit les champs financiers du contrat depuis les valeurs du bien.
+   *
+   * <p>Logique :
+   *
+   * <ul>
+   *   <li>Si salePrice manquant et bien en SALE : copie property.price
+   *   <li>Si monthlyRent manquant et bien en RENT/RENT_FURNISHED : copie property.price
+   *   <li>Préserve les valeurs explicitement fournies par le client (ne surcharge pas)
+   * </ul>
+   *
+   * @param req la requête de création de contrat (modifiée en place)
+   * @param property le bien immobilier lié au contrat
+   */
+  private void autoFillFromProperty(CreateContractRequest req, Property property) {
+    String propTransactionType = property.getTransactionType();
+
+    // Auto-fill prix selon le type de transaction du bien
+    if (Constants.CodeList.TransactionType.SALE.equals(propTransactionType)) {
+      if (req.getSalePrice() == null) {
+        req.setSalePrice(property.getPrice());
+        log.debug("Auto-fill salePrice={} depuis property.price", property.getPrice());
+      }
+    } else if (Constants.CodeList.TransactionType.RENT.equals(propTransactionType)
+        || Constants.CodeList.TransactionType.RENT_FURNISHED.equals(propTransactionType)) {
+      if (req.getMonthlyRent() == null) {
+        req.setMonthlyRent(property.getPrice());
+        log.debug("Auto-fill monthlyRent={} depuis property.price", property.getPrice());
+      }
+    } else if (Constants.CodeList.TransactionType.SHORT_STAY.equals(propTransactionType)) {
+      // SHORT_STAY → RESERVATION, pas de prix auto à copier de prime abord
     }
   }
 

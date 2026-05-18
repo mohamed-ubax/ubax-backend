@@ -19,6 +19,7 @@ import com.africa.ubaxplatform.reservation.mapper.ReservationMapper;
 import com.africa.ubaxplatform.reservation.repository.ReservationRepository;
 import com.africa.ubaxplatform.reservation.service.interfaces.ReservationService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -66,8 +67,8 @@ public class ReservationServiceImpl implements ReservationService {
           ResponseMessageConstants.USER_UNAUTHORIZED);
     }
     UUID hotelId = caller.getHotel().getId();
-    var propertyOwnerHotel = reservation.getProperty().getOwner().getHotel();
-    if (propertyOwnerHotel == null || !hotelId.equals(propertyOwnerHotel.getId())) {
+    var propertyHotel = reservation.getProperty().getHotel();
+    if (propertyHotel == null || !hotelId.equals(propertyHotel.getId())) {
       throw new CustomException(
           new UnAuthorizedException("Cette réservation n'appartient pas à votre hôtel"),
           ResponseMessageConstants.USER_FORBIDDEN);
@@ -113,9 +114,39 @@ public class ReservationServiceImpl implements ReservationService {
           ResponseMessageConstants.RESERVATION_CREATE_FAILURE_UNAVAILABLE);
     }
 
+    if (property.getMaxOccupancy() != null && request.guestCount() > property.getMaxOccupancy()) {
+      throw new CustomException(
+          new BadRequestException(
+              "Capacité maximale du bien dépassée : "
+                  + property.getMaxOccupancy()
+                  + " personne(s) autorisée(s), "
+                  + request.guestCount()
+                  + " demandée(s)"),
+          ResponseMessageConstants.RESERVATION_CREATE_FAILURE_BAD_REQUEST);
+    }
+
     int nights = (int) ChronoUnit.DAYS.between(request.checkInDate(), request.checkOutDate());
-    BigDecimal pricePerNight = property.getPrice();
-    BigDecimal total = pricePerNight.multiply(BigDecimal.valueOf(nights));
+    BigDecimal unitPrice = property.getPrice();
+
+    // Calcul du montant total selon la fréquence de facturation du bien
+    BigDecimal total =
+        switch (property.getPaymentFrequency() != null
+            ? property.getPaymentFrequency()
+            : "NIGHTLY") {
+          case "WEEKLY" ->
+              // Prix à la semaine : proratisé (ex: 10 nuits = 10/7 semaines)
+              unitPrice
+                  .multiply(BigDecimal.valueOf(nights))
+                  .divide(BigDecimal.valueOf(7), 2, RoundingMode.HALF_UP);
+          case "MONTHLY" ->
+              // Prix au mois : proratisé sur 30 jours (ex: 45 nuits = 45/30 mois)
+              unitPrice
+                  .multiply(BigDecimal.valueOf(nights))
+                  .divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP);
+          default ->
+              // NIGHTLY : prix × nombre de nuits
+              unitPrice.multiply(BigDecimal.valueOf(nights));
+        };
 
     Reservation reservation =
         Reservation.builder()
@@ -125,7 +156,7 @@ public class ReservationServiceImpl implements ReservationService {
             .checkOutDate(request.checkOutDate())
             .numberOfNights(nights)
             .guestCount(request.guestCount())
-            .pricePerNight(pricePerNight)
+            .pricePerNight(unitPrice)
             .totalAmount(total)
             .status(ReservationStatus.PENDING)
             .notes(request.notes())
@@ -151,11 +182,11 @@ public class ReservationServiceImpl implements ReservationService {
     Reservation reservation = resolveReservation(id);
 
     boolean isClient = reservation.getClient().getId().equals(caller.getId());
-    var propOwnerHotel = reservation.getProperty().getOwner().getHotel();
+    var propertyHotel = reservation.getProperty().getHotel();
     boolean isHotelOwner =
         caller.getHotel() != null
-            && propOwnerHotel != null
-            && caller.getHotel().getId().equals(propOwnerHotel.getId());
+            && propertyHotel != null
+            && caller.getHotel().getId().equals(propertyHotel.getId());
 
     if (!isClient && !isHotelOwner) {
       throw new CustomException(

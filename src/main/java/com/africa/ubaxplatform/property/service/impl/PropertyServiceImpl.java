@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.property.service.impl;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
+import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
@@ -62,6 +63,16 @@ public class PropertyServiceImpl implements PropertyService {
   private static final Set<String> ALLOWED_MEDIA_MIMES =
       Set.of("image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime");
 
+  /** Types de biens hôteliers — doivent obligatoirement utiliser SHORT_STAY. */
+  private static final Set<String> HOTEL_PROPERTY_TYPES =
+      Set.of(
+          Constants.CodeList.PropertyType.HOTEL_ROOM,
+          Constants.CodeList.PropertyType.HOTEL_SUITE,
+          Constants.CodeList.PropertyType.HOTEL_STUDIO,
+          Constants.CodeList.PropertyType.EVENT_SPACE,
+          Constants.CodeList.PropertyType.CONFERENCE_ROOM,
+          Constants.CodeList.PropertyType.RESTAURANT_SPACE);
+
   // ── Helpers ────────────────────────────────────────────────────
 
   private User resolveUser(String keycloakId) throws CustomException {
@@ -106,13 +117,80 @@ public class PropertyServiceImpl implements PropertyService {
     return result;
   }
 
+  /**
+   * Vérifie la cohérence entre propertyType et transactionType.
+   *
+   * <ul>
+   *   <li>Biens hôteliers (HOTEL_ROOM, HOTEL_SUITE, …) → SHORT_STAY obligatoire
+   *   <li>Biens immobiliers (APARTMENT, VILLA, …) → SHORT_STAY interdit
+   * </ul>
+   */
+  private void validatePropertyTypeCoherence(String propertyType, String transactionType)
+      throws CustomException {
+    if (propertyType == null || transactionType == null) return;
+
+    boolean isHotelType = HOTEL_PROPERTY_TYPES.contains(propertyType);
+    boolean isShortStay = Constants.CodeList.TransactionType.SHORT_STAY.equals(transactionType);
+
+    if (isHotelType && !isShortStay) {
+      throw new CustomException(
+          new BadRequestException(
+              "Un bien hôtelier ("
+                  + propertyType
+                  + ") doit obligatoirement être en SHORT_STAY,"
+                  + " pas en "
+                  + transactionType),
+          ResponseMessageConstants.PROPERTY_CREATE_FAILURE);
+    }
+    if (!isHotelType && isShortStay) {
+      throw new CustomException(
+          new BadRequestException(
+              "Un bien immobilier ("
+                  + propertyType
+                  + ") ne peut pas être en SHORT_STAY."
+                  + " Utilisez SALE, RENT ou RENT_FURNISHED."),
+          ResponseMessageConstants.PROPERTY_CREATE_FAILURE);
+    }
+  }
+
+  /**
+   * Valide les champs obligatoires selon le transactionType.
+   *
+   * <ul>
+   *   <li>SHORT_STAY → paymentFrequency et maxOccupancy obligatoires
+   * </ul>
+   */
+  private void validateRequiredFieldsByTransactionType(
+      String transactionType, String paymentFrequency, Integer maxOccupancy)
+      throws CustomException {
+    if (Constants.CodeList.TransactionType.SHORT_STAY.equals(transactionType)) {
+      if (paymentFrequency == null || paymentFrequency.isBlank()) {
+        throw new CustomException(
+            new BadRequestException(
+                "paymentFrequency est obligatoire pour un bien SHORT_STAY"
+                    + " (valeurs : NIGHTLY, WEEKLY, MONTHLY)"),
+            ResponseMessageConstants.PROPERTY_CREATE_FAILURE);
+      }
+      if (maxOccupancy == null || maxOccupancy < 1) {
+        throw new CustomException(
+            new BadRequestException(
+                "maxOccupancy est obligatoire pour un bien SHORT_STAY (min 1 personne)"),
+            ResponseMessageConstants.PROPERTY_CREATE_FAILURE);
+      }
+    }
+  }
+
   private void requireOwnership(Property property, User caller) throws CustomException {
     boolean isOwner = property.getOwner().getId().equals(caller.getId());
     boolean isAgency =
         property.getAgency() != null
             && caller.getAgency() != null
             && property.getAgency().getId().equals(caller.getAgency().getId());
-    if (!isOwner && !isAgency) {
+    boolean isHotel =
+        property.getHotel() != null
+            && caller.getHotel() != null
+            && property.getHotel().getId().equals(caller.getHotel().getId());
+    if (!isOwner && !isAgency && !isHotel) {
       log.warn(
           "[OWNERSHIP] Accès refusé | propertyId={} callerId={} ownerIdAttendu={}",
           property.getId(),
@@ -160,10 +238,15 @@ public class PropertyServiceImpl implements PropertyService {
                           ResponseMessageConstants.USER_NOT_FOUND));
     }
 
+    validatePropertyTypeCoherence(req.propertyType(), req.transactionType());
+    validateRequiredFieldsByTransactionType(
+        req.transactionType(), req.paymentFrequency(), req.maxOccupancy());
+
     Property property =
         Property.builder()
             .owner(owner)
             .agency(caller.getAgency())
+            .hotel(caller.getHotel())
             .title(req.title())
             .description(req.description())
             .propertyType(req.propertyType())
@@ -282,9 +365,11 @@ public class PropertyServiceImpl implements PropertyService {
       String callerKeycloakId, PropertyStatus status, Pageable pageable) throws CustomException {
     User caller = resolveUser(callerKeycloakId);
     UUID agencyId = caller.getAgency() != null ? caller.getAgency().getId() : null;
-    UUID ownerId = agencyId == null ? caller.getId() : null;
+    UUID hotelId = caller.getHotel() != null ? caller.getHotel().getId() : null;
+    // OWNER individuel : filter par ownerId. Agence/hôtel : filter par leur entité (tous membres)
+    UUID ownerId = (agencyId == null && hotelId == null) ? caller.getId() : null;
     return propertyRepo
-        .findWithFilters(status, null, null, null, null, null, agencyId, ownerId, null, pageable)
+        .findWithFilters(status, null, null, null, null, null, agencyId, ownerId, hotelId, pageable)
         .map(p -> PropertyMapper.toResponse(p, resolveCoverPhotoUrl(p.getId())));
   }
 
@@ -335,6 +420,19 @@ public class PropertyServiceImpl implements PropertyService {
               "Un bien publié, vendu ou archivé ne peut pas être modifié directement"),
           ResponseMessageConstants.PROPERTY_UPDATE_FAILURE);
     }
+
+    // Valider la cohérence sur l'état final (nouvelle valeur ou valeur actuelle si non modifiée)
+    String finalPropertyType =
+        req.propertyType() != null ? req.propertyType() : property.getPropertyType();
+    String finalTransactionType =
+        req.transactionType() != null ? req.transactionType() : property.getTransactionType();
+    String finalPaymentFrequency =
+        req.paymentFrequency() != null ? req.paymentFrequency() : property.getPaymentFrequency();
+    Integer finalMaxOccupancy =
+        req.maxOccupancy() != null ? req.maxOccupancy() : property.getMaxOccupancy();
+    validatePropertyTypeCoherence(finalPropertyType, finalTransactionType);
+    validateRequiredFieldsByTransactionType(
+        finalTransactionType, finalPaymentFrequency, finalMaxOccupancy);
 
     if (req.title() != null) property.setTitle(req.title());
     if (req.description() != null) property.setDescription(req.description());
