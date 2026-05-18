@@ -2424,6 +2424,20 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
 - [ ] Champ `paymentDay` (1–28) pour le jour d'échéance mensuel
 - [ ] Redirection vers le détail du contrat créé après succès
 
+**Autoremplissage depuis le bien sélectionné :**
+- [ ] À la sélection du bien : `ownerId` auto-rempli depuis `property.ownerId` — champ verrouillé, non modifiable par l'utilisateur
+- [ ] À la sélection du bien : suggérer automatiquement le `contractType` recommandé selon `property.transactionType` :
+  - `RENT` / `RENT_FURNISHED` → suggérer `LEASE`
+  - `SALE` → suggérer `SALE`
+  - `SHORT_STAY` → suggérer `RESERVATION`
+- [ ] Pré-remplissage automatique des montants et dates dès la sélection du type :
+  - `LEASE` → `monthlyRent = property.price` · `depositAmount = monthlyRent × 2` · `startDate = today` · `endDate = startDate + 1 an` · `paymentDay = 5`
+  - `SALE` → `salePrice = property.price` · `startDate = today`
+  - `RENT_TO_OWN` → `salePrice = property.price` · `monthlyInstallment = salePrice ÷ 60` · `depositAmount = monthlyInstallment × 6` · `startDate = today` · `durationYears = 5` (ou `endDate = startDate + 5 ans`) · `paymentDay = 5`
+  - `RESERVATION` → `reservationDeposit = property.price × 5%` · `reservationDurationDays = 30` · `startDate = today`
+  - `MANDATE` → `agencyCommissionRate = 10.00` · `startDate = today` · `endDate = startDate + 1 an`
+- [ ] Flag `userEdited` par champ : un champ modifié manuellement par l'utilisateur n'est plus écrasé lors d'un changement de `contractType` — stocker le flag dans l'état local du formulaire
+
 ---
 
 ### UBAX-FE-1004 · Modifier un contrat (DRAFT uniquement)

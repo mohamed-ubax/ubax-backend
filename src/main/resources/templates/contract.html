@@ -43,6 +43,7 @@
     <span th:switch="${contract.contractType}">
       <span th:case="'LEASE'">Contrat de Location</span>
       <span th:case="'SALE'">Contrat de Vente</span>
+      <span th:case="'RENT_TO_OWN'">Contrat de Location-Vente</span>
       <span th:case="'RESERVATION'">Contrat de R&#233;servation</span>
       <span th:case="*">Contrat de Mandat</span>
     </span>
@@ -118,12 +119,24 @@
       <td class="label">Prix de vente :</td>
       <td><span class="amount" th:text="${#numbers.formatDecimal(contract.salePrice, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</span></td>
     </tr>
+    <tr th:if="${contract.monthlyInstallment != null}">
+      <td class="label">Mensualité d&#39;acquisition :</td>
+      <td><span class="amount" th:text="${#numbers.formatDecimal(contract.monthlyInstallment, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</span></td>
+    </tr>
+    <tr th:if="${contract.reservationDeposit != null}">
+      <td class="label">Acompte de r&#233;servation :</td>
+      <td><span class="amount" th:text="${#numbers.formatDecimal(contract.reservationDeposit, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</span></td>
+    </tr>
+    <tr th:if="${contract.reservationDurationDays != null}">
+      <td class="label">Dur&#233;e de r&#233;servation :</td>
+      <td th:text="${contract.reservationDurationDays} + ' jours'">30 jours</td>
+    </tr>
     <tr th:if="${contract.agencyCommissionRate != null}">
       <td class="label">Commission agence :</td>
       <td th:text="${contract.agencyCommissionRate} + ' %'">0 %</td>
     </tr>
-    <tr>
-      <td class="label">Jour de règlement :</td>
+    <tr th:if="${contract.monthlyRent != null or contract.monthlyInstallment != null}">
+      <td class="label">Jour de r&#232;glement :</td>
       <td th:text="'Le ' + ${contract.paymentDay} + ' de chaque mois'">Le 5 de chaque mois</td>
     </tr>
   </table>
