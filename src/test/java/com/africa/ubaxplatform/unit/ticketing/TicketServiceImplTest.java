@@ -364,7 +364,7 @@ class TicketServiceImplTest {
   class ScheduleIntervention {
 
     @Test
-    @DisplayName("Succès – IN_ANALYSIS → TECHNICIAN_SENT")
+    @DisplayName("Succès – mode libre : IN_ANALYSIS → TECHNICIAN_SENT avec nom/téléphone libres")
     void scheduleIntervention_inAnalysis_success() throws Exception {
       Ticket inAnalysis =
           SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.IN_ANALYSIS);
@@ -380,6 +380,41 @@ class TicketServiceImplTest {
       TicketResponse resp = service.scheduleIntervention(SharedTestFixtures.TICKET_ID, req);
 
       assertThat(resp.status()).isEqualTo(TicketStatus.TECHNICIAN_SENT);
+      assertThat(inAnalysis.getTechnicien()).isNull();
+      assertThat(inAnalysis.getTechnicianName()).isEqualTo("Mamadou Diallo");
+      assertThat(inAnalysis.getTechnicianPhone()).isEqualTo("+2250712345678");
+    }
+
+    @Test
+    @DisplayName("Echec – mode libre : technicianPhone absent → CustomException(BadRequest)")
+    void scheduleIntervention_freeMode_missingPhone_throwsCustomException() {
+      Ticket inAnalysis =
+          SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.IN_ANALYSIS);
+
+      ScheduleInterventionRequest req = new ScheduleInterventionRequest();
+      req.setTechnicianName("Mamadou Diallo");
+      req.setInterventionScheduledAt(LocalDateTime.now().plusDays(2));
+
+      when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.of(inAnalysis));
+
+      assertThatThrownBy(() -> service.scheduleIntervention(SharedTestFixtures.TICKET_ID, req))
+          .isInstanceOf(CustomException.class);
+    }
+
+    @Test
+    @DisplayName("Echec – mode libre : technicianName absent → CustomException(BadRequest)")
+    void scheduleIntervention_freeMode_missingName_throwsCustomException() {
+      Ticket inAnalysis =
+          SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.IN_ANALYSIS);
+
+      ScheduleInterventionRequest req = new ScheduleInterventionRequest();
+      req.setTechnicianPhone("+2250712345678");
+      req.setInterventionScheduledAt(LocalDateTime.now().plusDays(2));
+
+      when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.of(inAnalysis));
+
+      assertThatThrownBy(() -> service.scheduleIntervention(SharedTestFixtures.TICKET_ID, req))
+          .isInstanceOf(CustomException.class);
     }
 
     @Test
