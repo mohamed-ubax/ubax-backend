@@ -9,10 +9,13 @@ import com.africa.ubaxplatform.favorite.dto.FavoriteResponse;
 import com.africa.ubaxplatform.favorite.entity.PropertyFavorite;
 import com.africa.ubaxplatform.favorite.repository.PropertyFavoriteRepository;
 import com.africa.ubaxplatform.favorite.service.interfaces.FavoriteService;
-import com.africa.ubaxplatform.property.dto.PropertyResponse;
+import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
+import com.africa.ubaxplatform.property.dto.PropertyMediaResponse;
 import com.africa.ubaxplatform.property.entity.Property;
 import com.africa.ubaxplatform.property.mapper.PropertyMapper;
+import com.africa.ubaxplatform.property.repository.PropertyMediaRepository;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ public class FavoriteServiceImpl implements FavoriteService {
   private final PropertyFavoriteRepository favoriteRepo;
   private final PropertyRepository propertyRepo;
   private final UserRepository userRepo;
+  private final PropertyMediaRepository mediaRepo;
 
   @Override
   @Transactional
@@ -72,9 +76,24 @@ public class FavoriteServiceImpl implements FavoriteService {
 
   @Override
   @Transactional(readOnly = true)
-  public Page<PropertyResponse> listMine(String keycloakId, Pageable pageable) {
+  public Page<PropertyDetailResponse> listMine(String keycloakId, Pageable pageable) {
     return favoriteRepo
         .findByUserKeycloakId(keycloakId, pageable)
-        .map(fav -> PropertyMapper.toResponse(fav.getProperty()));
+        .map(
+            fav -> {
+              Property p = fav.getProperty();
+              List<PropertyMediaResponse> media =
+                  mediaRepo.findByPropertyIdOrderBySortOrderAsc(p.getId()).stream()
+                      .map(PropertyMapper::toMediaResponse)
+                      .toList();
+              String coverPhotoUrl =
+                  media.stream()
+                      .filter(PropertyMediaResponse::cover)
+                      .map(PropertyMediaResponse::fileUrl)
+                      .findFirst()
+                      .orElse(null);
+              return new PropertyDetailResponse(
+                  PropertyMapper.toResponse(p, coverPhotoUrl), media, null);
+            });
   }
 }

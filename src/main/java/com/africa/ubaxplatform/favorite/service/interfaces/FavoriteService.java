@@ -2,7 +2,7 @@ package com.africa.ubaxplatform.favorite.service.interfaces;
 
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.favorite.dto.FavoriteResponse;
-import com.africa.ubaxplatform.property.dto.PropertyResponse;
+import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,5 +13,5 @@ public interface FavoriteService {
 
   void remove(String keycloakId, UUID propertyId) throws CustomException;
 
-  Page<PropertyResponse> listMine(String keycloakId, Pageable pageable);
+  Page<PropertyDetailResponse> listMine(String keycloakId, Pageable pageable);
 }
