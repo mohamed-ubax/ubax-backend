@@ -22,4 +22,12 @@ public record PropertyAmenityRequest(
             description = "Description libre de la commodité personnalisée.",
             example = "Hammam traditionnel avec bain de vapeur",
             nullable = true)
-        String customDescription) {}
+        String customDescription,
+    @Schema(
+            description =
+                "Description de la commodité telle qu'affichée dans la code list."
+                    + " Pour une commodité standard : valeur issue de PROPERTY_AMENITY dans la_code_list."
+                    + " Pour une commodité personnalisée : identique à customDescription.",
+            example = "Piscine (privée ou commune)",
+            nullable = true)
+        String description) {}

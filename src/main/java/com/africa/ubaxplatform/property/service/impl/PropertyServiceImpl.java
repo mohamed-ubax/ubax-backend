@@ -108,13 +108,7 @@ public class PropertyServiceImpl implements PropertyService {
       List<PropertyAmenityRequest> requests, Property property) {
     List<PropertyAmenity> result = new ArrayList<>();
     for (PropertyAmenityRequest req : requests) {
-      String description =
-          req.code() != null
-              ? codeListRepo
-                  .findByTypeAndValue("PROPERTY_AMENITY", req.code())
-                  .map(cl -> cl.getDescription())
-                  .orElse(null)
-              : req.customDescription();
+      String description = resolveDescription(req);
       result.add(
           PropertyAmenity.builder()
               .property(property)
@@ -125,6 +119,19 @@ public class PropertyServiceImpl implements PropertyService {
               .build());
     }
     return result;
+  }
+
+  private String resolveDescription(PropertyAmenityRequest req) {
+    if (req.description() != null) {
+      return req.description();
+    }
+    if (req.code() != null) {
+      return codeListRepo
+          .findByTypeAndValue("PROPERTY_AMENITY", req.code())
+          .map(cl -> cl.getDescription())
+          .orElse(null);
+    }
+    return req.customDescription();
   }
 
   /**
