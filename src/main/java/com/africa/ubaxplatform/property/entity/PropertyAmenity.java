@@ -41,4 +41,8 @@ public class PropertyAmenity extends BaseEntity {
   /** Description optionnelle de la commodité personnalisée. */
   @Column(name = "custom_description", length = 255)
   private String customDescription;
+
+  /** Description affichée pour cette commodité (standard ou personnalisée). */
+  @Column(name = "description", length = 500)
+  private String description;
 }
