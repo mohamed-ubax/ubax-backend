@@ -297,10 +297,10 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
   "latitude": 14.7495,
   "longitude": -17.4942,
   "amenities": [
-    { "code": "POOL" },
-    { "code": "PARKING" },
-    { "code": "SECURITY" },
-    { "code": "GARDEN" }
+    { "code": "POOL",     "description": "Piscine (privée ou commune)" },
+    { "code": "PARKING",  "description": "Parking privatif ou en commun" },
+    { "code": "SECURITY", "description": "Gardiennage / sécurité sur site" },
+    { "code": "GARDEN",   "description": "Jardin ou espace vert privatif" }
   ],
   "ownerId": null
 }
@@ -319,8 +319,8 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
   "city": "Dakar",
   "district": "Plateau",
   "amenities": [
-    { "code": "AC" },
-    { "code": "FURNISHED" }
+    { "code": "AC",       "description": "Climatisation" },
+    { "code": "FURNISHED","description": "Bien livré meublé" }
   ]
 }
 ```
@@ -344,7 +344,7 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
 }
 ```
 
-> **`amenities`** : codes standard via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`. Commodité personnalisée : `{ "customValue": "Jacuzzi", "customDescription": "Jacuzzi extérieur" }`  
+> **`amenities`** : charger via `GET /v1/code-list/type/PROPERTY_AMENITY` (retourne `value` + `description`). Envoyer **les deux champs** dans le body pour éviter un appel DB supplémentaire côté backend — commodité standard : `{ "code": "POOL", "description": "Piscine (privée ou commune)" }`. Commodité personnalisée : `{ "customValue": "Jacuzzi", "customDescription": "Jacuzzi extérieur", "description": "Jacuzzi extérieur" }`  
 > **`ownerId`** : UUID du bailleur si l'agence gère pour un tiers — `null` si l'appelant est lui-même propriétaire  
 > **Champs hôteliers (requis pour `SHORT_STAY`) :** `paymentFrequency` (`NIGHTLY`·`WEEKLY`·`MONTHLY`) · `maxOccupancy` (≥ 1 personne). `bedType` (`SINGLE`·`DOUBLE`·`TWIN`·`KING`·`QUEEN`·`BUNK`) et `mealPlan` (`ROOM_ONLY`·`BREAKFAST`·`HALF_BOARD`·`FULL_BOARD`·`ALL_INCLUSIVE`) sont recommandés.  
 > **Champs hôtel ignorés pour biens agence** — envoyer `null` ou omettre.
@@ -1028,10 +1028,10 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
   "bedType": "KING",
   "mealPlan": "BREAKFAST",
   "amenities": [
-    { "code": "AC" },
-    { "code": "SECURITY" },
-    { "code": "PARKING" },
-    { "code": "ELEVATOR" }
+    { "code": "AC",       "description": "Climatisation" },
+    { "code": "SECURITY", "description": "Gardiennage / sécurité sur site" },
+    { "code": "PARKING",  "description": "Parking privatif ou en commun" },
+    { "code": "ELEVATOR", "description": "Ascenseur dans l'immeuble" }
   ]
 }
 ```
@@ -1040,7 +1040,7 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 > **`propertyType` disponibles pour hôtels :** `HOTEL_ROOM` · `HOTEL_SUITE` · `HOTEL_STUDIO` · `EVENT_SPACE` · `CONFERENCE_ROOM` · `RESTAURANT_SPACE`  
 > **`transactionType` :** toujours `SHORT_STAY` pour les espaces hôteliers  
 > **Champs hôteliers requis pour `SHORT_STAY` :** `paymentFrequency` (`NIGHTLY`/`WEEKLY`/`MONTHLY`) · `maxOccupancy` (≥ 1)  
-> **`amenities`** : codes disponibles via `GET /v1/code-list/type/PROPERTY_AMENITY` : `POOL · GENERATOR · WATER_TANK · AC · SECURITY · PARKING · ELEVATOR · GARDEN · FURNISHED · PETS`
+> **`amenities`** : charger via `GET /v1/code-list/type/PROPERTY_AMENITY` (retourne `value` + `description`). Envoyer **les deux champs** dans le body — `{ "code": "AC", "description": "Climatisation" }` — pour éviter un appel DB supplémentaire côté backend.
 
 **Response `201` :**
 ```json
