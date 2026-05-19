@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.property.service.impl;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
+import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
@@ -57,6 +58,7 @@ public class PropertyServiceImpl implements PropertyService {
   private final PropertyMediaRepository mediaRepo;
   private final PropertyDocumentRepository docRepo;
   private final UserRepository userRepo;
+  private final LaCodeListRepository codeListRepo;
   private final MinioService minioService;
 
   private static final String BUCKET_MEDIA = "properties-media";
@@ -106,12 +108,20 @@ public class PropertyServiceImpl implements PropertyService {
       List<PropertyAmenityRequest> requests, Property property) {
     List<PropertyAmenity> result = new ArrayList<>();
     for (PropertyAmenityRequest req : requests) {
+      String description =
+          req.code() != null
+              ? codeListRepo
+                  .findByTypeAndValue("PROPERTY_AMENITY", req.code())
+                  .map(cl -> cl.getDescription())
+                  .orElse(null)
+              : req.customDescription();
       result.add(
           PropertyAmenity.builder()
               .property(property)
               .code(req.code())
               .customValue(req.customValue())
               .customDescription(req.customDescription())
+              .description(description)
               .build());
     }
     return result;

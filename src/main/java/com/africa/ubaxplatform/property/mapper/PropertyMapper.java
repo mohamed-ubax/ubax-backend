@@ -96,7 +96,7 @@ public class PropertyMapper {
 
   public static PropertyAmenityResponse toAmenityResponse(PropertyAmenity a) {
     return new PropertyAmenityResponse(
-        a.getId(), a.getCode(), a.getCustomValue(), a.getCustomDescription());
+        a.getId(), a.getCode(), a.getCustomValue(), a.getCustomDescription(), a.getDescription());
   }
 
   /**
