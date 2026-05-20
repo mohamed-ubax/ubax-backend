@@ -7,26 +7,22 @@ import com.africa.ubaxplatform.auth.repository.AgencyRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.bailleur.codeList.BailleurApplicationStatus;
+import com.africa.ubaxplatform.bailleur.dto.AgencyBailleurResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurAgencyResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplicationResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplyRequest;
 import com.africa.ubaxplatform.bailleur.dto.BailleurDecisionRequest;
-import com.africa.ubaxplatform.bailleur.dto.BailleurPropertyResponse;
 import com.africa.ubaxplatform.bailleur.entity.BailleurAgencyLink;
 import com.africa.ubaxplatform.bailleur.entity.BailleurApplication;
-import com.africa.ubaxplatform.bailleur.entity.BailleurApplicationProperty;
 import com.africa.ubaxplatform.bailleur.repository.BailleurAgencyLinkRepository;
-import com.africa.ubaxplatform.bailleur.repository.BailleurApplicationPropertyRepository;
 import com.africa.ubaxplatform.bailleur.repository.BailleurApplicationRepository;
 import com.africa.ubaxplatform.bailleur.service.interfaces.BailleurService;
-import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
+import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
-import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,16 +36,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class BailleurServiceImpl implements BailleurService {
 
-  private static final String GEO_RADIUS_TYPE = "GEO_CONFLICT_RADIUS_METERS";
-  private static final double DEFAULT_GEO_RADIUS = 50.0;
-
   private final BailleurApplicationRepository applicationRepo;
-  private final BailleurApplicationPropertyRepository propertyRepo;
   private final BailleurAgencyLinkRepository linkRepo;
   private final UserRepository userRepo;
   private final AgencyRepository agencyRepo;
-  private final PropertyRepository propertyRepository;
-  private final LaCodeListRepository codeListRepo;
   private final KeycloakAdminService keycloakAdminService;
 
   // ── Soumission (CLIENT authentifié) ───────────────────────────
@@ -77,41 +67,14 @@ public class BailleurServiceImpl implements BailleurService {
                         new NotFoundException(ResponseMessageConstants.BAILLEUR_AGENCY_NOT_FOUND),
                         ResponseMessageConstants.BAILLEUR_AGENCY_NOT_FOUND));
 
-    double radius = resolveGeoRadius();
-    boolean conflictDetected = false;
-    StringBuilder conflictNote = new StringBuilder();
-
-    if (propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
-        caller.getId(), request.getAgencyId())) {
-      throw new CustomException(
-          new IllegalArgumentException("Un bien de ce bailleur est déjà géré par une autre agence"),
-          ResponseMessageConstants.BAILLEUR_APPLICATION_CONFLICT);
-    }
-
-    for (var prop : request.getProperties()) {
-      if (prop.getLatitude() != null && prop.getLongitude() != null) {
-        boolean conflict =
-            propertyRepository.existsNearLocationForOtherAgency(
-                prop.getLatitude().doubleValue(),
-                prop.getLongitude().doubleValue(),
-                request.getAgencyId().toString(),
-                radius);
-        if (conflict) {
-          conflictDetected = true;
-          if (!conflictNote.isEmpty()) conflictNote.append(" | ");
-          conflictNote
-              .append("Bien à proximité (")
-              .append(prop.getAddress())
-              .append(") déjà géré par une autre agence");
-        }
-      } else {
-        conflictDetected = true;
-        if (!conflictNote.isEmpty()) conflictNote.append(" | ");
-        conflictNote
-            .append("Coordonnées manquantes pour \"")
-            .append(prop.getAddress())
-            .append("\" — vérification manuelle requise");
+    // Email : compte en priorité, body en fallback, erreur si aucun
+    String email = caller.getEmail();
+    if (email == null || email.isBlank()) {
+      if (request.getEmail() == null || request.getEmail().isBlank()) {
+        throw new BadRequestException(
+            "Votre compte ne possède pas d'adresse email. Veuillez en fournir une dans le champ 'email'.");
       }
+      email = request.getEmail();
     }
 
     BailleurApplication application =
@@ -121,25 +84,24 @@ public class BailleurServiceImpl implements BailleurService {
             .firstName(caller.getFirstName())
             .lastName(caller.getLastName())
             .phone(caller.getPhone())
-            .email(caller.getEmail())
+            .email(email)
             .idType(request.getIdType())
             .idNumber(request.getIdNumber())
+            .idDocRectoUrl(request.getIdDocRectoUrl())
+            .idDocVersoUrl(request.getIdDocVersoUrl())
+            .description(request.getDescription())
             .status(BailleurApplicationStatus.PENDING)
-            .conflictDetected(conflictDetected)
-            .conflictNote(conflictDetected ? conflictNote.toString() : null)
             .build();
 
     application = applicationRepo.save(application);
-    List<BailleurApplicationProperty> savedProps = saveProperties(application.getId(), request);
 
     log.info(
-        "Demande bailleur soumise : applicationId={}, agencyId={}, userId={}, conflictDetected={}",
+        "Demande bailleur soumise : applicationId={}, agencyId={}, userId={}",
         application.getId(),
         request.getAgencyId(),
-        caller.getId(),
-        conflictDetected);
+        caller.getId());
 
-    return toResponse(application, agency.getName(), savedProps);
+    return toResponse(application, agency.getName());
   }
 
   // ── Décision (approuver / rejeter) ────────────────────────────
@@ -196,8 +158,7 @@ public class BailleurServiceImpl implements BailleurService {
       approveApplication(application, agency, reviewer);
     }
 
-    List<BailleurApplicationProperty> props = propertyRepo.findByApplicationId(applicationId);
-    return toResponse(application, agency.getName(), props);
+    return toResponse(application, agency.getName());
   }
 
   // ── Lectures ──────────────────────────────────────────────────
@@ -210,9 +171,7 @@ public class BailleurServiceImpl implements BailleurService {
         .map(
             app -> {
               String agencyName = agencyRepo.findById(agencyId).map(Agency::getName).orElse(null);
-              List<BailleurApplicationProperty> props =
-                  propertyRepo.findByApplicationId(app.getId());
-              return toResponse(app, agencyName, props);
+              return toResponse(app, agencyName);
             });
   }
 
@@ -231,8 +190,7 @@ public class BailleurServiceImpl implements BailleurService {
 
     String agencyName =
         agencyRepo.findById(application.getAgencyId()).map(Agency::getName).orElse(null);
-    List<BailleurApplicationProperty> props = propertyRepo.findByApplicationId(applicationId);
-    return toResponse(application, agencyName, props);
+    return toResponse(application, agencyName);
   }
 
   @Override
@@ -244,9 +202,7 @@ public class BailleurServiceImpl implements BailleurService {
             app -> {
               String agencyName =
                   agencyRepo.findById(app.getAgencyId()).map(Agency::getName).orElse(null);
-              List<BailleurApplicationProperty> props =
-                  propertyRepo.findByApplicationId(app.getId());
-              return toResponse(app, agencyName, props);
+              return toResponse(app, agencyName);
             });
   }
 
@@ -273,8 +229,7 @@ public class BailleurServiceImpl implements BailleurService {
         app -> {
           String agencyName =
               agencyRepo.findById(app.getAgencyId()).map(Agency::getName).orElse(null);
-          List<BailleurApplicationProperty> props = propertyRepo.findByApplicationId(app.getId());
-          return toResponse(app, agencyName, props);
+          return toResponse(app, agencyName);
         });
   }
 
@@ -306,34 +261,42 @@ public class BailleurServiceImpl implements BailleurService {
         .toList();
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public Page<AgencyBailleurResponse> listAgencyBailleurs(UUID agencyId, Pageable pageable) {
+    return linkRepo
+        .findByAgencyId(agencyId, pageable)
+        .map(
+            link ->
+                userRepo
+                    .findById(link.getBailleurUserId())
+                    .map(
+                        user ->
+                            AgencyBailleurResponse.builder()
+                                .id(user.getId())
+                                .firstName(user.getFirstName())
+                                .lastName(user.getLastName())
+                                .phone(user.getPhone())
+                                .email(user.getEmail())
+                                .avatarUrl(user.getAvatarUrl())
+                                .joinedAt(link.getJoinedAt())
+                                .build())
+                    .orElse(null));
+  }
+
   // ── Helpers privés ─────────────────────────────────────────────
 
   private void approveApplication(BailleurApplication application, Agency agency, User reviewer)
       throws CustomException {
 
-    User bailleur;
-
-    if (application.getUserId() != null) {
-      // Nouveau flux : bailleur authentifié (CLIENT → OWNER)
-      bailleur =
-          userRepo
-              .findById(application.getUserId())
-              .orElseThrow(
-                  () ->
-                      new CustomException(
-                          new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND),
-                          ResponseMessageConstants.USER_NOT_FOUND));
-    } else {
-      // Flux legacy : demande soumise via l'ancien formulaire public
-      Optional<User> existingUser = userRepo.findByPhone(application.getPhone());
-      if (existingUser.isEmpty()) {
-        throw new CustomException(
-            new NotFoundException(
-                "Aucun compte trouvé pour ce bailleur. Demandez-lui de créer un compte CLIENT sur l'application mobile."),
-            ResponseMessageConstants.USER_NOT_FOUND);
-      }
-      bailleur = existingUser.get();
-    }
+    User bailleur =
+        userRepo
+            .findById(application.getUserId())
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND),
+                        ResponseMessageConstants.USER_NOT_FOUND));
 
     if (!bailleur.getRoles().contains(UserRole.OWNER)) {
       keycloakAdminService.assignRole(bailleur.getKeycloakId(), UserRole.OWNER);
@@ -366,51 +329,7 @@ public class BailleurServiceImpl implements BailleurService {
         bailleur.getId());
   }
 
-  private List<BailleurApplicationProperty> saveProperties(
-      UUID applicationId, BailleurApplyRequest request) {
-    return request.getProperties().stream()
-        .map(
-            p -> {
-              BailleurApplicationProperty prop =
-                  BailleurApplicationProperty.builder()
-                      .applicationId(applicationId)
-                      .address(p.getAddress())
-                      .propertyType(p.getPropertyType())
-                      .rooms(p.getRooms())
-                      .surface(p.getSurface())
-                      .desiredRent(p.getDesiredRent())
-                      .description(p.getDescription())
-                      .latitude(p.getLatitude())
-                      .longitude(p.getLongitude())
-                      .geoVerified(p.getLatitude() != null)
-                      .build();
-              return propertyRepo.save(prop);
-            })
-        .toList();
-  }
-
-  private double resolveGeoRadius() {
-    return codeListRepo.findAllByType(GEO_RADIUS_TYPE).stream()
-        .findFirst()
-        .map(c -> parseRadius(c.getValue()))
-        .orElse(DEFAULT_GEO_RADIUS);
-  }
-
-  private double parseRadius(String value) {
-    try {
-      return Double.parseDouble(value);
-    } catch (NumberFormatException e) {
-      log.warn(
-          "Valeur de rayon invalide en base : '{}', utilisation du défaut {}m",
-          value,
-          DEFAULT_GEO_RADIUS);
-      return DEFAULT_GEO_RADIUS;
-    }
-  }
-
-  private BailleurApplicationResponse toResponse(
-      BailleurApplication app, String agencyName, List<BailleurApplicationProperty> props) {
-
+  private BailleurApplicationResponse toResponse(BailleurApplication app, String agencyName) {
     BailleurApplicationResponse.BailleurApplicationResponseBuilder builder =
         BailleurApplicationResponse.builder()
             .id(app.getId())
@@ -422,34 +341,19 @@ public class BailleurServiceImpl implements BailleurService {
             .email(app.getEmail())
             .idType(app.getIdType())
             .idNumber(app.getIdNumber())
+            .idDocRectoUrl(app.getIdDocRectoUrl())
+            .idDocVersoUrl(app.getIdDocVersoUrl())
+            .description(app.getDescription())
             .status(app.getStatus())
-            .conflictDetected(app.isConflictDetected())
-            .conflictNote(app.getConflictNote())
             .rejectionReason(app.getRejectionReason())
             .reviewedAt(app.getReviewedAt())
             .createdAt(app.getCreatedAt())
-            .updatedAt(app.getUpdatedAt())
-            .properties(props.stream().map(this::toPropertyResponse).toList());
+            .updatedAt(app.getUpdatedAt());
 
     if (app.getReviewedBy() != null) {
       builder.reviewedByName(app.getReviewedBy().getFullName());
     }
 
     return builder.build();
-  }
-
-  private BailleurPropertyResponse toPropertyResponse(BailleurApplicationProperty p) {
-    return BailleurPropertyResponse.builder()
-        .id(p.getId())
-        .address(p.getAddress())
-        .propertyType(p.getPropertyType())
-        .rooms(p.getRooms())
-        .surface(p.getSurface())
-        .desiredRent(p.getDesiredRent())
-        .description(p.getDescription())
-        .latitude(p.getLatitude())
-        .longitude(p.getLongitude())
-        .geoVerified(p.isGeoVerified())
-        .build();
   }
 }

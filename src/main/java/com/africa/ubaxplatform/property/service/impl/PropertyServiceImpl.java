@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.property.service.impl;
 
 import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
+import com.africa.ubaxplatform.bailleur.repository.BailleurAgencyLinkRepository;
 import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
@@ -60,6 +61,7 @@ public class PropertyServiceImpl implements PropertyService {
   private final UserRepository userRepo;
   private final LaCodeListRepository codeListRepo;
   private final MinioService minioService;
+  private final BailleurAgencyLinkRepository bailleurAgencyLinkRepo;
 
   private static final String BUCKET_MEDIA = "properties-media";
   private static final Set<String> ALLOWED_MEDIA_MIMES =
@@ -253,6 +255,15 @@ public class PropertyServiceImpl implements PropertyService {
                       new CustomException(
                           new NotFoundException("Propriétaire introuvable"),
                           ResponseMessageConstants.USER_NOT_FOUND));
+
+      // Un membre d'agence ne peut rattacher un bien qu'à un bailleur approuvé par sa propre agence
+      if (caller.getAgency() != null
+          && !bailleurAgencyLinkRepo.existsByBailleurUserIdAndAgencyId(
+              owner.getId(), caller.getAgency().getId())) {
+        throw new BadRequestException(
+            "Ce propriétaire n'est pas lié à votre agence. "
+                + "Seuls les bailleurs approuvés par votre agence peuvent être rattachés à un bien.");
+      }
     }
 
     validatePropertyTypeCoherence(req.propertyType(), req.transactionType());

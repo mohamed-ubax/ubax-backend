@@ -109,6 +109,7 @@ services:
         mc mb --ignore-existing ubax/documents-generated
         mc mb --ignore-existing ubax/ticket-attachments
         mc mb --ignore-existing ubax/partner-documents
+        mc mb --ignore-existing ubax/bailleur-documents
 
         mc anonymous set download ubax/users-avatars
         mc anonymous set download ubax/agencies-logos

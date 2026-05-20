@@ -3,8 +3,6 @@ package com.africa.ubaxplatform.unit.bailleur;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -18,24 +16,20 @@ import com.africa.ubaxplatform.auth.repository.AgencyRepository;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.service.interfaces.KeycloakAdminService;
 import com.africa.ubaxplatform.bailleur.codeList.BailleurApplicationStatus;
+import com.africa.ubaxplatform.bailleur.dto.AgencyBailleurResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurAgencyResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplicationResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplyRequest;
 import com.africa.ubaxplatform.bailleur.dto.BailleurDecisionRequest;
-import com.africa.ubaxplatform.bailleur.dto.BailleurPropertyRequest;
 import com.africa.ubaxplatform.bailleur.entity.BailleurAgencyLink;
 import com.africa.ubaxplatform.bailleur.entity.BailleurApplication;
-import com.africa.ubaxplatform.bailleur.entity.BailleurApplicationProperty;
 import com.africa.ubaxplatform.bailleur.repository.BailleurAgencyLinkRepository;
-import com.africa.ubaxplatform.bailleur.repository.BailleurApplicationPropertyRepository;
 import com.africa.ubaxplatform.bailleur.repository.BailleurApplicationRepository;
 import com.africa.ubaxplatform.bailleur.service.impl.BailleurServiceImpl;
-import com.africa.ubaxplatform.common.codelist.repository.LaCodeListRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
+import com.africa.ubaxplatform.common.exception.BadRequestException;
 import com.africa.ubaxplatform.common.exception.CustomException;
-import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import com.africa.ubaxplatform.testHelper.SharedTestFixtures;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -56,31 +50,29 @@ import org.springframework.data.domain.Pageable;
 class BailleurServiceImplTest {
 
   @Mock BailleurApplicationRepository applicationRepo;
-  @Mock BailleurApplicationPropertyRepository bailleurPropRepo;
   @Mock BailleurAgencyLinkRepository linkRepo;
   @Mock UserRepository userRepo;
   @Mock AgencyRepository agencyRepo;
-  @Mock PropertyRepository propertyRepository;
-  @Mock LaCodeListRepository codeListRepo;
   @Mock KeycloakAdminService keycloakAdminService;
 
   @InjectMocks BailleurServiceImpl service;
 
   private static final UUID APPLICATION_ID = UUID.randomUUID();
   private static final String REVIEWER_KC_ID = "kc-reviewer-001";
+  private static final String VALID_DESCRIPTION =
+      "Je souhaite confier mes trois appartements situés à Abidjan à votre agence pour gestion locative.";
 
   private Agency agency;
   private BailleurApplication pendingApp;
   private User reviewer;
-  private BailleurApplicationProperty savedProp;
 
   @BeforeEach
   void setUp() {
     agency = SharedTestFixtures.buildAgency();
 
-    // userId null → legacy application (no authenticated account linked)
     pendingApp =
         BailleurApplication.builder()
+            .userId(UUID.randomUUID())
             .agencyId(SharedTestFixtures.AGENCY_ID)
             .firstName("Mamadou")
             .lastName("Coulibaly")
@@ -88,56 +80,40 @@ class BailleurServiceImplTest {
             .email("mamadou@example.ci")
             .idType("CNI")
             .idNumber("CI-9999")
+            .description(VALID_DESCRIPTION)
             .status(BailleurApplicationStatus.PENDING)
-            .conflictDetected(false)
             .build();
     SharedTestFixtures.injectId(pendingApp, APPLICATION_ID);
 
     reviewer = SharedTestFixtures.buildAdminUser(REVIEWER_KC_ID, UUID.randomUUID(), UserRole.ADMIN);
-
-    savedProp =
-        BailleurApplicationProperty.builder()
-            .applicationId(APPLICATION_ID)
-            .address("12 Rue Test, Abidjan")
-            .propertyType("VILLA")
-            .rooms(4)
-            .build();
-    SharedTestFixtures.injectId(savedProp, UUID.randomUUID());
   }
 
-  // apply
+  // ── apply() ──────────────────────────────────────────────────────
 
   @Nested
   @DisplayName("apply()")
   class Apply {
 
     private static final String CALLER_KC_ID = "kc-caller-apply";
-    private User callerUser;
+    private User callerWithEmail;
+    private User callerWithoutEmail;
 
     @BeforeEach
     void stubCommon() {
-      callerUser = SharedTestFixtures.buildUserWithoutAgency(CALLER_KC_ID, UUID.randomUUID());
-      lenient().when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.of(callerUser));
-      lenient().when(codeListRepo.findAllByType(any())).thenReturn(List.of());
+      callerWithEmail = SharedTestFixtures.buildUserWithoutAgency(CALLER_KC_ID, UUID.randomUUID());
+      callerWithoutEmail =
+          SharedTestFixtures.buildUserWithoutAgency(CALLER_KC_ID, UUID.randomUUID());
+      callerWithoutEmail.setEmail(null);
       lenient().when(applicationRepo.save(any())).thenReturn(pendingApp);
-      lenient().when(bailleurPropRepo.save(any())).thenReturn(savedProp);
     }
 
-    private BailleurApplyRequest buildRequest(boolean withCoords) {
-      BailleurPropertyRequest prop = new BailleurPropertyRequest();
-      prop.setAddress("12 Rue Test, Abidjan");
-      prop.setPropertyType("VILLA");
-      prop.setRooms(4);
-      if (withCoords) {
-        prop.setLatitude(BigDecimal.valueOf(5.345));
-        prop.setLongitude(BigDecimal.valueOf(-4.007));
-      }
-
+    private BailleurApplyRequest buildRequest(String description, String email) {
       BailleurApplyRequest req = new BailleurApplyRequest();
       req.setAgencyId(SharedTestFixtures.AGENCY_ID);
       req.setIdType("CNI");
       req.setIdNumber("CI-9999");
-      req.setProperties(List.of(prop));
+      req.setDescription(description);
+      if (email != null) req.setEmail(email);
       return req;
     }
 
@@ -146,7 +122,7 @@ class BailleurServiceImplTest {
     void apply_userNotFound_throws() {
       when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.empty());
 
-      assertThatThrownBy(() -> service.apply(CALLER_KC_ID, buildRequest(true)))
+      assertThatThrownBy(() -> service.apply(CALLER_KC_ID, buildRequest(VALID_DESCRIPTION, null)))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.USER_NOT_FOUND);
     }
@@ -154,96 +130,85 @@ class BailleurServiceImplTest {
     @Test
     @DisplayName("Echec – agence introuvable → BAILLEUR_AGENCY_NOT_FOUND")
     void apply_agencyNotFound_throws() {
+      when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.of(callerWithEmail));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.empty());
 
-      assertThatThrownBy(() -> service.apply(CALLER_KC_ID, buildRequest(true)))
+      assertThatThrownBy(() -> service.apply(CALLER_KC_ID, buildRequest(VALID_DESCRIPTION, null)))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.BAILLEUR_AGENCY_NOT_FOUND);
     }
 
     @Test
-    @DisplayName("Echec – bailleur avec un bien géré par une autre agence → CONFLICT")
-    void apply_callerHasPropertyAtOtherAgency_throws() {
+    @DisplayName("Echec – compte sans email ET body sans email → BadRequestException")
+    void apply_missingEmail_throws() {
+      when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.of(callerWithoutEmail));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
-              callerUser.getId(), SharedTestFixtures.AGENCY_ID))
-          .thenReturn(true);
 
-      assertThatThrownBy(() -> service.apply(CALLER_KC_ID, buildRequest(true)))
-          .isInstanceOf(CustomException.class)
-          .hasMessageContaining(ResponseMessageConstants.BAILLEUR_APPLICATION_CONFLICT);
+      assertThatThrownBy(() -> service.apply(CALLER_KC_ID, buildRequest(VALID_DESCRIPTION, null)))
+          .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    @DisplayName("Succès – coordonnées présentes, pas de conflit → conflictDetected=false")
-    void apply_withCoords_noConflict_success() throws CustomException {
+    @DisplayName("Succès – email extrait automatiquement du compte")
+    void apply_emailFromAccount_success() throws CustomException {
+      when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.of(callerWithEmail));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
-              callerUser.getId(), SharedTestFixtures.AGENCY_ID))
-          .thenReturn(false);
-      when(propertyRepository.existsNearLocationForOtherAgency(
-              anyDouble(), anyDouble(), anyString(), anyDouble()))
-          .thenReturn(false);
 
-      BailleurApplicationResponse result = service.apply(CALLER_KC_ID, buildRequest(true));
+      BailleurApplicationResponse result =
+          service.apply(CALLER_KC_ID, buildRequest(VALID_DESCRIPTION, null));
 
       assertThat(result).isNotNull();
       assertThat(result.getStatus()).isEqualTo(BailleurApplicationStatus.PENDING);
-      assertThat(result.isConflictDetected()).isFalse();
-    }
-
-    @Test
-    @DisplayName("Succès – coordonnées absentes → conflictDetected=true (vérification manuelle)")
-    void apply_withoutCoords_conflictFlagged() throws CustomException {
-      pendingApp.setConflictDetected(true);
-      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
-              callerUser.getId(), SharedTestFixtures.AGENCY_ID))
-          .thenReturn(false);
-
-      BailleurApplicationResponse result = service.apply(CALLER_KC_ID, buildRequest(false));
-
-      assertThat(result).isNotNull();
-      assertThat(result.isConflictDetected()).isTrue();
       verify(applicationRepo).save(any(BailleurApplication.class));
     }
 
     @Test
-    @DisplayName("Succès – conflit géo détecté → conflictDetected=true signalé")
-    void apply_withCoords_geoConflict_flagged() throws CustomException {
-      pendingApp.setConflictDetected(true);
+    @DisplayName("Succès – compte sans email, email fourni dans le body")
+    void apply_emailFromBody_success() throws CustomException {
+      when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.of(callerWithoutEmail));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
-              callerUser.getId(), SharedTestFixtures.AGENCY_ID))
-          .thenReturn(false);
-      when(propertyRepository.existsNearLocationForOtherAgency(
-              anyDouble(), anyDouble(), anyString(), anyDouble()))
-          .thenReturn(true);
 
-      BailleurApplicationResponse result = service.apply(CALLER_KC_ID, buildRequest(true));
+      service.apply(CALLER_KC_ID, buildRequest(VALID_DESCRIPTION, "body@example.com"));
 
-      assertThat(result).isNotNull();
-      assertThat(result.isConflictDetected()).isTrue();
+      verify(applicationRepo).save(argThat(app -> "body@example.com".equals(app.getEmail())));
     }
 
     @Test
     @DisplayName("Succès – userId de l'appelant persisté dans la demande")
     void apply_storesCallerUserId() throws CustomException {
+      when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.of(callerWithEmail));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(propertyRepository.existsByOwnerIdAndAgencyIdNotNullAndAgencyIdNot(
-              callerUser.getId(), SharedTestFixtures.AGENCY_ID))
-          .thenReturn(false);
-      when(propertyRepository.existsNearLocationForOtherAgency(
-              anyDouble(), anyDouble(), anyString(), anyDouble()))
-          .thenReturn(false);
 
-      service.apply(CALLER_KC_ID, buildRequest(true));
+      service.apply(CALLER_KC_ID, buildRequest(VALID_DESCRIPTION, null));
 
-      verify(applicationRepo).save(argThat(app -> callerUser.getId().equals(app.getUserId())));
+      verify(applicationRepo).save(argThat(app -> callerWithEmail.getId().equals(app.getUserId())));
+    }
+
+    @Test
+    @DisplayName("Succès – description et URLs pièce d'identité persistées")
+    void apply_storesDescriptionAndIdDocUrls() throws CustomException {
+      when(userRepo.findByKeycloakId(CALLER_KC_ID)).thenReturn(Optional.of(callerWithEmail));
+      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
+
+      BailleurApplyRequest req = buildRequest(VALID_DESCRIPTION, null);
+      req.setIdDocRectoUrl("http://minio/bailleur-documents/recto.jpg");
+      req.setIdDocVersoUrl("http://minio/bailleur-documents/verso.jpg");
+
+      service.apply(CALLER_KC_ID, req);
+
+      verify(applicationRepo)
+          .save(
+              argThat(
+                  app ->
+                      VALID_DESCRIPTION.equals(app.getDescription())
+                          && "http://minio/bailleur-documents/recto.jpg"
+                              .equals(app.getIdDocRectoUrl())
+                          && "http://minio/bailleur-documents/verso.jpg"
+                              .equals(app.getIdDocVersoUrl())));
     }
   }
 
-  // processDecision
+  // ── processDecision() ─────────────────────────────────────────────
 
   @Nested
   @DisplayName("processDecision()")
@@ -281,7 +246,6 @@ class BailleurServiceImplTest {
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
       when(userRepo.findByKeycloakId(REVIEWER_KC_ID)).thenReturn(Optional.of(reviewer));
       when(applicationRepo.save(pendingApp)).thenReturn(pendingApp);
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
 
       BailleurDecisionRequest req = new BailleurDecisionRequest();
       req.setDecision(BailleurDecisionRequest.Decision.REJECT);
@@ -297,11 +261,10 @@ class BailleurServiceImplTest {
     }
 
     @Test
-    @DisplayName("Succès – APPROVE nouveau flux (userId présent) : rôle OWNER assigné, lien créé")
-    void processDecision_approve_newPath_ownerRoleAssigned_linkCreated() throws CustomException {
-      UUID bailleurUserId = UUID.randomUUID();
+    @DisplayName("Succès – APPROVE : rôle OWNER assigné, lien agence créé")
+    void processDecision_approve_ownerRoleAssigned_linkCreated() throws CustomException {
+      UUID bailleurUserId = pendingApp.getUserId();
       User bailleur = SharedTestFixtures.buildUserWithoutAgency("kc-bailleur-new", bailleurUserId);
-      pendingApp.setUserId(bailleurUserId);
 
       when(applicationRepo.findById(APPLICATION_ID)).thenReturn(Optional.of(pendingApp));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
@@ -310,7 +273,6 @@ class BailleurServiceImplTest {
       when(linkRepo.existsByBailleurUserIdAndAgencyId(bailleurUserId, SharedTestFixtures.AGENCY_ID))
           .thenReturn(false);
       when(applicationRepo.save(pendingApp)).thenReturn(pendingApp);
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
 
       BailleurDecisionRequest req = new BailleurDecisionRequest();
       req.setDecision(BailleurDecisionRequest.Decision.APPROVE);
@@ -328,11 +290,10 @@ class BailleurServiceImplTest {
     @Test
     @DisplayName("Succès – APPROVE rôle OWNER déjà présent : assignRole et save user ignorés")
     void processDecision_approve_ownerAlreadyPresent_skipRoleAssignment() throws CustomException {
-      UUID bailleurUserId = UUID.randomUUID();
+      UUID bailleurUserId = pendingApp.getUserId();
       User bailleur =
           SharedTestFixtures.buildUserWithoutAgency("kc-bailleur-owner", bailleurUserId);
       bailleur.getRoles().add(UserRole.OWNER);
-      pendingApp.setUserId(bailleurUserId);
 
       when(applicationRepo.findById(APPLICATION_ID)).thenReturn(Optional.of(pendingApp));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
@@ -341,7 +302,6 @@ class BailleurServiceImplTest {
       when(linkRepo.existsByBailleurUserIdAndAgencyId(bailleurUserId, SharedTestFixtures.AGENCY_ID))
           .thenReturn(false);
       when(applicationRepo.save(pendingApp)).thenReturn(pendingApp);
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
 
       BailleurDecisionRequest req = new BailleurDecisionRequest();
       req.setDecision(BailleurDecisionRequest.Decision.APPROVE);
@@ -355,10 +315,9 @@ class BailleurServiceImplTest {
     @Test
     @DisplayName("Succès – APPROVE lien déjà existant : linkRepo.save non appelé")
     void processDecision_approve_linkAlreadyExists_skipLinkCreation() throws CustomException {
-      UUID bailleurUserId = UUID.randomUUID();
+      UUID bailleurUserId = pendingApp.getUserId();
       User bailleur =
           SharedTestFixtures.buildUserWithoutAgency("kc-bailleur-linked", bailleurUserId);
-      pendingApp.setUserId(bailleurUserId);
 
       when(applicationRepo.findById(APPLICATION_ID)).thenReturn(Optional.of(pendingApp));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
@@ -367,7 +326,6 @@ class BailleurServiceImplTest {
       when(linkRepo.existsByBailleurUserIdAndAgencyId(bailleurUserId, SharedTestFixtures.AGENCY_ID))
           .thenReturn(true);
       when(applicationRepo.save(pendingApp)).thenReturn(pendingApp);
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
 
       BailleurDecisionRequest req = new BailleurDecisionRequest();
       req.setDecision(BailleurDecisionRequest.Decision.APPROVE);
@@ -379,74 +337,27 @@ class BailleurServiceImplTest {
       assertThat(pendingApp.getStatus()).isEqualTo(BailleurApplicationStatus.APPROVED);
       verify(linkRepo, never()).save(any());
     }
-
-    @Test
-    @DisplayName(
-        "Succès – APPROVE flux legacy (userId null, compte trouvé par téléphone) : OWNER assigné")
-    void processDecision_approve_legacyPath_userFoundByPhone_ownerRoleAssigned()
-        throws CustomException {
-      // pendingApp.userId is null → legacy path
-      User legacyUser = SharedTestFixtures.buildUserWithoutAgency("kc-legacy", UUID.randomUUID());
-
-      when(applicationRepo.findById(APPLICATION_ID)).thenReturn(Optional.of(pendingApp));
-      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(userRepo.findByKeycloakId(REVIEWER_KC_ID)).thenReturn(Optional.of(reviewer));
-      when(userRepo.findByPhone(pendingApp.getPhone())).thenReturn(Optional.of(legacyUser));
-      when(linkRepo.existsByBailleurUserIdAndAgencyId(
-              legacyUser.getId(), SharedTestFixtures.AGENCY_ID))
-          .thenReturn(false);
-      when(applicationRepo.save(pendingApp)).thenReturn(pendingApp);
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
-
-      BailleurDecisionRequest req = new BailleurDecisionRequest();
-      req.setDecision(BailleurDecisionRequest.Decision.APPROVE);
-
-      BailleurApplicationResponse result =
-          service.processDecision(APPLICATION_ID, req, REVIEWER_KC_ID);
-
-      assertThat(result).isNotNull();
-      assertThat(pendingApp.getStatus()).isEqualTo(BailleurApplicationStatus.APPROVED);
-      verify(keycloakAdminService).assignRole(legacyUser.getKeycloakId(), UserRole.OWNER);
-      verify(linkRepo).save(any());
-    }
-
-    @Test
-    @DisplayName(
-        "Echec – APPROVE flux legacy (userId null, téléphone introuvable) → USER_NOT_FOUND")
-    void processDecision_approve_legacyPath_userNotFound_throws() {
-      // pendingApp.userId is null → legacy path
-      when(applicationRepo.findById(APPLICATION_ID)).thenReturn(Optional.of(pendingApp));
-      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(userRepo.findByKeycloakId(REVIEWER_KC_ID)).thenReturn(Optional.of(reviewer));
-      when(userRepo.findByPhone(pendingApp.getPhone())).thenReturn(Optional.empty());
-
-      BailleurDecisionRequest req = new BailleurDecisionRequest();
-      req.setDecision(BailleurDecisionRequest.Decision.APPROVE);
-
-      assertThatThrownBy(() -> service.processDecision(APPLICATION_ID, req, REVIEWER_KC_ID))
-          .isInstanceOf(CustomException.class)
-          .hasMessageContaining(ResponseMessageConstants.USER_NOT_FOUND);
-    }
   }
 
-  // getById
+  // ── getById() ─────────────────────────────────────────────────────
 
   @Nested
   @DisplayName("getById()")
   class GetById {
 
     @Test
-    @DisplayName("Succès – retourne la réponse de la demande")
+    @DisplayName("Succès – retourne la réponse avec description et identité")
     void getById_success() throws CustomException {
       when(applicationRepo.findById(APPLICATION_ID)).thenReturn(Optional.of(pendingApp));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of(savedProp));
 
       BailleurApplicationResponse result = service.getById(APPLICATION_ID);
 
       assertThat(result).isNotNull();
       assertThat(result.getFirstName()).isEqualTo("Mamadou");
-      assertThat(result.getProperties()).hasSize(1);
+      assertThat(result.getDescription()).isEqualTo(VALID_DESCRIPTION);
+      assertThat(result.getIdType()).isEqualTo("CNI");
+      assertThat(result.getStatus()).isEqualTo(BailleurApplicationStatus.PENDING);
     }
 
     @Test
@@ -460,7 +371,7 @@ class BailleurServiceImplTest {
     }
   }
 
-  // listByAgency
+  // ── listByAgency() ────────────────────────────────────────────────
 
   @Nested
   @DisplayName("listByAgency()")
@@ -472,16 +383,26 @@ class BailleurServiceImplTest {
       when(applicationRepo.findByAgencyId(SharedTestFixtures.AGENCY_ID, Pageable.unpaged()))
           .thenReturn(new PageImpl<>(List.of(pendingApp)));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
 
       var result = service.listByAgency(SharedTestFixtures.AGENCY_ID, Pageable.unpaged());
 
       assertThat(result.getContent()).hasSize(1);
       assertThat(result.getContent().getFirst().getAgencyName()).isEqualTo("Agence Test CI");
     }
+
+    @Test
+    @DisplayName("Retourne page vide si aucune demande pour l'agence")
+    void listByAgency_empty_returnsEmptyPage() {
+      when(applicationRepo.findByAgencyId(SharedTestFixtures.AGENCY_ID, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of()));
+
+      var result = service.listByAgency(SharedTestFixtures.AGENCY_ID, Pageable.unpaged());
+
+      assertThat(result.getContent()).isEmpty();
+    }
   }
 
-  // listAll
+  // ── listAll() ─────────────────────────────────────────────────────
 
   @Nested
   @DisplayName("listAll()")
@@ -493,7 +414,6 @@ class BailleurServiceImplTest {
       when(applicationRepo.findAll(Pageable.unpaged()))
           .thenReturn(new PageImpl<>(List.of(pendingApp)));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
 
       var result = service.listAll(Pageable.unpaged());
 
@@ -501,7 +421,7 @@ class BailleurServiceImplTest {
     }
   }
 
-  // getMyApplications
+  // ── getMyApplications() ───────────────────────────────────────────
 
   @Nested
   @DisplayName("getMyApplications()")
@@ -532,7 +452,6 @@ class BailleurServiceImplTest {
       when(applicationRepo.findByUserId(callerUser.getId(), Pageable.unpaged()))
           .thenReturn(new PageImpl<>(List.of(pendingApp)));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of(savedProp));
 
       var result = service.getMyApplications(CALLER_KC_ID, null, Pageable.unpaged());
 
@@ -548,7 +467,6 @@ class BailleurServiceImplTest {
               callerUser.getId(), BailleurApplicationStatus.PENDING, Pageable.unpaged()))
           .thenReturn(new PageImpl<>(List.of(pendingApp)));
       when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(bailleurPropRepo.findByApplicationId(APPLICATION_ID)).thenReturn(List.of());
 
       var result =
           service.getMyApplications(
@@ -574,41 +492,9 @@ class BailleurServiceImplTest {
       assertThat(result.getContent()).isEmpty();
       assertThat(result.getTotalElements()).isZero();
     }
-
-    @Test
-    @DisplayName("Avec filtre statut APPROVED – retourne les demandes approuvées")
-    void getMyApplications_withApprovedStatus_returnsFilteredList() throws CustomException {
-      BailleurApplication approvedApp =
-          BailleurApplication.builder()
-              .agencyId(SharedTestFixtures.AGENCY_ID)
-              .firstName("Mamadou")
-              .lastName("Coulibaly")
-              .phone("+2250700000099")
-              .email("mamadou@example.ci")
-              .idType("CNI")
-              .idNumber("CI-9999")
-              .status(BailleurApplicationStatus.APPROVED)
-              .conflictDetected(false)
-              .build();
-      SharedTestFixtures.injectId(approvedApp, UUID.randomUUID());
-
-      when(applicationRepo.findByUserIdAndStatus(
-              callerUser.getId(), BailleurApplicationStatus.APPROVED, Pageable.unpaged()))
-          .thenReturn(new PageImpl<>(List.of(approvedApp)));
-      when(agencyRepo.findById(SharedTestFixtures.AGENCY_ID)).thenReturn(Optional.of(agency));
-      when(bailleurPropRepo.findByApplicationId(approvedApp.getId())).thenReturn(List.of());
-
-      var result =
-          service.getMyApplications(
-              CALLER_KC_ID, BailleurApplicationStatus.APPROVED, Pageable.unpaged());
-
-      assertThat(result.getContent()).hasSize(1);
-      assertThat(result.getContent().getFirst().getStatus())
-          .isEqualTo(BailleurApplicationStatus.APPROVED);
-    }
   }
 
-  // getMyAgencies
+  // ── getMyAgencies() ───────────────────────────────────────────────
 
   @Nested
   @DisplayName("getMyAgencies()")
@@ -738,6 +624,88 @@ class BailleurServiceImplTest {
       assertThat(result)
           .extracting(BailleurAgencyResponse::getAgencyName)
           .containsExactlyInAnyOrder("Agence Test CI", "Agence Lomé");
+    }
+  }
+
+  // ── listAgencyBailleurs() ─────────────────────────────────────────
+
+  @Nested
+  @DisplayName("listAgencyBailleurs()")
+  class ListAgencyBailleurs {
+
+    @Test
+    @DisplayName("Retourne la page des bailleurs liés à l'agence avec l'id nécessaire pour ownerId")
+    void listAgencyBailleurs_returnsPage() {
+      UUID bailleurId = UUID.randomUUID();
+      User bailleur = SharedTestFixtures.buildUserWithoutAgency("kc-bailleur", bailleurId);
+      BailleurAgencyLink link =
+          BailleurAgencyLink.builder()
+              .bailleurUserId(bailleurId)
+              .agencyId(SharedTestFixtures.AGENCY_ID)
+              .joinedAt(LocalDateTime.of(2026, 1, 10, 8, 0))
+              .build();
+      SharedTestFixtures.injectId(link, UUID.randomUUID());
+
+      when(linkRepo.findByAgencyId(SharedTestFixtures.AGENCY_ID, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of(link)));
+      when(userRepo.findById(bailleurId)).thenReturn(Optional.of(bailleur));
+
+      var result = service.listAgencyBailleurs(SharedTestFixtures.AGENCY_ID, Pageable.unpaged());
+
+      assertThat(result.getContent()).hasSize(1);
+      AgencyBailleurResponse resp = result.getContent().getFirst();
+      assertThat(resp.getId()).isEqualTo(bailleurId);
+      assertThat(resp.getFirstName()).isEqualTo("Solo");
+      assertThat(resp.getJoinedAt()).isEqualTo(LocalDateTime.of(2026, 1, 10, 8, 0));
+    }
+
+    @Test
+    @DisplayName("Aucun bailleur lié → retourne page vide sans appel userRepo")
+    void listAgencyBailleurs_empty_returnsEmptyPage() {
+      when(linkRepo.findByAgencyId(SharedTestFixtures.AGENCY_ID, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of()));
+
+      var result = service.listAgencyBailleurs(SharedTestFixtures.AGENCY_ID, Pageable.unpaged());
+
+      assertThat(result.getContent()).isEmpty();
+      verify(userRepo, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("Plusieurs bailleurs → page retournée avec tous les IDs")
+    void listAgencyBailleurs_multipleLinks_returnsAll() {
+      UUID bailleurId1 = UUID.randomUUID();
+      UUID bailleurId2 = UUID.randomUUID();
+      User b1 = SharedTestFixtures.buildUserWithoutAgency("kc-b1", bailleurId1);
+      User b2 = SharedTestFixtures.buildUserWithoutAgency("kc-b2", bailleurId2);
+
+      BailleurAgencyLink link1 =
+          BailleurAgencyLink.builder()
+              .bailleurUserId(bailleurId1)
+              .agencyId(SharedTestFixtures.AGENCY_ID)
+              .joinedAt(LocalDateTime.now().minusDays(60))
+              .build();
+      SharedTestFixtures.injectId(link1, UUID.randomUUID());
+
+      BailleurAgencyLink link2 =
+          BailleurAgencyLink.builder()
+              .bailleurUserId(bailleurId2)
+              .agencyId(SharedTestFixtures.AGENCY_ID)
+              .joinedAt(LocalDateTime.now().minusDays(10))
+              .build();
+      SharedTestFixtures.injectId(link2, UUID.randomUUID());
+
+      when(linkRepo.findByAgencyId(SharedTestFixtures.AGENCY_ID, Pageable.unpaged()))
+          .thenReturn(new PageImpl<>(List.of(link1, link2)));
+      when(userRepo.findById(bailleurId1)).thenReturn(Optional.of(b1));
+      when(userRepo.findById(bailleurId2)).thenReturn(Optional.of(b2));
+
+      var result = service.listAgencyBailleurs(SharedTestFixtures.AGENCY_ID, Pageable.unpaged());
+
+      assertThat(result.getContent()).hasSize(2);
+      assertThat(result.getContent())
+          .extracting(AgencyBailleurResponse::getId)
+          .containsExactlyInAnyOrder(bailleurId1, bailleurId2);
     }
   }
 }

@@ -6,6 +6,7 @@ import com.africa.ubaxplatform.auth.dto.RequestUser;
 import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.auth.repository.UserSubRoleRepository;
 import com.africa.ubaxplatform.bailleur.codeList.BailleurApplicationStatus;
+import com.africa.ubaxplatform.bailleur.dto.AgencyBailleurResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurAgencyResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplicationResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplyRequest;
@@ -54,10 +55,13 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <ol>
  *   <li>CLIENT browse les agences : {@code GET /v1/agencies}
- *   <li>CLIENT soumet une demande : {@code POST /v1/bailleur/apply} (JWT CLIENT requis)
- *   <li>DIRECTEUR_AGENCE approuve : {@code PATCH /v1/bailleur/agency/applications/{id}/decision}
+ *   <li>CLIENT soumet une demande avec sa pièce d'identité et une description libre de ses biens :
+ *       {@code POST /v1/bailleur/apply} (JWT CLIENT requis)
+ *   <li>DIRECTEUR_AGENCE vérifie les biens du bailleur en dehors de l'app, puis statue : {@code
+ *       PATCH /v1/bailleur/agency/applications/{id}/decision}
  *   <li>Approbation → rôle {@code UBAX_OWNER} ajouté au compte Keycloak + lien agence créé
- *   <li>OWNER rafraîchit son token → formulaire de saisie de bien débloqué
+ *   <li>OWNER rafraîchit son token → l'agence crée les biens via {@code POST /v1/properties} en
+ *       rattachant le bailleur comme propriétaire
  * </ol>
  *
  * <p>Endpoints mobile OWNER :
@@ -106,12 +110,10 @@ public class BailleurController {
       description =
           "📱 **Mobile** · 🛡 **Rôle requis :** `CLIENT`\n\n"
               + "Soumet une demande d'adhésion à une agence UBAX depuis le compte CLIENT connecté.\n\n"
-              + "Les informations d'identité (nom, prénom, téléphone, email) sont automatiquement extraites du compte CLIENT — "
-              + "seuls l'agence cible, la pièce d'identité et la liste des biens sont requis dans le corps.\n\n"
-              + "**Vérifications automatiques :**\n"
-              + "- Contrôle que les biens du bailleur ne sont pas déjà gérés par une autre agence\n"
-              + "- Vérification géographique par Haversine (rayon configurable via `GEO_CONFLICT_RADIUS_METERS`)\n"
-              + "- Biens sans coordonnées : `conflictDetected = true` → revue manuelle obligatoire\n\n"
+              + "Les informations personnelles (nom, prénom, téléphone, email) sont extraites automatiquement du compte — "
+              + "seuls l'agence cible, la pièce d'identité et une description libre sont requis dans le corps.\n\n"
+              + "L'agence vérifie les biens en dehors de l'app avant de statuer sur la demande. "
+              + "Une fois approuvée, l'agence crée les biens via `POST /v1/properties` en rattachant le bailleur comme propriétaire.\n\n"
               + "La demande est créée avec le statut `PENDING` en attente de décision du `DIRECTEUR_AGENCE`.",
       tags = {"Bailleur"},
       security = @SecurityRequirement(name = "bearerAuth"))
@@ -132,11 +134,7 @@ public class BailleurController {
         responseCode = "403",
         description = "Rôle insuffisant – CLIENT requis",
         content = @Content),
-    @ApiResponse(responseCode = "404", description = "Agence introuvable", content = @Content),
-    @ApiResponse(
-        responseCode = "409",
-        description = "Conflit détecté – un bien de ce bailleur est déjà géré par une autre agence",
-        content = @Content)
+    @ApiResponse(responseCode = "404", description = "Agence introuvable", content = @Content)
   })
   public ResponseEntity<CustomResponse> apply(
       @RequestBody @Valid BailleurApplyRequest request, HttpServletRequest httpRequest)
@@ -162,8 +160,7 @@ public class BailleurController {
       summary = "Lister les demandes bailleur reçues par l'agence",
       description =
           "🛡 **Rôles requis :** `PARTNER` + sous-rôle `DIRECTEUR_AGENCE`\n\n"
-              + "Retourne la liste paginée des demandes d'adhésion bailleur adressées à l'agence de l'utilisateur connecté.\n\n"
-              + "Les demandes avec `conflictDetected = true` nécessitent une vérification manuelle avant approbation.",
+              + "Retourne la liste paginée des demandes d'adhésion bailleur adressées à l'agence de l'utilisateur connecté.",
       tags = {"Bailleur"},
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
@@ -215,7 +212,8 @@ public class BailleurController {
       summary = "Détail d'une demande bailleur",
       description =
           "🛡 **Rôles requis :** `PARTNER` + sous-rôle `DIRECTEUR_AGENCE`\n\n"
-              + "Retourne le détail complet de la demande, incluant les biens décrits et le flag de conflit géographique.",
+              + "Retourne le détail complet de la demande : informations personnelles du bailleur, "
+              + "pièce d'identité (recto/verso), description libre et statut courant.",
       tags = {"Bailleur"},
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
@@ -321,6 +319,61 @@ public class BailleurController {
             Constants.Status.OK,
             ResponseMessageConstants.BAILLEUR_APPLICATION_DECISION_SUCCESS,
             response));
+  }
+
+  /** Liste paginée des bailleurs approuvés liés à l'agence du DIRECTEUR_AGENCE connecté. */
+  @GetMapping("/agency/bailleurs")
+  @Operation(
+      summary = "Lister les bailleurs de l'agence",
+      description =
+          "🛡 **Rôles requis :** `PARTNER` + sous-rôle `DIRECTEUR_AGENCE`\n\n"
+              + "Retourne la liste paginée des bailleurs (OWNER) dont la demande a été approuvée "
+              + "et qui sont liés à l'agence de l'utilisateur connecté.\n\n"
+              + "L'`id` retourné pour chaque bailleur est l'UUID à passer comme `ownerId` "
+              + "dans `POST /v1/properties` pour rattacher un bien à ce bailleur.",
+      tags = {"Bailleur"},
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Liste paginée des bailleurs",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AgencyBailleurResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Token absent ou invalide",
+        content = @Content),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant – PARTNER + DIRECTEUR_AGENCE requis",
+        content = @Content)
+  })
+  public ResponseEntity<CustomResponse> listAgencyBailleurs(
+      @ParameterObject
+          @PageableDefault(size = 20, sort = "joinedAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+
+    RequestUser caller =
+        RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+    var dbUser =
+        userRepository
+            .findByKeycloakId(caller.getSub())
+            .orElseThrow(() -> new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND));
+    RoleGuard.checkAgenceRole(dbUser, subRoleRepo, AgenceRole.DIRECTEUR_AGENCE);
+
+    UUID agencyId = dbUser.getAgency().getId();
+    var result = bailleurService.listAgencyBailleurs(agencyId, pageable);
+
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.BAILLEUR_AGENCY_BAILLEURS_SUCCESS,
+            result));
   }
 
   // ── Espace bailleur (OWNER) ────────────────────────────────────
