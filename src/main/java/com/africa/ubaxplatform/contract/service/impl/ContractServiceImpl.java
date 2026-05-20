@@ -61,7 +61,7 @@ public class ContractServiceImpl implements ContractService {
       throws CustomException {
     User caller = requireUser(keycloakId);
     Property property = requireProperty(req.getPropertyId());
-    User owner = requireUserById(req.getOwnerId());
+    User owner = property.getOwner();
 
     Tenant tenant = null;
     if (req.getTenantId() != null) {
@@ -422,16 +422,6 @@ public class ContractServiceImpl implements ContractService {
   private User requireUser(String keycloakId) throws CustomException {
     return userRepo
         .findByKeycloakId(keycloakId)
-        .orElseThrow(
-            () ->
-                new CustomException(
-                    new NotFoundException("Utilisateur introuvable"),
-                    ResponseMessageConstants.USER_NOT_FOUND));
-  }
-
-  private User requireUserById(UUID userId) throws CustomException {
-    return userRepo
-        .findById(userId)
         .orElseThrow(
             () ->
                 new CustomException(

@@ -2220,7 +2220,6 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 {
   "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
   "tenantId": "uuid-du-dossier-locataire",
-  "ownerId": "uuid-du-propriétaire",
   "contractType": "LEASE",
   "startDate": "2026-06-01",
   "endDate": "2027-05-31",
@@ -2235,7 +2234,6 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 {
   "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
   "tenantId": "uuid-du-dossier-locataire",
-  "ownerId": "uuid-du-propriétaire",
   "contractType": "RENT_TO_OWN",
   "startDate": "2026-06-01",
   "endDate": "2031-06-01",
@@ -2251,7 +2249,6 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 {
   "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
   "tenantId": "uuid-du-dossier-locataire",
-  "ownerId": "uuid-du-propriétaire",
   "contractType": "RENT_TO_OWN",
   "startDate": "2026-06-01",
   "durationYears": 5,
@@ -2269,7 +2266,6 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 {
   "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
   "tenantId": "uuid-du-dossier-acheteur",
-  "ownerId": "uuid-du-propriétaire",
   "contractType": "SALE",
   "startDate": "2026-06-01",
   "salePrice": 25000000
@@ -2282,7 +2278,6 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 ```json
 {
   "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
-  "ownerId": "uuid-du-propriétaire",
   "contractType": "RESERVATION",
   "startDate": "2026-06-01",
   "reservationDeposit": 500000,
@@ -2291,7 +2286,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 ```
 
 > **`contractType` disponibles :** `LEASE` · `SALE` · `RENT_TO_OWN` · `RESERVATION` (MANDATE bloqué — utiliser `/v1/mandates`)  
-> **`ownerId` :** UUID de l'entité `Owner` (propriétaire du bien) — différent de l'`userId` Keycloak  
+> **`ownerId` :** non envoyé dans le body — le backend le dérive automatiquement depuis `property.owner`. Le propriétaire est toujours celui enregistré sur le bien au moment de sa création.  
 > **`tenantId` :** UUID du dossier `Tenant` (KYC), pas l'`userId` — requis pour `LEASE`, `RENT_TO_OWN` et **`SALE`** (acheteur obligatoire pour l'acte de vente)  
 > **`endDate` :** optionnel pour `LEASE` (reconduction tacite si absent) ; pour `RENT_TO_OWN`, **`endDate` ou `durationYears` est obligatoire** (pas les deux — si les deux sont fournis, `endDate` est prioritaire)
 
@@ -2351,7 +2346,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 | Code HTTP | Message | Cause |
 |-----------|---------|-------|
 | `400` | `CONTRACT_CREATE_FAILURE` | Champ obligatoire manquant, type invalide, dates invalides, ou `contractType = MANDATE` |
-| `404` | `CONTRACT_NOT_FOUND` | Bien, locataire ou propriétaire introuvable |
+| `404` | `CONTRACT_NOT_FOUND` | Bien ou locataire introuvable |
 | `409` | `CONTRACT_CREATE_FAILURE_PROPERTY_CONFLICT` | Un contrat `ACTIVE` ou `PENDING_SIGNATURE` existe déjà sur ce bien |
 | `409` | `CONTRACT_CREATE_FAILURE_TENANT_CONFLICT` | Ce locataire a déjà un contrat `DRAFT`/`PENDING_SIGNATURE`/`ACTIVE` sur ce bien |
 
@@ -2365,7 +2360,7 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
 
 | Champ `PropertyResponse` | Utilisation dans le formulaire |
 |--------------------------|-------------------------------|
-| `ownerId` | → `ownerId` (auto-rempli, non modifiable) |
+| `ownerId` / `ownerName` | Affichage informatif uniquement — **non envoyé dans le body** (le backend le dérive depuis le bien) |
 | `price` | → `salePrice` si `transactionType = SALE`<br>→ `monthlyRent` si `transactionType = RENT` ou `RENT_FURNISHED`<br>→ valeur de base pour le calcul `reservationDeposit` (`price × 5%`) |
 | `transactionType` | → aide à pré-sélectionner le `contractType` recommandé |
 
@@ -2375,25 +2370,21 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
 
 | Type | Champ | Source / Calcul |
 |------|-------|-----------------|
-| **LEASE** | `ownerId` | `property.ownerId` |
-| | `monthlyRent` | `property.price` (si `transactionType = RENT`) |
+| **LEASE** | `monthlyRent` | `property.price` (si `transactionType = RENT`) |
 | | `depositAmount` | `monthlyRent × 2` (calcul frontend) |
 | | `startDate` | Date du jour |
 | | `endDate` | `startDate + 1 an` (optionnel, modifiable) |
 | | `paymentDay` | `5` (défaut métier) |
-| **SALE** | `ownerId` | `property.ownerId` |
-| | `salePrice` | `property.price` (si `transactionType = SALE`) |
+| **SALE** | `salePrice` | `property.price` (si `transactionType = SALE`) |
 | | `startDate` | Date du jour |
-| **RENT_TO_OWN** | `ownerId` | `property.ownerId` |
-| | `salePrice` | `property.price` (prix total du bien) |
+| **RENT_TO_OWN** | `salePrice` | `property.price` (prix total du bien) |
 | | `monthlyInstallment` | `salePrice ÷ 60` (5 ans, modifiable) |
 | | `depositAmount` | `monthlyInstallment × 6` (modifiable) |
 | | `startDate` | Date du jour |
 | | `endDate` | `startDate + 5 ans` (modifiable — alternatif à `durationYears`) |
 | | `durationYears` | `5` (défaut — alternatif à `endDate`, 1-30 ans, modifiable) |
 | | `paymentDay` | `5` (défaut) |
-| **RESERVATION** | `ownerId` | `property.ownerId` |
-| | `reservationDeposit` | `property.price × 5%` (modifiable) |
+| **RESERVATION** | `reservationDeposit` | `property.price × 5%` (modifiable) |
 | | `reservationDurationDays` | `30` (défaut) |
 > **Pour `RENT_TO_OWN`** — afficher un récapitulatif indicatif recalculé à la volée :  
 > *« 200 000 XOF/mois × 60 mois = 12 000 000 XOF »* → recalculer si `monthlyInstallment` ou `endDate` changent.
@@ -2416,7 +2407,7 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
 - [ ] Redirection vers le détail du contrat créé après succès
 
 **Autoremplissage depuis le bien sélectionné :**
-- [ ] À la sélection du bien : `ownerId` auto-rempli depuis `property.ownerId` — champ verrouillé, non modifiable par l'utilisateur
+- [ ] À la sélection du bien : afficher le nom du propriétaire (`property.ownerName`) à titre informatif — **ne pas inclure `ownerId` dans le body envoyé** (le backend le dérive automatiquement depuis le bien)
 - [ ] À la sélection du bien : suggérer automatiquement le `contractType` recommandé selon `property.transactionType` :
   - `RENT` / `RENT_FURNISHED` → suggérer `LEASE`
   - `SALE` → suggérer `SALE`

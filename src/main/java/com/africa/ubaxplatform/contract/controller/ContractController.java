@@ -52,13 +52,13 @@ import org.springframework.web.bind.annotation.RestController;
             + "| `LEASE` | Bail de location | `tenantId`, `monthlyRent` |"
             + " `depositAmount` recommandé (`monthlyRent × 2`) · `endDate` optionnel (reconduction tacite)"
             + " · activation → 1er loyer créé |\n"
-            + "| `SALE` | Acte de vente | `salePrice` | Pas de locataire, pas de loyer récurrent |\n"
+            + "| `SALE` | Acte de vente | `tenantId` (acheteur), `salePrice` | Acheteur obligatoire pour générer l'acte · contrat one-shot |\n"
             + "| `RENT_TO_OWN` | Location-vente | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` |"
             + " `endDate` **obligatoire** · `depositAmount` recommandé (`monthlyInstallment × 6`) |\n"
             + "| `RESERVATION` | Contrat de réservation | `reservationDeposit` |"
             + " `reservationDurationDays` recommandé (défaut 30 j) |\n"
-            + "| `MANDATE` | Mandat de gestion locative | aucun champ financier |"
-            + " `agencyCommissionRate` défaut 10 % · masquer `tenantId`, `monthlyRent`, `depositAmount` |")
+            + "| ~~`MANDATE`~~ | Mandat de gestion | — |"
+            + " **Bloqué sur cet endpoint** — utiliser `POST /v1/mandates` |")
 public class ContractController {
 
   private final ContractService contractService;
@@ -75,20 +75,18 @@ public class ContractController {
               + "{\n"
               + "  \"contractType\": \"LEASE\",\n"
               + "  \"propertyId\": \"uuid-du-bien\",\n"
-              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
               + "  \"tenantId\": \"uuid-dossier-locataire\",\n"
               + "  \"startDate\": \"2026-06-01\",\n"
               + "  \"monthlyRent\": 250000,\n"
-              + "  \"depositAmount\": 500000,\n"
-              + "  \"paymentDay\": 5\n"
+              + "  \"depositAmount\": 500000\n"
               + "}\n"
               + "```\n\n"
-              + "**SALE** — Acte de vente :\n"
+              + "**SALE** — Acte de vente (`tenantId` acheteur obligatoire) :\n"
               + "```json\n"
               + "{\n"
               + "  \"contractType\": \"SALE\",\n"
               + "  \"propertyId\": \"uuid-du-bien\",\n"
-              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
+              + "  \"tenantId\": \"uuid-dossier-acheteur\",\n"
               + "  \"startDate\": \"2026-06-01\",\n"
               + "  \"salePrice\": 25000000\n"
               + "}\n"
@@ -98,7 +96,6 @@ public class ContractController {
               + "{\n"
               + "  \"contractType\": \"RENT_TO_OWN\",\n"
               + "  \"propertyId\": \"uuid-du-bien\",\n"
-              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
               + "  \"tenantId\": \"uuid-dossier-locataire\",\n"
               + "  \"startDate\": \"2026-06-01\",\n"
               + "  \"endDate\": \"2031-06-01\",\n"
@@ -112,25 +109,13 @@ public class ContractController {
               + "{\n"
               + "  \"contractType\": \"RESERVATION\",\n"
               + "  \"propertyId\": \"uuid-du-bien\",\n"
-              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
               + "  \"startDate\": \"2026-06-01\",\n"
               + "  \"reservationDeposit\": 500000,\n"
               + "  \"reservationDurationDays\": 30\n"
               + "}\n"
               + "```\n\n"
-              + "**MANDATE** — Mandat de gestion locative :\n"
-              + "```json\n"
-              + "{\n"
-              + "  \"contractType\": \"MANDATE\",\n"
-              + "  \"propertyId\": \"uuid-du-bien\",\n"
-              + "  \"ownerId\": \"uuid-du-proprietaire\",\n"
-              + "  \"startDate\": \"2026-06-01\",\n"
-              + "  \"endDate\": \"2027-06-01\",\n"
-              + "  \"agencyCommissionRate\": 10.00,\n"
-              + "  \"specialClauses\": \"...\",\n"
-              + "  \"terminationConditions\": \"...\"\n"
-              + "}\n"
-              + "```",
+              + "> ⚠️ **`contractType = MANDATE` est bloqué sur cet endpoint**"
+              + " — retourne `400`. Utiliser `POST /v1/mandates` pour les mandats agence↔bailleur.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(responseCode = "201", description = "Contrat créé en DRAFT"),
@@ -140,9 +125,7 @@ public class ContractController {
             "Champ obligatoire manquant pour le type (tenantId/monthlyRent pour LEASE,"
                 + " salePrice pour SALE, salePrice+monthlyInstallment+endDate+tenantId pour"
                 + " RENT_TO_OWN, reservationDeposit pour RESERVATION) · ou contractType invalide"),
-    @ApiResponse(
-        responseCode = "404",
-        description = "Bien, propriétaire ou dossier locataire introuvable"),
+    @ApiResponse(responseCode = "404", description = "Bien ou dossier locataire introuvable"),
   })
   public ResponseEntity<CustomResponse> create(
       @RequestBody @Valid CreateContractRequest request, HttpServletRequest httpRequest)

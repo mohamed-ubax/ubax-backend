@@ -20,28 +20,23 @@ public class CreateContractRequest {
   @Schema(description = "Identifiant du bien immobilier")
   private UUID propertyId;
 
-  @NotNull
-  @Schema(description = "Identifiant du propriétaire (User)")
-  private UUID ownerId;
-
-  @Schema(description = "Identifiant du dossier locataire (requis pour LEASE et RENT_TO_OWN)")
+  @Schema(description = "Identifiant du dossier locataire (requis pour LEASE, RENT_TO_OWN et SALE)")
   private UUID tenantId;
 
   @NotBlank
   @Pattern(
-      regexp = "LEASE|SALE|RESERVATION|MANDATE|RENT_TO_OWN",
-      message = "Valeurs : LEASE, SALE, RESERVATION, MANDATE, RENT_TO_OWN")
+      regexp = "LEASE|SALE|RESERVATION|RENT_TO_OWN",
+      message = "Valeurs : LEASE, SALE, RESERVATION, RENT_TO_OWN")
   @Schema(
       description =
           "Type de contrat :\n"
-              + "- `LEASE` — Bail de location (monthlyRent requis)\n"
-              + "- `SALE` — Acte de vente (salePrice requis)\n"
-              + "- `RENT_TO_OWN` — Location-vente : le locataire verse une mensualité"
-              + " (monthlyInstallment) qui s'impute sur le prix total du bien (salePrice)"
-              + " jusqu'au terme fixé par endDate\n"
+              + "- `LEASE` — Bail de location (tenantId + monthlyRent requis)\n"
+              + "- `SALE` — Acte de vente (tenantId acheteur + salePrice requis)\n"
+              + "- `RENT_TO_OWN` — Location-vente (tenantId + salePrice + monthlyInstallment +"
+              + " endDate ou durationYears requis)\n"
               + "- `RESERVATION` — Contrat de réservation (reservationDeposit requis)\n"
-              + "- `MANDATE` — Mandat de gestion locative",
-      allowableValues = {"LEASE", "SALE", "RENT_TO_OWN", "RESERVATION", "MANDATE"})
+              + "⚠️ `MANDATE` est bloqué — utiliser POST /v1/mandates",
+      allowableValues = {"LEASE", "SALE", "RENT_TO_OWN", "RESERVATION"})
   private String contractType;
 
   @NotNull

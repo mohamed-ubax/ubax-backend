@@ -97,7 +97,6 @@ class ContractServiceImplTest {
   private CreateContractRequest buildRequest() {
     CreateContractRequest req = new CreateContractRequest();
     req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-    req.setOwnerId(SharedTestFixtures.USER_ID);
     req.setContractType("LEASE");
     req.setStartDate(LocalDate.now());
     req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -108,7 +107,6 @@ class ContractServiceImplTest {
   private CreateContractRequest buildRequestWithoutTenant() {
     CreateContractRequest req = new CreateContractRequest();
     req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-    req.setOwnerId(SharedTestFixtures.USER_ID);
     req.setContractType("LEASE");
     req.setStartDate(LocalDate.now());
     req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -128,7 +126,6 @@ class ContractServiceImplTest {
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(SharedTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
@@ -151,7 +148,6 @@ class ContractServiceImplTest {
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
 
       assertThatThrownBy(
               () -> service.create(SharedTestFixtures.KEYCLOAK_ID, buildRequestWithoutTenant()))
@@ -179,19 +175,6 @@ class ContractServiceImplTest {
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, buildRequest()))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.PROPERTY_GET_FAILURE_NOT_FOUND);
-    }
-
-    @Test
-    @DisplayName("Echec – propriétaire introuvable → USER_NOT_FOUND")
-    void create_ownerNotFound_throwsCustomException() {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
-          .thenReturn(Optional.of(caller));
-      when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.empty());
-
-      assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, buildRequest()))
-          .isInstanceOf(CustomException.class)
-          .hasMessageContaining(ResponseMessageConstants.USER_NOT_FOUND);
     }
   }
 
@@ -832,7 +815,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setTenantId(SharedTestFixtures.TENANT_ID);
       req.setContractType("SALE");
       req.setStartDate(LocalDate.now());
@@ -842,7 +824,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(saleProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(SharedTestFixtures.TENANT_ID)).thenReturn(Optional.of(buyer));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
@@ -880,7 +861,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("LEASE");
       req.setStartDate(LocalDate.now());
       // monthlyRent NOT provided – should be auto-filled
@@ -890,7 +870,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(rentProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(any(UUID.class))).thenReturn(Optional.of(tenant));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
@@ -925,7 +904,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("LEASE"); // Wrong: should be SALE for SALE property
       req.setStartDate(LocalDate.now());
       req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -935,7 +913,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(saleProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
           .isInstanceOf(CustomException.class)
@@ -962,7 +939,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("LEASE"); // Wrong: should be RESERVATION for SHORT_STAY
       req.setStartDate(LocalDate.now());
       req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -972,7 +948,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(shortStayProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
           .isInstanceOf(CustomException.class)
@@ -1004,7 +979,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("RENT_TO_OWN");
       req.setStartDate(startDate);
       req.setTenantId(SharedTestFixtures.TENANT_ID);
@@ -1016,7 +990,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(rentProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(any(UUID.class))).thenReturn(Optional.of(tenant));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
@@ -1055,7 +1028,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("RENT_TO_OWN");
       req.setStartDate(LocalDate.of(2026, 6, 1));
       req.setTenantId(SharedTestFixtures.TENANT_ID);
@@ -1067,7 +1039,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(rentProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(any(UUID.class))).thenReturn(Optional.of(tenant));
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
@@ -1095,7 +1066,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("MANDATE");
       req.setStartDate(LocalDate.now());
 
@@ -1103,7 +1073,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(saleProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
           .isInstanceOf(CustomException.class)
