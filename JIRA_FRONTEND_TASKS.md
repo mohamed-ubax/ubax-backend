@@ -383,8 +383,9 @@ Ce module couvre l'intégralité du cycle de vie d'une demande d'adhésion baill
 2. La demande est reçue par l'agence ciblée avec le statut `PENDING`.
 3. Le Directeur d'agence (`DIRECTEUR_AGENCE`) contacte le bailleur en dehors de l'app pour vérifier ses biens, puis **approuve** ou **rejette** depuis l'espace partenaire.
 4. En cas d'approbation : si le bailleur est nouveau → compte `UBAX_OWNER` créé automatiquement + SMS envoyé ; si le compte existe déjà → lien agence↔bailleur ajouté. Aucune action frontend supplémentaire requise.
-5. L'agence crée ensuite les biens du bailleur via `POST /v1/properties` en passant `ownerId` = UUID du bailleur.
-6. L'équipe admin UBAX dispose d'une vue globale en lecture seule sur toutes les demandes de toutes les agences.
+5. Le Directeur d'agence crée un **mandat de gestion** avec le bailleur via `POST /v1/mandates` (commission, durée, clauses spéciales), le soumet (`PATCH /v1/mandates/{id}/submit`) puis un Admin l'active (`PATCH /v1/mandates/{id}/activate`).
+6. L'agence crée ensuite les biens du bailleur via `POST /v1/properties` en passant `ownerId` = UUID du bailleur.
+7. L'équipe admin UBAX dispose d'une vue globale en lecture seule sur toutes les demandes de toutes les agences.
 
 **Périmètre frontend de ce module :**
 
@@ -396,6 +397,7 @@ Ce module couvre l'intégralité du cycle de vie d'une demande d'adhésion baill
 | UBAX-FE-304 — Décision (approuver / rejeter) | Directeur d'agence | Espace partenaire |
 | UBAX-FE-305 — Vue globale toutes agences | Admin / Super Admin | Back-office UBAX |
 | UBAX-FE-306 — Liste des bailleurs de l'agence | Directeur d'agence | Espace partenaire |
+| UBAX-FE-307 — Créer / gérer un mandat de gestion | Directeur d'agence | Espace partenaire |
 
 **Points d'attention :**
 - Le formulaire **n'est pas public** — le CLIENT doit être connecté. Rediriger vers le login si token absent.
@@ -675,6 +677,106 @@ Ce module couvre l'intégralité du cycle de vie d'une demande d'adhésion baill
 - [ ] `ownerId` envoyé dans le body de `POST /v1/properties` si un bailleur est sélectionné
 - [ ] Champ optionnel — si aucun bailleur sélectionné, le bien appartient à l'agence (créateur)
 - [ ] État vide si aucun bailleur approuvé
+
+---
+
+### UBAX-FE-307 · Créer et gérer un mandat de gestion (Agence ↔ Bailleur)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint création** | `POST /v1/mandates` |
+| **Auth** | Bearer token · Rôle `UBAX_PARTNER` + sous-rôle `DIRECTEUR_AGENCE` |
+| **Endpoint liste** | `GET /v1/mandates?status=&page=&size=` |
+| **Endpoint détail** | `GET /v1/mandates/{id}` |
+| **Endpoint soumettre** | `PATCH /v1/mandates/{id}/submit` |
+| **Endpoint activer** | `PATCH /v1/mandates/{id}/activate` _(ADMIN uniquement)_ |
+| **Endpoint résilier** | `PATCH /v1/mandates/{id}/terminate` |
+| **Endpoint annuler** | `PATCH /v1/mandates/{id}/cancel` |
+
+> Le mandat est un acte administratif **exclusivement entre l'agence et le bailleur** — jamais visible ni accessible par les clients ou locataires. Le bailleur doit avoir un lien approuvé avec l'agence avant de créer un mandat (`POST /v1/bailleur/agency/applications/{id}/decision` avec `APPROVED`).
+
+**Body `POST /v1/mandates` :**
+```json
+{
+  "ownerId": "uuid",
+  "startDate": "2026-06-01",
+  "endDate": "2027-05-31",
+  "commissionRate": 8.5,
+  "specialClauses": "Clause de préavis 3 mois obligatoire.",
+  "terminationConditions": "Résiliation possible après 6 mois avec préavis de 30 jours."
+}
+```
+
+| Champ | Obligatoire | Contrainte |
+|-------|:-----------:|-----------|
+| `ownerId` | ✅ | UUID du bailleur approuvé par l'agence |
+| `startDate` | ✅ | Date de début (format `YYYY-MM-DD`) |
+| `endDate` | — | Date de fin (null = durée indéterminée) |
+| `commissionRate` | — | Taux de commission en % (ex. `8.5`) |
+| `specialClauses` | — | Clauses spéciales libres |
+| `terminationConditions` | — | Conditions de résiliation |
+
+**Response `201` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 201,
+  "message": "MANDATE_CREATE_SUCCESS",
+  "data": {
+    "id": "uuid",
+    "referenceNumber": "MAN-2026-A1B2C3",
+    "status": "DRAFT",
+    "agencyId": "uuid",
+    "agencyName": "Agence Prestige",
+    "ownerId": "uuid",
+    "ownerFullName": "Kouamé Yao",
+    "ownerPhone": "+2250712345678",
+    "startDate": "2026-06-01",
+    "endDate": "2027-05-31",
+    "commissionRate": 8.5,
+    "specialClauses": "...",
+    "terminationConditions": "...",
+    "terminatedAt": null,
+    "terminationReason": null,
+    "createdAt": "2026-05-20T10:00:00"
+  }
+}
+```
+
+**Cycle de vie du mandat :**
+
+```
+DRAFT → [submit] → PENDING_SIGNATURE → [activate (ADMIN)] → ACTIVE → [terminate] → TERMINATED
+  ↓                        ↓
+[cancel]               [cancel]
+CANCELLED            CANCELLED
+```
+
+**Body `PATCH /v1/mandates/{id}/terminate` :**
+```json
+{ "terminationReason": "Non-respect des clauses contractuelles." }
+```
+
+**Erreurs possibles :**
+
+| Code HTTP | Message | Cause |
+|-----------|---------|-------|
+| 400 | `MANDATE_ACCESS_DENIED` | Bailleur non lié à l'agence |
+| 409 | `MANDATE_CONFLICT` | Mandat ACTIVE ou PENDING_SIGNATURE déjà existant pour ce bailleur |
+| 400 | `MANDATE_INVALID_TRANSITION` | Transition de statut invalide |
+| 404 | `MANDATE_NOT_FOUND` | Mandat introuvable |
+
+**Critères d'acceptation :**
+- [ ] Sélecteur de bailleur : appeler `GET /v1/bailleur/agency/bailleurs` pour afficher les bailleurs approuvés
+- [ ] Formulaire de création avec champs date, taux de commission, clauses (champs texte longs)
+- [ ] Afficher le `referenceNumber` généré (format `MAN-YYYY-XXXXXX`) après création
+- [ ] Badge statut coloré : `DRAFT` (gris) · `PENDING_SIGNATURE` (orange) · `ACTIVE` (vert) · `TERMINATED` (rouge) · `CANCELLED` (gris foncé)
+- [ ] Bouton « Soumettre pour signature » visible uniquement si statut `DRAFT`
+- [ ] Bouton « Annuler » visible si statut `DRAFT` ou `PENDING_SIGNATURE`
+- [ ] Bouton « Résilier » (avec motif obligatoire) visible si statut `ACTIVE`
+- [ ] Activation par l'Admin : visible dans le back-office uniquement (PENDING_SIGNATURE → ACTIVE)
+- [ ] Liste paginée avec filtre par statut
+- [ ] Un seul mandat ACTIVE ou PENDING_SIGNATURE possible par bailleur — afficher message d'erreur 409 explicite
 
 ---
 

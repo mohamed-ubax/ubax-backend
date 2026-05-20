@@ -5,6 +5,7 @@ import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.constants.Constants;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.BadRequestException;
+import com.africa.ubaxplatform.common.exception.ConflictException;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
@@ -72,6 +73,30 @@ public class ContractServiceImpl implements ContractService {
                       new CustomException(
                           new NotFoundException("Dossier locataire introuvable"),
                           ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND));
+    }
+
+    // ── Unicité — un bien ne peut avoir qu'un seul contrat ACTIVE ou PENDING_SIGNATURE ───────────
+    List<ContractStatus> blockingStatuses =
+        List.of(ContractStatus.ACTIVE, ContractStatus.PENDING_SIGNATURE);
+
+    if (contractRepo.existsByPropertyIdAndStatusIn(property.getId(), blockingStatuses)) {
+      throw new CustomException(
+          new ConflictException(
+              "Ce bien possède déjà un contrat actif ou en attente de signature."
+                  + " Il doit être résilié ou annulé avant d'en créer un nouveau."),
+          ResponseMessageConstants.CONTRACT_CREATE_FAILURE_PROPERTY_CONFLICT);
+    }
+
+    if (req.getTenantId() != null
+        && contractRepo.existsByPropertyIdAndTenantIdAndStatusIn(
+            property.getId(),
+            req.getTenantId(),
+            List.of(
+                ContractStatus.DRAFT, ContractStatus.PENDING_SIGNATURE, ContractStatus.ACTIVE))) {
+      throw new CustomException(
+          new ConflictException(
+              "Ce locataire a déjà un contrat en cours sur ce bien (DRAFT, PENDING_SIGNATURE ou ACTIVE)."),
+          ResponseMessageConstants.CONTRACT_CREATE_FAILURE_TENANT_CONFLICT);
     }
 
     // ── Auto-fill & validation cohérence ──────────────────────────────────────
@@ -467,12 +492,21 @@ public class ContractServiceImpl implements ContractService {
   private void validateByType(CreateContractRequest req) throws CustomException {
     String type = req.getContractType();
     switch (type) {
+      case Constants.CodeList.ContractType.MANDATE ->
+          throw new CustomException(
+              new BadRequestException(
+                  "Le type MANDATE ne peut pas être créé via cet endpoint. "
+                      + "Utilisez POST /v1/mandates pour créer un mandat de gestion agence↔bailleur."),
+              ResponseMessageConstants.CONTRACT_CREATE_FAILURE);
       case Constants.CodeList.ContractType.LEASE -> {
         requireField(req.getTenantId(), "tenantId est requis pour un bail LEASE");
         requireField(req.getMonthlyRent(), "monthlyRent est requis pour un bail LEASE");
       }
-      case Constants.CodeList.ContractType.SALE ->
-          requireField(req.getSalePrice(), "salePrice est requis pour un acte de vente SALE");
+      case Constants.CodeList.ContractType.SALE -> {
+        requireField(
+            req.getTenantId(), "tenantId (acheteur) est requis pour un acte de vente SALE");
+        requireField(req.getSalePrice(), "salePrice est requis pour un acte de vente SALE");
+      }
       case Constants.CodeList.ContractType.RENT_TO_OWN -> {
         requireField(req.getTenantId(), "tenantId est requis pour un contrat RENT_TO_OWN");
         requireField(req.getSalePrice(), "salePrice (prix total) est requis pour RENT_TO_OWN");

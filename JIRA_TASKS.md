@@ -2040,7 +2040,9 @@ GET /v1/tenants?propertyId=<uuid-bien>&withoutContract=true&status=PENDING_REVIE
 
 ### Objectif
 
-Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente, location-vente, réservation, mandat) depuis leur création jusqu'à leur résiliation ou annulation. L'activation d'un contrat déclenche automatiquement la génération du premier paiement de loyer.
+Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente, location-vente, réservation) depuis leur création jusqu'à leur résiliation ou annulation. L'activation d'un contrat déclenche automatiquement la génération du premier paiement de loyer.
+
+> ⚠️ **Le type `MANDATE` (mandat de gestion agence↔bailleur) n'est PAS géré ici.** Utiliser exclusivement `POST /v1/mandates` — voir MODULE 3 UBAX-FE-307.
 
 **Flux principal :**
 1. Un partenaire/propriétaire crée un contrat en brouillon (`DRAFT`) et sélectionne le bien + le locataire.
@@ -2066,11 +2068,11 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 
 | `contractType` | Description | Champs obligatoires (validés backend) | Notes |
 |----------------|-------------|---------------------------------------|-------|
-| `LEASE` | Bail de location | `tenantId`, `monthlyRent` | `depositAmount` recommandé (`monthlyRent × 2`) · `endDate` optionnel (reconduction tacite) · active → 1er loyer créé |
-| `SALE` | Acte de vente | `salePrice` | Pas de locataire, pas de loyer récurrent · contrat one-shot |
+| `LEASE` | Bail de location | `tenantId`, `monthlyRent` | `depositAmount` recommandé (`monthlyRent × 2`) · `endDate` optionnel (reconduction tacite) · activate → 1er loyer créé |
+| `SALE` | Acte de vente | `tenantId` (acheteur), `salePrice` | L'acheteur est obligatoire pour générer l'acte — contrat one-shot, pas de loyer récurrent |
 | `RENT_TO_OWN` | Location-vente | `tenantId`, `salePrice`, `monthlyInstallment`, `endDate` OU `durationYears` | `endDate` **ou** `durationYears` (1-30 ans) **obligatoire** — le backend calcule `endDate = startDate + durationYears` si seul `durationYears` fourni · `depositAmount` recommandé (`monthlyInstallment × 6`) · afficher récap *"X XOF × N mois = Y XOF"* |
 | `RESERVATION` | Réservation | `reservationDeposit` | `reservationDurationDays` recommandé (défaut 30 j) · bloque le bien le temps de confirmer |
-| `MANDATE` | Mandat de gestion | aucun champ financier | `agencyCommissionRate` (défaut 10 %) · `endDate` optionnel · **masquer** `tenantId`, `monthlyRent`, `depositAmount` |
+| ~~`MANDATE`~~ | ~~Mandat de gestion~~ | — | **Bloqué sur cet endpoint** — utiliser `POST /v1/mandates` (MODULE 3 UBAX-FE-307) |
 
 **Points d'attention :**
 - Le PDF de contrat est généré automatiquement à la soumission (`/submit`) — afficher un lien de téléchargement depuis la réponse.
@@ -2079,6 +2081,9 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 - Un `CLIENT` peut consulter le détail d'un contrat (`GET /v1/contracts/{id}`) mais n'accède pas à la liste.
 - Les KPIs (`GET /v1/contracts/stats`) doivent être appelés **avant** la liste (route `/stats` déclarée avant `/{id}` dans Spring).
 - **`RENT_TO_OWN` :** le formulaire doit afficher `salePrice` + `monthlyInstallment` + `endDate` (obligatoire) à la place des champs `LEASE`. Masquer `monthlyRent`.
+- **`SALE` :** `tenantId` (acheteur) est **obligatoire** — sans acheteur identifié, l'acte de vente ne peut pas être généré. Le sélecteur de locataire doit rester visible pour le type SALE.
+- **`MANDATE` est bloqué** sur `POST /v1/contracts` — le backend retourne `400`. Utiliser `POST /v1/mandates` pour les mandats agence↔bailleur. Ne pas exposer `MANDATE` dans le select `contractType` de ce formulaire.
+- **Conflits (409)** : le backend bloque si un contrat `ACTIVE` ou `PENDING_SIGNATURE` existe déjà sur le même bien (conflit propriété), ou si le même locataire a déjà un contrat `DRAFT`/`PENDING_SIGNATURE`/`ACTIVE` sur ce bien (conflit locataire+bien).
 
 ---
 
@@ -2192,10 +2197,9 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 - [ ] Fiche complète : référence, bien, propriétaire, locataire, type, statut, dates, montants
 - [ ] **Affichage conditionnel selon `contractType` :**
   - `LEASE` → afficher `monthlyRent`, `depositAmount`
-  - `SALE` → afficher `salePrice`
+  - `SALE` → afficher `salePrice`, `tenantName` (acheteur)
   - `RENT_TO_OWN` → afficher `salePrice` (prix total), `monthlyInstallment` (mensualité), `endDate` (fin du programme) + indicateur de progression (mois écoulés / durée totale)
   - `RESERVATION` → afficher `reservationDeposit`, `reservationDurationDays`
-  - `MANDATE` → afficher `agencyCommissionRate` (taux %) + `endDate` (optionnel) + `specialClauses` + `terminationConditions`
 - [ ] Bouton « Télécharger le contrat PDF » si `fileUrl` non null (URL privée — presign de lecture)
 - [ ] Badge statut coloré
 - [ ] Boutons d'action contextuels selon statut et rôle (identiques à UBAX-FE-1001)
@@ -2264,6 +2268,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 ```json
 {
   "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
+  "tenantId": "uuid-du-dossier-acheteur",
   "ownerId": "uuid-du-propriétaire",
   "contractType": "SALE",
   "startDate": "2026-06-01",
@@ -2271,19 +2276,7 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 }
 ```
 
-**Request body — MANDATE :**
-```json
-{
-  "propertyId": "394e1b94-6d87-41b2-8b31-031a9f45944d",
-  "ownerId": "uuid-du-propriétaire",
-  "contractType": "MANDATE",
-  "startDate": "2026-06-01",
-  "endDate": "2027-06-01",
-  "agencyCommissionRate": 10.00,
-  "specialClauses": "L'agence est autorisée à signer les baux au nom du propriétaire pour une durée maximale de 12 mois.",
-  "terminationConditions": "Résiliable avec préavis de 30 jours par l'une ou l'autre des parties."
-}
-```
+> ⚠️ **`MANDATE` est bloqué sur cet endpoint.** Le backend retourne `400 CONTRACT_CREATE_FAILURE` si `contractType = "MANDATE"`. Utiliser `POST /v1/mandates` — voir UBAX-FE-307.
 
 **Request body — RESERVATION :**
 ```json
@@ -2297,27 +2290,28 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 }
 ```
 
-> **`contractType` disponibles :** `LEASE` · `SALE` · `RENT_TO_OWN` · `RESERVATION` · `MANDATE`  
+> **`contractType` disponibles :** `LEASE` · `SALE` · `RENT_TO_OWN` · `RESERVATION` (MANDATE bloqué — utiliser `/v1/mandates`)  
 > **`ownerId` :** UUID de l'entité `Owner` (propriétaire du bien) — différent de l'`userId` Keycloak  
-> **`tenantId` :** UUID du dossier `Tenant` (KYC), pas l'`userId` — requis pour `LEASE` et `RENT_TO_OWN`  
-> **`endDate` :** optionnel pour `LEASE` et `MANDATE` (reconduction tacite si absent) ; pour `RENT_TO_OWN`, **`endDate` ou `durationYears` est obligatoire** (pas les deux — si les deux sont fournis, `endDate` est prioritaire)
+> **`tenantId` :** UUID du dossier `Tenant` (KYC), pas l'`userId` — requis pour `LEASE`, `RENT_TO_OWN` et **`SALE`** (acheteur obligatoire pour l'acte de vente)  
+> **`endDate` :** optionnel pour `LEASE` (reconduction tacite si absent) ; pour `RENT_TO_OWN`, **`endDate` ou `durationYears` est obligatoire** (pas les deux — si les deux sont fournis, `endDate` est prioritaire)
 
 **Champs par type de contrat :**
 
-| Champ | `LEASE` | `SALE` | `RENT_TO_OWN` | `RESERVATION` | `MANDATE` |
-|-------|---------|--------|---------------|---------------|-----------|
-| `tenantId` | ✅ requis | — | ✅ requis | — | — |
-| `monthlyRent` | ✅ | — | — | — | — |
-| `salePrice` | — | ✅ | ✅ prix total | — | — |
-| `monthlyInstallment` | — | — | ✅ mensualité | — | — |
-| `depositAmount` | ✅ caution | — | ✅ apport | — | — |
-| `endDate` | optionnel | — | `endDate` OU `durationYears` | — | optionnel |
-| `durationYears` | — | — | `endDate` OU `durationYears` (1-30) | — | — |
-| `reservationDeposit` | — | — | — | ✅ | — |
-| `reservationDurationDays` | — | — | — | ✅ | — |
-| `agencyCommissionRate` | optionnel | — | — | — | ✅ taux % |
-| `specialClauses` | optionnel | optionnel | optionnel | optionnel | ✅ |
-| `terminationConditions` | optionnel | — | optionnel | — | ✅ |
+| Champ | `LEASE` | `SALE` | `RENT_TO_OWN` | `RESERVATION` |
+|-------|---------|--------|---------------|---------------|
+| `tenantId` | ✅ requis | ✅ requis (acheteur) | ✅ requis | — |
+| `monthlyRent` | ✅ | — | — | — |
+| `salePrice` | — | ✅ | ✅ prix total | — |
+| `monthlyInstallment` | — | — | ✅ mensualité | — |
+| `depositAmount` | ✅ caution | — | ✅ apport | — |
+| `endDate` | optionnel | — | `endDate` OU `durationYears` | — |
+| `durationYears` | — | — | `endDate` OU `durationYears` (1-30) | — |
+| `reservationDeposit` | — | — | — | ✅ |
+| `reservationDurationDays` | — | — | — | ✅ |
+| `specialClauses` | optionnel | optionnel | optionnel | optionnel |
+| `terminationConditions` | optionnel | — | optionnel | — |
+
+> La colonne `MANDATE` a été supprimée — ce type est bloqué sur cet endpoint. Voir `POST /v1/mandates`.
 
 **Response `201` :**
 ```json
@@ -2347,14 +2341,19 @@ Ce module couvre la gestion complète du cycle de vie des contrats (bail, vente,
 | Type | Champs obligatoires vérifiés par le backend |
 |------|---------------------------------------------|
 | `LEASE` | `tenantId`, `monthlyRent` |
-| `SALE` | `salePrice` |
+| `SALE` | `tenantId` (acheteur), `salePrice` |
 | `RENT_TO_OWN` | `tenantId`, `salePrice`, `monthlyInstallment`, (`endDate` OU `durationYears`) |
 | `RESERVATION` | `reservationDeposit` |
-| `MANDATE` | aucun champ financier obligatoire |
+| `MANDATE` | **Bloqué** — retourne `400 CONTRACT_CREATE_FAILURE` → utiliser `POST /v1/mandates` |
 
 **Erreurs possibles :**
-- `400 Bad Request` — champ obligatoire manquant, `contractType` invalide ou dates invalides
-- `404 Not Found` — bien, locataire ou propriétaire introuvable
+
+| Code HTTP | Message | Cause |
+|-----------|---------|-------|
+| `400` | `CONTRACT_CREATE_FAILURE` | Champ obligatoire manquant, type invalide, dates invalides, ou `contractType = MANDATE` |
+| `404` | `CONTRACT_NOT_FOUND` | Bien, locataire ou propriétaire introuvable |
+| `409` | `CONTRACT_CREATE_FAILURE_PROPERTY_CONFLICT` | Un contrat `ACTIVE` ou `PENDING_SIGNATURE` existe déjà sur ce bien |
+| `409` | `CONTRACT_CREATE_FAILURE_TENANT_CONFLICT` | Ce locataire a déjà un contrat `DRAFT`/`PENDING_SIGNATURE`/`ACTIVE` sur ce bien |
 
 ---
 
@@ -2396,28 +2395,20 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
 | **RESERVATION** | `ownerId` | `property.ownerId` |
 | | `reservationDeposit` | `property.price × 5%` (modifiable) |
 | | `reservationDurationDays` | `30` (défaut) |
-| **MANDATE** | `ownerId` | `property.ownerId` |
-| | `startDate` | Date du jour |
-| | `endDate` | `startDate + 1 an` (optionnel) |
-| | `agencyCommissionRate` | `10.00` (défaut %) |
-
 > **Pour `RENT_TO_OWN`** — afficher un récapitulatif indicatif recalculé à la volée :  
 > *« 200 000 XOF/mois × 60 mois = 12 000 000 XOF »* → recalculer si `monthlyInstallment` ou `endDate` changent.
-
-> **Pour `MANDATE`** — masquer tous les champs financiers liés au locataire (`tenantId`, `monthlyRent`, `depositAmount`).
 
 > **Règle de non-écrasement** : une fois qu'un champ a été modifié manuellement par l'utilisateur, ne plus l'écraser lors d'un changement de type de contrat. Stocker un flag `userEdited` par champ dans l'état local du formulaire.
 
 **Critères d'acceptation :**
 - [ ] Formulaire multi-étapes : bien → locataire (pré-rempli depuis dossier KYC) → type → conditions
 - [ ] Sélecteur de locataire : appel `GET /v1/tenants?status=QUALIFIED&withoutContract=true` — locataires qualifiés sans contrat actif
-- [ ] Sélecteur de type de contrat (`contractType`) — 5 valeurs : LEASE, SALE, RENT_TO_OWN, RESERVATION, MANDATE
+- [ ] Sélecteur de type de contrat (`contractType`) — 4 valeurs : LEASE, SALE, RENT_TO_OWN, RESERVATION (**ne pas inclure MANDATE** — utiliser `/v1/mandates`)
 - [ ] **Formulaire dynamique selon `contractType` :**
-  - `LEASE` → afficher `monthlyRent`, `depositAmount`, `endDate` (optionnel), `paymentDay`
-  - `SALE` → afficher `salePrice` uniquement
-  - `RENT_TO_OWN` → afficher `salePrice` (prix total du bien), `monthlyInstallment` (mensualité), `endDate` **ou** `durationYears` (1-30 ans, **l'un des deux est obligatoire**), `depositAmount`, `paymentDay`
+  - `LEASE` → afficher `tenantId`, `monthlyRent`, `depositAmount`, `endDate` (optionnel), `paymentDay`
+  - `SALE` → afficher `tenantId` (acheteur, obligatoire), `salePrice`
+  - `RENT_TO_OWN` → afficher `tenantId`, `salePrice` (prix total du bien), `monthlyInstallment` (mensualité), `endDate` **ou** `durationYears` (1-30 ans, **l'un des deux est obligatoire**), `depositAmount`, `paymentDay`
   - `RESERVATION` → afficher `reservationDeposit`, `reservationDurationDays`
-  - `MANDATE` → afficher `agencyCommissionRate` (%), `endDate` (optionnel), `specialClauses`, `terminationConditions` ; masquer tous les champs financiers locataires
 - [ ] Pour `RENT_TO_OWN` : afficher un récapitulatif indicatif recalculé en temps réel — ex. « 200 000 XOF/mois × 60 mois = 12 000 000 XOF » ; recalculer si `monthlyInstallment`, `endDate` ou `durationYears` changent
 - [ ] Pour `RENT_TO_OWN` : proposer deux modes de saisie de la durée — sélecteur « N années » (`durationYears`) ou date-picker explicite (`endDate`)
 - [ ] Champs de dates avec date-picker (start, end)
@@ -2435,7 +2426,6 @@ Les champs suivants de `PropertyResponse` permettent de pré-remplir le formulai
   - `SALE` → `salePrice = property.price` · `startDate = today`
   - `RENT_TO_OWN` → `salePrice = property.price` · `monthlyInstallment = salePrice ÷ 60` · `depositAmount = monthlyInstallment × 6` · `startDate = today` · `durationYears = 5` (ou `endDate = startDate + 5 ans`) · `paymentDay = 5`
   - `RESERVATION` → `reservationDeposit = property.price × 5%` · `reservationDurationDays = 30` · `startDate = today`
-  - `MANDATE` → `agencyCommissionRate = 10.00` · `startDate = today` · `endDate = startDate + 1 an`
 - [ ] Flag `userEdited` par champ : un champ modifié manuellement par l'utilisateur n'est plus écrasé lors d'un changement de `contractType` — stocker le flag dans l'état local du formulaire
 
 ---
