@@ -8,7 +8,11 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(del \"src\\\\main\\\\java\\\\com\\\\africa\\\\ubaxplatform\\\\bailleur\\\\dto\\\\BailleurPropertyRequest.java\")",
+      "Bash(del \"src\\\\main\\\\java\\\\com\\\\africa\\\\ubaxplatform\\\\bailleur\\\\dto\\\\BailleurPropertyResponse.java\")",
+      "Bash(del \"src\\\\main\\\\java\\\\com\\\\africa\\\\ubaxplatform\\\\bailleur\\\\entity\\\\BailleurApplicationProperty.java\")",
+      "Bash(del \"src\\\\main\\\\java\\\\com\\\\africa\\\\ubaxplatform\\\\bailleur\\\\repository\\\\BailleurApplicationPropertyRepository.java\")"
     ]
   }
 }

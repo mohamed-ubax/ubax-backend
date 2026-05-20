@@ -551,7 +551,8 @@ Prochaine version disponible : **V056**
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `GET` | `/v1/dashboard/agency` | `PARTNER/ADMIN` | KPIs agence par sous-rôle |
+| `GET` | `/v1/dashboard/agency` | `PARTNER/ADMIN` | KPIs agence par sous-rôle (filtre `?from=&to=` optionnel) |
+| `GET` | `/v1/dashboard/admin` | `ADMIN/SUPER_ADMIN` | KPIs globaux plateforme (agences actives, hôtels, clients, owners, réservations, biens en modération, tickets ouverts) |
 | `POST` | `/v1/storage/upload` | Authentifié | Upload direct multipart |
 | `POST` | `/v1/storage/upload/agency-logo` | Authentifié | Upload logo agence |
 | `GET` | `/v1/storage/presign` | Authentifié | URL présignée générique |

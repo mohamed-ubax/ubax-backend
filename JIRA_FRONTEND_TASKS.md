@@ -687,26 +687,38 @@ Ce module couvre l'intégralité du cycle de vie d'une demande d'adhésion baill
 
 ### Objectif
 
-Le **back-office UBAX** est réservé aux équipes internes d'UBAX. Il permet à un Super Admin de gérer les comptes administrateurs, de leur attribuer des sous-rôles fonctionnels internes, et d'avoir une vision transverse sur les équipes des agences et hôtels partenaires.
+Le **back-office UBAX** est réservé aux équipes internes d'UBAX. Il couvre quatre périmètres distincts :
+
+1. **Gestion des comptes administrateurs** — création, modification de rôle, suppression, attribution de sous-rôles internes.
+2. **Gestion des partenaires** — consultation, suspension/réactivation et gestion des abonnements des agences et hôtels actifs sur la plateforme.
+3. **Vue clients** — liste paginée de tous les clients, filtrable par agence ou hôtel.
+4. **Tableau de bord global** — KPIs temps réel de la plateforme (agences actives, hôtels, clients, biens, réservations, tickets ouverts).
 
 **Flux principal :**
 1. Le Super Admin crée les comptes des collaborateurs internes UBAX (Directeur général, Finance, Opérations, etc.) via le formulaire de création admin.
-2. Il leur assigne un ou plusieurs sous-rôles internes (`UBAX_INTERNAL`) qui déterminent leur tableau de bord et leurs accès fonctionnels dans le back-office.
-3. Il peut modifier le niveau de rôle Keycloak (`ADMIN` → `SUPER_ADMIN` ou inverse) et supprimer (archiver) un compte.
-4. Un Admin (sans prefix SUPER) peut consulter la liste des admins et les sous-rôles, mais ne peut pas écrire — toutes les actions de modification sont réservées au `SUPER_ADMIN`.
-5. En lecture, tout admin peut consulter la composition des équipes agence et hôtel depuis les fiches partenaires.
+2. Il leur assigne un ou plusieurs sous-rôles internes (`UBAX_INTERNAL`) qui déterminent leur tableau de bord et leurs accès fonctionnels.
+3. Il peut modifier le niveau de rôle Keycloak (`ADMIN` → `SUPER_ADMIN`) et supprimer (archiver) un compte.
+4. Un Admin peut consulter la liste des admins, les sous-rôles et les équipes des structures partenaires en lecture — toutes les actions d'écriture sont réservées au `SUPER_ADMIN`.
+5. Les Opérations/Finance peuvent suspendre ou réactiver un partenaire, et mettre à jour son plan d'abonnement (`BASIC` · `PRO` · `PREMIUM`).
 
 **Deux niveaux de permissions dans ce module :**
 
 | Action | `UBAX_ADMIN` | `UBAX_SUPER_ADMIN` |
 |--------|:---:|:---:|
+| Tableau de bord global | ✅ | ✅ |
 | Voir la liste des admins | ✅ | ✅ |
 | Voir les sous-rôles d'un admin | ✅ | ✅ |
 | Voir les membres d'une agence / hôtel | ✅ | ✅ |
+| Voir les membres inactifs | ✅ | ✅ |
+| Liste des agences partenaires | ✅ | ✅ |
+| Liste des hôtels partenaires | ✅ | ✅ |
+| Liste des clients | ✅ | ✅ |
 | Créer un admin | ✗ | ✅ |
 | Modifier le rôle d'un admin | ✗ | ✅ |
 | Supprimer un admin | ✗ | ✅ |
 | Assigner / révoquer des sous-rôles internes | ✗ | ✅ |
+| Suspendre / réactiver un partenaire | ✅ | ✅ |
+| Mettre à jour un abonnement | ✅ | ✅ |
 
 **Périmètre frontend de ce module :**
 
@@ -719,14 +731,28 @@ Le **back-office UBAX** est réservé aux équipes internes d'UBAX. Il permet à
 | UBAX-FE-405 — Assigner des sous-rôles internes | Écriture | `SUPER_ADMIN` uniquement |
 | UBAX-FE-406 — Consulter les sous-rôles | Lecture | `ADMIN` + `SUPER_ADMIN` |
 | UBAX-FE-407 — Révoquer un sous-rôle interne | Écriture | `SUPER_ADMIN` uniquement |
-| UBAX-FE-408 — Voir membres d'une agence | Lecture | `ADMIN` + `SUPER_ADMIN` |
-| UBAX-FE-409 — Voir membres d'un hôtel | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-408 — Voir membres actifs d'une agence | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-409 — Voir membres actifs d'un hôtel | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-410 — Membres inactifs d'une agence | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-411 — Membres inactifs d'un hôtel | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-412 — Liste des agences partenaires | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-413 — Suspendre une agence | Écriture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-414 — Réactiver une agence | Écriture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-415 — Abonnement agence | Écriture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-416 — Liste des hôtels partenaires | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-417 — Suspendre un hôtel | Écriture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-418 — Réactiver un hôtel | Écriture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-419 — Abonnement hôtel | Écriture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-420 — Liste des clients | Lecture | `ADMIN` + `SUPER_ADMIN` |
+| UBAX-FE-421 — Tableau de bord admin global | Lecture | `ADMIN` + `SUPER_ADMIN` |
 
 **Points d'attention :**
 - Un admin ne peut **pas modifier ou supprimer son propre compte** — désactiver les actions sur la ligne correspondant à l'utilisateur connecté.
 - Les sous-rôles internes (`UBAX_INTERNAL`) sont différents des sous-rôles agence/hôtel — utiliser une liste distincte dans les composants de sélection.
 - La suppression est un **soft delete** (champ `deletedAt`) — l'entrée disparaît de la liste mais reste en base.
-- Les vues membres agence/hôtel (FE-408/409) sont en **lecture seule** depuis le back-office admin — la gestion reste à la charge du Directeur d'agence ou du Gérant hôtel.
+- Les vues membres agence/hôtel (FE-408 à 411) sont en **lecture seule** depuis le back-office admin — la gestion reste à la charge du Directeur d'agence ou du Gérant hôtel.
+- La suspension d'une agence/hôtel positionne `is_active = false` — tous les membres de la structure ne peuvent plus se connecter jusqu'à réactivation.
+- `subscriptionPlan` accepte trois valeurs : `BASIC` · `PRO` · `PREMIUM`. `subscriptionExpiresAt` doit être une date **future** (`@Future` côté backend).
 
 ---
 
@@ -982,7 +1008,7 @@ Le **back-office UBAX** est réservé aux équipes internes d'UBAX. Il permet à
 
 ---
 
-### UBAX-FE-409 · Voir les membres d'un hôtel (Admin)
+### UBAX-FE-409 · Voir les membres actifs d'un hôtel (Admin)
 
 | Champ | Valeur |
 |-------|--------|
@@ -995,6 +1021,413 @@ Le **back-office UBAX** est réservé aux équipes internes d'UBAX. Il permet à
 **Critères d'acceptation :**
 - [ ] Accessible depuis la fiche hôtel dans le back-office admin
 - [ ] Tableau en lecture seule
+- [ ] Lien vers les membres inactifs (UBAX-FE-411)
+
+---
+
+### UBAX-FE-410 · Voir les membres inactifs d'une agence (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/admin/agencies/{agencyId}/members/inactive` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `agencyId` : UUID |
+
+**Response `200` :** _(tableau de `UserResponse` — mêmes champs que UBAX-FE-408, membres avec `active = false` / `deletedAt` renseigné)_
+
+**Critères d'acceptation :**
+- [ ] Accessible depuis la fiche agence, onglet ou section « Membres retirés »
+- [ ] Tableau en lecture seule (pas d'action de réactivation depuis le back-office — géré par le Directeur d'agence)
+- [ ] Afficher la date de retrait si disponible
+- [ ] État vide si aucun membre inactif
+
+---
+
+### UBAX-FE-411 · Voir les membres inactifs d'un hôtel (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/admin/hotels/{hotelId}/members/inactive` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `hotelId` : UUID |
+
+**Response `200` :** _(tableau de `UserResponse` — mêmes champs que UBAX-FE-409, membres avec `active = false`)_
+
+**Critères d'acceptation :**
+- [ ] Accessible depuis la fiche hôtel, onglet ou section « Membres retirés »
+- [ ] Tableau en lecture seule
+- [ ] État vide si aucun membre inactif
+
+---
+
+---
+
+### UBAX-FE-412 · Liste des agences partenaires (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/admin/partners/agencies` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Query params** | `page` (défaut 0) · `size` (défaut 20) · `sort=createdAt,desc` |
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "...",
+  "data": {
+    "content": [
+      {
+        "id": "uuid",
+        "name": "Agence Immobilière Alpha",
+        "city": "Douala",
+        "email": "contact@alpha.cm",
+        "phone": "+237612345678",
+        "logoUrl": "https://minio/.../logo.png",
+        "subscriptionPlan": "PRO",
+        "subscriptionExpiresAt": "2026-12-31T00:00:00",
+        "subscriptionActive": true,
+        "verified": true,
+        "verifiedAt": "2026-01-15T10:00:00",
+        "active": true,
+        "createdAt": "2026-01-01T00:00:00"
+      }
+    ],
+    "totalElements": 45,
+    "totalPages": 3,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**Critères d'acceptation :**
+- [ ] Tableau paginé avec colonnes : nom, ville, email, téléphone, plan (`subscriptionPlan`), expiration abonnement, statut actif/suspendu (badge coloré), actions
+- [ ] Badge statut : `active = true` → vert « Active » · `active = false` → rouge « Suspendue »
+- [ ] Badge plan : `BASIC` gris · `PRO` bleu · `PREMIUM` violet
+- [ ] Alerter visuellement si `subscriptionActive = false` (abonnement expiré)
+- [ ] Bouton « Suspendre » affiché uniquement si `active = true` (→ UBAX-FE-413)
+- [ ] Bouton « Réactiver » affiché uniquement si `active = false` (→ UBAX-FE-414)
+- [ ] Bouton « Abonnement » accessible à tout moment (→ UBAX-FE-415)
+- [ ] Clic sur une ligne → fiche détail avec membres (UBAX-FE-408/410)
+
+---
+
+### UBAX-FE-413 · Suspendre une agence (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/admin/partners/agencies/{id}/suspend` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `id` : UUID de l'agence |
+| **Request body** | _(aucun)_ |
+
+**Response `200` :** _(objet `AdminAgencyResponse` complet avec `active = false` — voir UBAX-FE-412)_
+
+**Erreurs possibles :**
+- `404 Not Found` — agence introuvable
+- `409 Conflict` — agence déjà suspendue
+
+**Critères d'acceptation :**
+- [ ] Dialog de confirmation : « Suspendre [Nom agence] ? Tous les membres ne pourront plus se connecter. »
+- [ ] Appel uniquement si `active = true` (bouton masqué sinon)
+- [ ] Mise à jour du badge statut en liste après succès
+- [ ] Toast de confirmation
+
+---
+
+### UBAX-FE-414 · Réactiver une agence (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/admin/partners/agencies/{id}/activate` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `id` : UUID de l'agence |
+| **Request body** | _(aucun)_ |
+
+**Response `200` :** _(objet `AdminAgencyResponse` complet avec `active = true`)_
+
+**Erreurs possibles :**
+- `404 Not Found` — agence introuvable
+- `409 Conflict` — agence déjà active
+
+**Critères d'acceptation :**
+- [ ] Confirmation avant réactivation
+- [ ] Appel uniquement si `active = false` (bouton masqué sinon)
+- [ ] Mise à jour du badge statut après succès
+
+---
+
+### UBAX-FE-415 · Mettre à jour l'abonnement d'une agence (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/admin/partners/agencies/{id}/subscription` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `id` : UUID de l'agence |
+| **Content-Type** | `application/json` |
+
+**Request body :**
+```json
+{
+  "subscriptionPlan": "PRO",
+  "subscriptionExpiresAt": "2027-01-31T00:00:00"
+}
+```
+
+> **Valeurs `subscriptionPlan` :** `BASIC` · `PRO` · `PREMIUM`  
+> `subscriptionExpiresAt` doit être une **date future** — le backend retourne `400` si la date est passée.
+
+**Response `200` :** _(objet `AdminAgencyResponse` complet avec les nouveaux champs d'abonnement)_
+
+**Erreurs possibles :**
+- `400 Bad Request` — plan manquant ou date dans le passé
+- `404 Not Found` — agence introuvable
+
+**Critères d'acceptation :**
+- [ ] Modal avec select `subscriptionPlan` (BASIC / PRO / PREMIUM) et date picker `subscriptionExpiresAt`
+- [ ] Date picker bloque les dates passées
+- [ ] Afficher le plan et la date actuels en pré-remplissage
+- [ ] Mise à jour du badge plan après succès
+- [ ] Toast de confirmation
+
+---
+
+---
+
+### UBAX-FE-416 · Liste des hôtels partenaires (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/admin/partners/hotels` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Query params** | `page` (défaut 0) · `size` (défaut 20) · `sort=createdAt,desc` |
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "...",
+  "data": {
+    "content": [
+      {
+        "id": "uuid",
+        "name": "Hôtel Ivoire Palace",
+        "city": "Abidjan",
+        "email": "info@ivoire-palace.ci",
+        "phone": "+225012345678",
+        "logoUrl": "https://minio/.../logo.png",
+        "stars": 4,
+        "totalRooms": 80,
+        "subscriptionPlan": "PREMIUM",
+        "subscriptionExpiresAt": "2026-12-31T00:00:00",
+        "subscriptionActive": true,
+        "verified": true,
+        "verifiedAt": "2026-01-15T10:00:00",
+        "active": true,
+        "createdAt": "2026-01-01T00:00:00"
+      }
+    ],
+    "totalElements": 12,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**Critères d'acceptation :**
+- [ ] Tableau paginé avec colonnes : nom, ville, étoiles (`stars`), chambres (`totalRooms`), plan, expiration, statut actif/suspendu, actions
+- [ ] Même logique badges statut/plan que UBAX-FE-412
+- [ ] Boutons Suspendre / Réactiver / Abonnement (→ UBAX-FE-417 / 418 / 419)
+- [ ] Clic ligne → fiche hôtel avec membres (UBAX-FE-409/411)
+- [ ] Afficher les étoiles sous forme d'icônes ★ si possible
+
+---
+
+### UBAX-FE-417 · Suspendre un hôtel (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/admin/partners/hotels/{id}/suspend` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `id` : UUID de l'hôtel |
+| **Request body** | _(aucun)_ |
+
+**Response `200` :** _(objet `AdminHotelResponse` complet avec `active = false` — voir UBAX-FE-416)_
+
+**Erreurs possibles :**
+- `404 Not Found` — hôtel introuvable
+- `409 Conflict` — hôtel déjà suspendu
+
+**Critères d'acceptation :**
+- [ ] Dialog de confirmation avec nom de l'hôtel
+- [ ] Même logique UI que UBAX-FE-413
+
+---
+
+### UBAX-FE-418 · Réactiver un hôtel (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/admin/partners/hotels/{id}/activate` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `id` : UUID de l'hôtel |
+| **Request body** | _(aucun)_ |
+
+**Response `200` :** _(objet `AdminHotelResponse` complet avec `active = true`)_
+
+**Erreurs possibles :**
+- `404 Not Found` — hôtel introuvable
+- `409 Conflict` — hôtel déjà actif
+
+**Critères d'acceptation :**
+- [ ] Confirmation avant réactivation
+- [ ] Même logique UI que UBAX-FE-414
+
+---
+
+### UBAX-FE-419 · Mettre à jour l'abonnement d'un hôtel (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/admin/partners/hotels/{id}/subscription` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Path params** | `id` : UUID de l'hôtel |
+| **Content-Type** | `application/json` |
+
+**Request body :** _(identique à UBAX-FE-415)_
+```json
+{
+  "subscriptionPlan": "PREMIUM",
+  "subscriptionExpiresAt": "2027-06-30T00:00:00"
+}
+```
+
+**Response `200` :** _(objet `AdminHotelResponse` complet avec les nouveaux champs d'abonnement)_
+
+**Critères d'acceptation :**
+- [ ] Même logique UI que UBAX-FE-415 (composant réutilisable avec prop `type = "hotel"`)
+
+---
+
+---
+
+### UBAX-FE-420 · Liste des clients de la plateforme (Admin)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/admin/clients` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Query params** | `page` (défaut 0) · `size` (défaut 20) · `sort=createdAt,desc` · `agencyId` (optionnel) · `hotelId` (optionnel) |
+
+> `agencyId` filtre les clients ayant au moins un contrat sur un bien de l'agence.  
+> `hotelId` filtre les clients ayant au moins une réservation dans l'hôtel.  
+> Les deux filtres sont **mutuellement exclusifs** — `agencyId` est prioritaire si les deux sont fournis.
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "...",
+  "data": {
+    "content": [
+      {
+        "id": "uuid",
+        "firstName": "string",
+        "lastName": "string",
+        "email": "string",
+        "phone": "string",
+        "city": "string",
+        "avatarUrl": "string",
+        "emailVerified": true,
+        "phoneVerified": false,
+        "identityVerified": false,
+        "active": true,
+        "lastLoginAt": "2026-05-20T10:00:00",
+        "createdAt": "2026-01-01T00:00:00"
+      }
+    ],
+    "totalElements": 380,
+    "totalPages": 19,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**Critères d'acceptation :**
+- [ ] Tableau paginé avec colonnes : nom complet, email, téléphone, ville, vérification email/identité (icônes), statut actif, date inscription
+- [ ] Badges de vérification : `emailVerified`, `phoneVerified`, `identityVerified`
+- [ ] Filtre optionnel par `agencyId` (depuis la fiche agence) ou `hotelId` (depuis la fiche hôtel)
+- [ ] Sans filtre : tous les clients de la plateforme
+- [ ] État vide si aucun client
+
+---
+
+---
+
+### UBAX-FE-421 · Tableau de bord administrateur global
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/dashboard/admin` |
+| **Auth** | Bearer token · Rôle `UBAX_ADMIN` ou `UBAX_SUPER_ADMIN` |
+| **Query params** | _(aucun)_ |
+
+> Ce dashboard retourne une **vue instantanée** de la plateforme — pas de filtre par période. Pour les KPIs agence sur une période donnée, utiliser `GET /v1/dashboard/agency?from=&to=`.
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "DASHBOARD_ADMIN_GET_SUCCESS",
+  "data": {
+    "totalActiveAgencies": 45,
+    "totalActiveHotels": 12,
+    "totalClients": 380,
+    "totalOwners": 67,
+    "pendingReservations": 18,
+    "confirmedReservations": 34,
+    "propertiesPendingReview": 8,
+    "publishedProperties": 156,
+    "openTickets": 23
+  }
+}
+```
+
+**Description des KPIs :**
+
+| Champ | Description |
+|-------|-------------|
+| `totalActiveAgencies` | Nombre d'agences avec `active = true` |
+| `totalActiveHotels` | Nombre d'hôtels avec `active = true` |
+| `totalClients` | Nombre d'utilisateurs avec rôle `UBAX_CLIENT` |
+| `totalOwners` | Nombre d'utilisateurs avec rôle `UBAX_OWNER` (bailleurs approuvés) |
+| `pendingReservations` | Réservations hôtelières en statut `PENDING` |
+| `confirmedReservations` | Réservations hôtelières en statut `CONFIRMED` |
+| `propertiesPendingReview` | Biens soumis en attente de modération (`PENDING_REVIEW`) |
+| `publishedProperties` | Biens publiés en ligne (`PUBLISHED`) |
+| `openTickets` | Tickets SAV non résolus (statut `OPEN` ou `IN_PROGRESS`) |
+
+**Critères d'acceptation :**
+- [ ] Page d'accueil du back-office admin — chargement dès l'entrée dans le dashboard
+- [ ] Grille de cartes KPIs avec icône, valeur numérique et libellé
+- [ ] Mise en avant visuelle des indicateurs critiques :
+  - `propertiesPendingReview > 0` → badge d'alerte orange sur la carte
+  - `openTickets > 0` → badge d'alerte rouge sur la carte
+- [ ] Clic sur une carte KPI → navigation vers la liste correspondante :
+  - `totalActiveAgencies` → UBAX-FE-412 (liste des agences)
+  - `totalActiveHotels` → UBAX-FE-416 (liste des hôtels)
+  - `totalClients` → UBAX-FE-420 (liste des clients)
+  - `propertiesPendingReview` → liste des biens en modération (`GET /v1/properties?status=PENDING_REVIEW`)
+  - `openTickets` → liste des tickets ouverts
+- [ ] Loader skeleton pendant la requête
+- [ ] Bouton « Rafraîchir » pour recharger les données manuellement
 
 ---
 
