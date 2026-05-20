@@ -1,12 +1,11 @@
 package com.africa.ubaxplatform.bailleur.dto;
 
+import com.africa.ubaxplatform.common.validation.MinWords;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,7 +32,34 @@ public class BailleurApplyRequest {
   @Size(max = 100)
   private String idNumber;
 
-  @NotEmpty(message = "Au moins un bien est requis")
-  @Valid
-  private List<BailleurPropertyRequest> properties;
+  @Schema(
+      description =
+          "Email de contact. Requis uniquement si le compte CLIENT ne possède pas d'adresse email.",
+      example = "bailleur@example.com")
+  @Email(message = "L'adresse email n'est pas valide")
+  @Size(max = 150)
+  private String email;
+
+  @Schema(
+      description =
+          "URL de la photo recto de la pièce d'identité — obtenue via POST /v1/storage/upload?bucket=bailleur-documents",
+      example = "http://minio:9000/bailleur-documents/uuid-recto.jpg")
+  private String idDocRectoUrl;
+
+  @Schema(
+      description =
+          "URL de la photo verso de la pièce d'identité — obtenue via POST /v1/storage/upload?bucket=bailleur-documents",
+      example = "http://minio:9000/bailleur-documents/uuid-verso.jpg")
+  private String idDocVersoUrl;
+
+  @Schema(
+      description =
+          "Description des biens et motivation de la demande d'adhésion à l'agence. "
+              + "Obligatoire — minimum 10 mots pour permettre à l'agence d'évaluer la demande.",
+      example =
+          "Je suis propriétaire de trois appartements en centre-ville de Yaoundé que je souhaite confier à votre agence pour gestion locative.")
+  @NotBlank(message = "La description est obligatoire")
+  @MinWords(10)
+  @Size(max = 1000)
+  private String description;
 }

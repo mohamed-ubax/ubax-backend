@@ -167,6 +167,7 @@ Les sous-rôles affinent les accès à l'intérieur d'un rôle Keycloak. Persist
 | `COMMERCIAL` | Commercial | Prospects, rendez-vous, biens |
 | `COMPTABLE_AGENCE` | Comptable | Finances (solde masqué) |
 | `AGENT_SAV` | SAV | Tickets et interventions |
+| `AGENT_IMMOBILIER` | — | Gestion des biens, visites et dossiers locataires/acheteurs |
 
 **Scope `HOTEL` — pour `PARTNER` hôtel (`HotelRole`) :**
 
@@ -298,8 +299,12 @@ public class ModuleController {
 | V049 | `create_property_favorites.sql` | Table `property_favorites` (user_id FK, property_id FK, contrainte unique) |
 | V050 | `add_property_id_to_tenants.sql` | Colonne `property_id UUID` (nullable, FK → `properties.id`) sur `tenants` — bien ciblé à la soumission du dossier |
 | V051 | `add_rent_to_own_contract_type.sql` | Seed `la_code_list` (CONTRACT_TYPE : RENT_TO_OWN = Location-vente) + colonne `monthly_installment NUMERIC(15,2)` sur `contracts` |
+| V052 | `drop_transaction_type_check_constraint.sql` | Suppression contrainte CHECK statique `properties_transaction_type_check` — bloquait SHORT_STAY et autres types hôteliers ajoutés en V034 |
+| V053 | `add_description_to_property_amenities.sql` | Colonne `description VARCHAR(500)` sur `property_amenities` — description libre pour chaque commodité d'un bien |
+| V054 | `simplify_bailleur_application.sql` | Simplification module bailleur : ajout colonne `description TEXT` sur `bailleur_applications`, suppression colonnes `conflict_detected`/`conflict_note`, suppression table `bailleur_application_properties` |
+| V055 | `add_id_docs_and_nullable_email_to_bailleur.sql` | `email` nullable sur `bailleur_applications` (clients sans email) + colonnes `id_doc_recto_url TEXT` et `id_doc_verso_url TEXT` (pièce d'identité recto/verso) |
 
-Prochaine version disponible : **V052**
+Prochaine version disponible : **V056**
 
 ---
 
@@ -338,11 +343,12 @@ Prochaine version disponible : **V052**
 | `GET` | `/v1/admin/users/{userId}/sub-roles` | `ADMIN` | Consulter les sous-rôles |
 | `DELETE` | `/v1/admin/users/{userId}/sub-roles/{role}` | `SUPER_ADMIN` | Révoquer un sous-rôle |
 
-### Agencies
+### Agencies & Hotels (liste publique partenaires)
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
 | `GET` | `/v1/agencies` | Authentifié 📱 | Liste paginée des agences actives (filtre optionnel `?city=`) — utilisé avant `POST /v1/bailleur/apply` |
+| `GET` | `/v1/hotels` | Authentifié 📱 | Liste paginée des hôtels actifs (filtre optionnel `?city=`) |
 
 ### Agency Team
 
@@ -491,8 +497,9 @@ Prochaine version disponible : **V052**
 
 ### Bailleur
 
-> **Flux mobile** : `CLIENT` connecté → choisit une agence (`GET /v1/agencies`) → soumet une demande (`POST /v1/bailleur/apply`) → agence approuve → rôle `UBAX_OWNER` ajouté automatiquement → token refreshé → formulaire de saisie de bien débloqué.
-> **`POST /v1/bailleur/apply`** : requiert JWT `CLIENT`. Les champs `firstName`, `lastName`, `phone`, `email` sont extraits automatiquement du compte — seuls `agencyId`, `idType`, `idNumber` et `properties` sont requis dans le body.
+> **Flux mobile simplifié** : `CLIENT` connecté → choisit une agence (`GET /v1/agencies`) → soumet une demande avec sa pièce d'identité + description libre (`POST /v1/bailleur/apply`) → agence vérifie les biens hors-app → approuve ou rejette → rôle `UBAX_OWNER` ajouté automatiquement → l'agence crée les biens via `POST /v1/properties` en rattachant le bailleur comme propriétaire.
+> **`POST /v1/bailleur/apply`** : requiert JWT `CLIENT`. Les champs `firstName`, `lastName`, `phone`, `email` sont extraits automatiquement du compte. Champs obligatoires : `agencyId`, `idType`, `idNumber`, `description` (**minimum 10 mots**, max 1000 chars, validé par `@MinWords(10)`). Champs optionnels : `email` (requis si le compte n'a pas d'email), `idDocRectoUrl`, `idDocVersoUrl` (URLs pré-uploadées via bucket `bailleur-documents`). **Aucune liste de biens dans le body.**
+> **`POST /v1/properties` avec `ownerId`** : si le créateur est membre d'une agence ET que `ownerId` ≠ soi-même, le backend vérifie que le propriétaire est un bailleur approuvé par cette agence (table `bailleur_agency_links`). Si le lien n'existe pas → `400`. Utiliser `GET /v1/bailleur/agency/bailleurs` pour obtenir la liste des `ownerId` valides.
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
@@ -502,6 +509,7 @@ Prochaine version disponible : **V052**
 | `GET` | `/v1/bailleur/agency/applications` | `PARTNER` + `DIRECTEUR_AGENCE` | Liste paginée des demandes reçues |
 | `GET` | `/v1/bailleur/agency/applications/{id}` | `PARTNER` + `DIRECTEUR_AGENCE` | Détail d'une demande |
 | `PATCH` | `/v1/bailleur/agency/applications/{id}/decision` | `PARTNER` + `DIRECTEUR_AGENCE` | Approuver / rejeter |
+| `GET` | `/v1/bailleur/agency/bailleurs` | `PARTNER` + `DIRECTEUR_AGENCE` | Bailleurs approuvés liés à l'agence (retourne `id` à utiliser comme `ownerId` dans `POST /v1/properties`) |
 | `GET` | `/v1/bailleur/admin/applications` | `ADMIN` · `SUPER_ADMIN` | Vue globale toutes agences |
 
 ### Reservation
@@ -519,6 +527,26 @@ Prochaine version disponible : **V052**
 | `PATCH` | `/v1/reservations/{id}/no-show` | `PARTNER` (hôtel) | Marquer no-show |
 | `GET` | `/v1/reservations` | `ADMIN/SUPER_ADMIN` | Toutes les réservations |
 
+### Gestion admin des partenaires (back-office)
+
+> Endpoints réservés aux rôles `ADMIN` et `SUPER_ADMIN`. Permettent de lister, suspendre, réactiver et gérer les abonnements des agences et hôtels partenaires. La suspension désactive `is_active` — les membres ne peuvent plus se connecter.
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/admin/partners/agencies` | `ADMIN` | Liste paginée de toutes les agences |
+| `PATCH` | `/v1/admin/partners/agencies/{id}/suspend` | `ADMIN` | Suspendre une agence |
+| `PATCH` | `/v1/admin/partners/agencies/{id}/activate` | `ADMIN` | Réactiver une agence |
+| `PATCH` | `/v1/admin/partners/agencies/{id}/subscription` | `ADMIN` | Mettre à jour l'abonnement (plan + date expiration) |
+| `GET` | `/v1/admin/partners/hotels` | `ADMIN` | Liste paginée de tous les hôtels |
+| `PATCH` | `/v1/admin/partners/hotels/{id}/suspend` | `ADMIN` | Suspendre un hôtel |
+| `PATCH` | `/v1/admin/partners/hotels/{id}/activate` | `ADMIN` | Réactiver un hôtel |
+| `PATCH` | `/v1/admin/partners/hotels/{id}/subscription` | `ADMIN` | Mettre à jour l'abonnement |
+| `GET` | `/v1/admin/partners/clients` | `ADMIN` | Liste paginée des clients |
+| `GET` | `/v1/admin/agencies/{agencyId}/members` | `ADMIN` | Membres actifs d'une agence (audit/support) |
+| `GET` | `/v1/admin/agencies/{agencyId}/members/inactive` | `ADMIN` | Membres inactifs (soft-deleted) d'une agence |
+| `GET` | `/v1/admin/hotels/{hotelId}/members` | `ADMIN` | Membres actifs d'un hôtel (audit/support) |
+| `GET` | `/v1/admin/hotels/{hotelId}/members/inactive` | `ADMIN` | Membres inactifs (soft-deleted) d'un hôtel |
+
 ### Dashboard & Storage
 
 | Méthode | Chemin | Rôle | Description |
@@ -532,6 +560,7 @@ Prochaine version disponible : **V052**
 | `GET` | `/v1/storage/presign/tenant-document` | Authentifié | URL présignée KYC |
 | `GET` | `/v1/storage/presign/agency-logo` | Authentifié | URL présignée logo |
 | `GET` | `/v1/storage/presign/ticket-attachment` | Authentifié | URL présignée ticket |
+| `GET` | `/v1/storage/presign/bailleur-document` | Authentifié | URL présignée pièce d'identité bailleur (recto ou verso) |
 
 ---
 
@@ -578,7 +607,8 @@ docker compose -f docker/docker-compose.yml up -d
 ## Buckets MinIO
 
 `users-avatars`, `agencies-logos`, `properties-media`, `property-documents`,
-`tenant-documents`, `documents-generated`, `ticket-attachments`, `partner-documents`
+`tenant-documents`, `documents-generated`, `ticket-attachments`, `partner-documents`,
+`bailleur-documents`
 
 ---
 

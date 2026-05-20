@@ -1,6 +1,7 @@
 package com.africa.ubaxplatform.bailleur.service.interfaces;
 
 import com.africa.ubaxplatform.bailleur.codeList.BailleurApplicationStatus;
+import com.africa.ubaxplatform.bailleur.dto.AgencyBailleurResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurAgencyResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplicationResponse;
 import com.africa.ubaxplatform.bailleur.dto.BailleurApplyRequest;
@@ -31,4 +32,6 @@ public interface BailleurService {
       throws CustomException;
 
   List<BailleurAgencyResponse> getMyAgencies(String callerKeycloakId) throws CustomException;
+
+  Page<AgencyBailleurResponse> listAgencyBailleurs(UUID agencyId, Pageable pageable);
 }

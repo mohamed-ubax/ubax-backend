@@ -104,7 +104,8 @@ public class StorageController {
           "users-avatars",
           "technicien-avatars",
           "ticket-attachments",
-          "partner-documents");
+          "partner-documents",
+          "bailleur-documents");
 
   private static final Set<String> PRIVATE_BUCKETS =
       Set.of(
@@ -112,7 +113,8 @@ public class StorageController {
           "tenant-documents",
           "partner-documents",
           "ticket-attachments",
-          "documents-generated");
+          "documents-generated",
+          "bailleur-documents");
 
   // Taille max par type de bucket
   private static final long MAX_IMAGE_BYTES = 10L * 1024 * 1024; // 10 Mo
@@ -628,6 +630,58 @@ public class StorageController {
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
             "Presigned URL pièce jointe ticket – uploadez via uploadUrl puis liez via POST /v1/tickets/{id}/attachments",
+            response));
+  }
+
+  /**
+   * Génère une URL présignée PUT pour une photo de pièce d'identité bailleur (recto ou verso).
+   *
+   * <p>Clé MinIO : {@code bailleur-{uuid}.{ext}}. Uploader recto et verso séparément, puis passer
+   * les deux {@code publicUrl} dans {@code idDocRectoUrl} et {@code idDocVersoUrl} de {@code POST
+   * /v1/bailleur/apply}.
+   */
+  @GetMapping("/presign/bailleur-document")
+  @Operation(
+      summary = "Presigned URL – pièce d'identité bailleur",
+      description =
+          "🔑 **Authentifié** – Génère une presigned URL pour uploader une photo de pièce d'identité "
+              + "(recto ou verso) dans le cadre d'une demande d'adhésion bailleur.\n\n"
+              + "Appeler deux fois (une par face), puis inclure les `publicUrl` dans "
+              + "`idDocRectoUrl` et `idDocVersoUrl` du body `POST /v1/bailleur/apply`.\n\n"
+              + "**Types MIME acceptés :** `image/jpeg`, `image/png`, `image/webp`, `application/pdf`",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "URL présignée – `data` contient `uploadUrl`, `publicUrl`",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PresignedUrlResponse.class))),
+    @ApiResponse(responseCode = "400", description = "Type MIME non autorisé", content = @Content),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> presignBailleurDocument(
+      @Parameter(description = "Type MIME du fichier", example = "image/jpeg", required = true)
+          @RequestParam
+          String contentType,
+      @RequestParam(defaultValue = "900") int expires,
+      HttpServletRequest request)
+      throws CustomException {
+
+    RoleGuard.requireAuthenticated(requestHeaderParser, request);
+    validateMime(contentType, MIME_DOCS, "bailleur-documents");
+
+    String objectName = "bailleur-" + UUID.randomUUID() + extFor(contentType);
+    PresignedUrlResponse response =
+        minioService.generatePresignedUrl(
+            "bailleur-documents", objectName, Math.min(expires, MAX_EXPIRY_SECONDS));
+
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            "Presigned URL pièce d'identité bailleur – uploadez via uploadUrl puis passez publicUrl dans idDocRectoUrl ou idDocVersoUrl",
             response));
   }
 

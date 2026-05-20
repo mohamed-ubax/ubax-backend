@@ -43,7 +43,7 @@ public class BailleurApplication extends BaseEntity {
   @Column(name = "phone", nullable = false, length = 25)
   private String phone;
 
-  @Column(name = "email", nullable = false, length = 150)
+  @Column(name = "email", nullable = true, length = 150)
   private String email;
 
   @Column(name = "id_type", nullable = false, length = 50)
@@ -52,18 +52,21 @@ public class BailleurApplication extends BaseEntity {
   @Column(name = "id_number", nullable = false, length = 100)
   private String idNumber;
 
+  @Column(name = "description", columnDefinition = "TEXT")
+  private String description;
+
+  @Column(name = "id_doc_recto_url", columnDefinition = "TEXT")
+  private String idDocRectoUrl;
+
+  @Column(name = "id_doc_verso_url", columnDefinition = "TEXT")
+  private String idDocVersoUrl;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   private BailleurApplicationStatus status;
 
   @Column(name = "rejection_reason", columnDefinition = "TEXT")
   private String rejectionReason;
-
-  @Column(name = "conflict_detected", nullable = false)
-  private boolean conflictDetected;
-
-  @Column(name = "conflict_note", columnDefinition = "TEXT")
-  private String conflictNote;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "reviewed_by_user_id")
