@@ -97,7 +97,6 @@ class ContractServiceImplTest {
   private CreateContractRequest buildRequest() {
     CreateContractRequest req = new CreateContractRequest();
     req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-    req.setOwnerId(SharedTestFixtures.USER_ID);
     req.setContractType("LEASE");
     req.setStartDate(LocalDate.now());
     req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -108,7 +107,6 @@ class ContractServiceImplTest {
   private CreateContractRequest buildRequestWithoutTenant() {
     CreateContractRequest req = new CreateContractRequest();
     req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-    req.setOwnerId(SharedTestFixtures.USER_ID);
     req.setContractType("LEASE");
     req.setStartDate(LocalDate.now());
     req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -128,7 +126,6 @@ class ContractServiceImplTest {
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(SharedTestFixtures.TENANT_ID)).thenReturn(Optional.of(tenant));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
@@ -151,7 +148,6 @@ class ContractServiceImplTest {
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
 
       assertThatThrownBy(
               () -> service.create(SharedTestFixtures.KEYCLOAK_ID, buildRequestWithoutTenant()))
@@ -179,19 +175,6 @@ class ContractServiceImplTest {
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, buildRequest()))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.PROPERTY_GET_FAILURE_NOT_FOUND);
-    }
-
-    @Test
-    @DisplayName("Echec – propriétaire introuvable → USER_NOT_FOUND")
-    void create_ownerNotFound_throwsCustomException() {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
-          .thenReturn(Optional.of(caller));
-      when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.of(property));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.empty());
-
-      assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, buildRequest()))
-          .isInstanceOf(CustomException.class)
-          .hasMessageContaining(ResponseMessageConstants.USER_NOT_FOUND);
     }
   }
 
@@ -827,18 +810,21 @@ class ContractServiceImplTest {
               .build();
       SharedTestFixtures.injectId(saleProperty, SharedTestFixtures.PROPERTY_ID);
 
+      Tenant buyer = new Tenant();
+      SharedTestFixtures.injectId(buyer, SharedTestFixtures.TENANT_ID);
+
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
+      req.setTenantId(SharedTestFixtures.TENANT_ID);
       req.setContractType("SALE");
       req.setStartDate(LocalDate.now());
-      // salePrice NOT provided – should be auto-filled; tenantId not required for SALE
+      // salePrice NOT provided – should be auto-filled from property.price
 
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(saleProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
+      when(tenantRepo.findById(SharedTestFixtures.TENANT_ID)).thenReturn(Optional.of(buyer));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
               inv -> {
@@ -851,7 +837,7 @@ class ContractServiceImplTest {
 
       assertThat(resp).isNotNull();
       assertThat(resp.contractType()).isEqualTo("SALE");
-      // Note: salePrice should have been auto-filled during creation
+      assertThat(resp.tenantId()).isEqualTo(SharedTestFixtures.TENANT_ID);
     }
 
     @Test
@@ -875,7 +861,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("LEASE");
       req.setStartDate(LocalDate.now());
       // monthlyRent NOT provided – should be auto-filled
@@ -885,7 +870,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(rentProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(any(UUID.class))).thenReturn(Optional.of(tenant));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
@@ -920,7 +904,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("LEASE"); // Wrong: should be SALE for SALE property
       req.setStartDate(LocalDate.now());
       req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -930,7 +913,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(saleProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
           .isInstanceOf(CustomException.class)
@@ -957,7 +939,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("LEASE"); // Wrong: should be RESERVATION for SHORT_STAY
       req.setStartDate(LocalDate.now());
       req.setMonthlyRent(BigDecimal.valueOf(300_000));
@@ -967,7 +948,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(shortStayProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
           .isInstanceOf(CustomException.class)
@@ -999,7 +979,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("RENT_TO_OWN");
       req.setStartDate(startDate);
       req.setTenantId(SharedTestFixtures.TENANT_ID);
@@ -1011,7 +990,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(rentProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(any(UUID.class))).thenReturn(Optional.of(tenant));
       when(contractRepo.save(any(Contract.class)))
           .thenAnswer(
@@ -1050,7 +1028,6 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
       req.setContractType("RENT_TO_OWN");
       req.setStartDate(LocalDate.of(2026, 6, 1));
       req.setTenantId(SharedTestFixtures.TENANT_ID);
@@ -1062,7 +1039,6 @@ class ContractServiceImplTest {
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(rentProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
       when(tenantRepo.findById(any(UUID.class))).thenReturn(Optional.of(tenant));
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
@@ -1073,8 +1049,8 @@ class ContractServiceImplTest {
     }
 
     @Test
-    @DisplayName("Success – MANDATE contract works with any property type")
-    void create_mandateAnyProperty_success() throws CustomException {
+    @DisplayName("Echec – MANDATE bloqué sur POST /v1/contracts → CONTRACT_CREATE_FAILURE")
+    void create_mandateType_isBlocked() {
       Property saleProperty =
           Property.builder()
               .owner(caller)
@@ -1090,27 +1066,21 @@ class ContractServiceImplTest {
 
       CreateContractRequest req = new CreateContractRequest();
       req.setPropertyId(SharedTestFixtures.PROPERTY_ID);
-      req.setOwnerId(SharedTestFixtures.USER_ID);
-      req.setContractType("MANDATE"); // Mandate works with any property
+      req.setContractType("MANDATE");
       req.setStartDate(LocalDate.now());
 
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(saleProperty));
-      when(userRepo.findById(SharedTestFixtures.USER_ID)).thenReturn(Optional.of(caller));
-      when(contractRepo.save(any(Contract.class)))
-          .thenAnswer(
-              inv -> {
-                Contract c = inv.getArgument(0);
-                SharedTestFixtures.injectId(c, SharedTestFixtures.CONTRACT_ID);
-                return c;
-              });
 
-      ContractResponse resp = service.create(SharedTestFixtures.KEYCLOAK_ID, req);
+      assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.CONTRACT_CREATE_FAILURE)
+          .cause()
+          .hasMessageContaining("/v1/mandates");
 
-      assertThat(resp).isNotNull();
-      assertThat(resp.contractType()).isEqualTo("MANDATE");
+      verify(contractRepo, never()).save(any());
     }
   }
 }

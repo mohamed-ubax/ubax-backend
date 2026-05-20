@@ -185,4 +185,11 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
   /** Comptage global par statut — réservé aux admins. */
   @Query("SELECT c.status, COUNT(c) FROM Contract c GROUP BY c.status")
   List<Object[]> countAllGroupByStatus();
+
+  /** Vérifie qu'aucun contrat bloquant n'existe déjà sur ce bien (indépendamment du locataire). */
+  boolean existsByPropertyIdAndStatusIn(UUID propertyId, List<ContractStatus> statuses);
+
+  /** Vérifie qu'aucun contrat bloquant n'existe pour ce locataire sur ce bien. */
+  boolean existsByPropertyIdAndTenantIdAndStatusIn(
+      UUID propertyId, UUID tenantId, List<ContractStatus> statuses);
 }

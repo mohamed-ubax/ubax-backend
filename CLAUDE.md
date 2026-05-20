@@ -303,8 +303,9 @@ public class ModuleController {
 | V053 | `add_description_to_property_amenities.sql` | Colonne `description VARCHAR(500)` sur `property_amenities` — description libre pour chaque commodité d'un bien |
 | V054 | `simplify_bailleur_application.sql` | Simplification module bailleur : ajout colonne `description TEXT` sur `bailleur_applications`, suppression colonnes `conflict_detected`/`conflict_note`, suppression table `bailleur_application_properties` |
 | V055 | `add_id_docs_and_nullable_email_to_bailleur.sql` | `email` nullable sur `bailleur_applications` (clients sans email) + colonnes `id_doc_recto_url TEXT` et `id_doc_verso_url TEXT` (pièce d'identité recto/verso) |
+| V056 | `create_management_contracts.sql` | Table `management_contracts` (agence↔bailleur, statuts DRAFT/PENDING_SIGNATURE/ACTIVE/TERMINATED/CANCELLED, FKs agency/owner/created_by/terminated_by, indexes agency/owner/status) |
 
-Prochaine version disponible : **V056**
+Prochaine version disponible : **V057**
 
 ---
 
@@ -335,6 +336,92 @@ Prochaine version disponible : **V056**
 | `POST` | `/v1/users/me/avatar` | Authentifié | Mettre à jour avatar |
 | `GET` | `/v1/admin/clients` | `ADMIN` | Liste tous les clients (`?agencyId=` ou `?hotelId=` optionnel) |
 
+#### Détail des DTOs — Authentification mobile
+
+**`POST /v1/auth/login`** — `LoginRequest` → `LoginResponse`
+```json
+// Request
+{ "email": "user@example.com", "password": "..." }
+
+// Response (Keycloak token)
+{
+  "access_token": "eyJ...", "refresh_token": "eyJ...",
+  "expires_in": 300, "refresh_expires_in": 1800,
+  "token_type": "Bearer", "session_state": "uuid", "scope": "email profile"
+}
+```
+
+**`POST /v1/auth/login/phone`** — `PhoneLoginRequest` → `LoginResponse`
+```json
+{ "phone": "+2250712345678", "password": "..." }
+// Même LoginResponse que ci-dessus
+```
+Format téléphone : `^\+[1-9]\d{7,14}$` — préfixe international obligatoire.
+
+**`POST /v1/auth/register/send-otp`** — `SendOtpRequest`
+```json
+{ "phone": "+2250712345678" }
+// 200 OK | 409 téléphone déjà utilisé
+```
+
+**`POST /v1/auth/register/verify-otp`** — `VerifyOtpRequest`
+```json
+{ "phone": "+2250712345678", "code": "123456" }
+// 200 OK | 400 OTP invalide/expiré
+```
+
+**`POST /v1/auth/register/complete`** — `RegisterCompleteRequest` → `RegisterResponse` (201)
+```java
+// Champs et contraintes
+String phone;       // @NotBlank @Pattern (international)
+String title;       // @NotBlank — "M." ou "Mme" — OBLIGATOIRE
+String firstName;   // @NotBlank @Size(2,100)
+String lastName;    // @NotBlank @Size(2,100)
+String password;    // @NotBlank @Size(min=8)
+String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
+```
+> **email est optionnel** — ne jamais le marquer `required` côté frontend.
+
+```json
+// RegisterResponse (201)
+{
+  "userId": "uuid", "keycloakId": "uuid",
+  "phone": "+2250712345678", "firstName": "Kouassi", "lastName": "Amani",
+  "email": null, "roles": ["CLIENT"]
+}
+```
+
+**`POST /v1/auth/logout`** — `LogoutRequest`
+```json
+{ "refreshToken": "eyJ..." }
+// 200 OK — invalide la session Keycloak
+```
+
+**`POST /v1/auth/forgot-password`** — `ForgotPasswordRequest`
+```json
+{ "email": "user@example.com" }
+// Toujours 200 OK (anti-énumération) — ne pas distinguer "email trouvé" vs "introuvable"
+```
+
+**`POST /v1/auth/forgot-password/send-otp`** — `SendOtpRequest`
+```json
+{ "phone": "+2250712345678" }
+// 200 OK | 404 compte introuvable
+```
+
+**`POST /v1/auth/forgot-password/verify-otp`** — `VerifyOtpRequest`
+```json
+{ "phone": "+2250712345678", "code": "123456" }
+// 200 OK | 400 OTP invalide
+// ⚠️ L'OTP est vérifié mais NON consommé — /reset doit encore être appelé
+```
+
+**`POST /v1/auth/forgot-password/reset`** — `ResetPasswordByPhoneRequest`
+```json
+{ "phone": "+2250712345678", "code": "123456", "newPassword": "min8chars" }
+// 200 OK — l'OTP est consommé (invalidé) ici | 400 OTP invalide/expiré
+```
+
 ### Sous-rôles (User Sub-Roles)
 
 | Méthode | Chemin | Rôle | Description |
@@ -343,21 +430,27 @@ Prochaine version disponible : **V056**
 | `GET` | `/v1/admin/users/{userId}/sub-roles` | `ADMIN` | Consulter les sous-rôles |
 | `DELETE` | `/v1/admin/users/{userId}/sub-roles/{role}` | `SUPER_ADMIN` | Révoquer un sous-rôle |
 
-### Agencies & Hotels (liste publique partenaires)
+### Agencies & Hotels (liste authentifiée 📱)
+
+> Ces endpoints **requièrent un JWT valide** — ils ne sont pas publics.
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `GET` | `/v1/agencies` | Authentifié 📱 | Liste paginée des agences actives (filtre optionnel `?city=`) — utilisé avant `POST /v1/bailleur/apply` |
-| `GET` | `/v1/hotels` | Authentifié 📱 | Liste paginée des hôtels actifs (filtre optionnel `?city=`) |
+| `GET` | `/v1/agencies` | `CLIENT/OWNER/PARTNER/ADMIN` | Liste paginée des agences actives (filtre optionnel `?city=`, tri `name` ASC) — étape 1 du flux bailleur mobile |
+| `GET` | `/v1/hotels` | `CLIENT/OWNER/PARTNER/ADMIN` | Liste paginée des hôtels actifs (filtre optionnel `?city=`) |
 
 ### Agency Team
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `GET` | `/v1/agency/team` | `PARTNER` | Lister membres |
-| `POST` | `/v1/agency/team` | `PARTNER` + `DIRECTEUR_AGENCE` | Ajouter membre |
-| `PUT` | `/v1/agency/team/{userId}/role` | `PARTNER` + `DIRECTEUR_AGENCE` | Changer rôle |
-| `DELETE` | `/v1/agency/team/{userId}` | `PARTNER` + `DIRECTEUR_AGENCE` | Retirer membre |
+| `GET` | `/v1/agency/team` | `PARTNER` | Lister les membres actifs |
+| `POST` | `/v1/agency/team` | `PARTNER` | Inviter un nouveau membre (crée compte PARTNER + envoie email) |
+| `GET` | `/v1/agency/team/inactive` | `PARTNER` | Lister les membres inactifs (soft-deleted) |
+| `PATCH` | `/v1/agency/team/{userId}/activate` | `PARTNER` + `DIRECTEUR_AGENCE` | Réactiver un membre retiré |
+| `DELETE` | `/v1/agency/team/{userId}` | `PARTNER` + `DIRECTEUR_AGENCE` | Retirer un membre (soft delete) |
+| `POST` | `/v1/agency/team/{userId}/sub-roles` | `PARTNER` | Assigner des sous-rôles AGENCE (additif) |
+| `GET` | `/v1/agency/team/{userId}/sub-roles` | `PARTNER` | Consulter les sous-rôles d'un membre |
+| `DELETE` | `/v1/agency/team/{userId}/sub-roles/{role}` | `PARTNER` | Révoquer un sous-rôle AGENCE |
 | `GET` | `/v1/agency/clients` | `PARTNER` | Clients de mon agence (via contrats) |
 
 ### Hotel Team
@@ -495,6 +588,22 @@ Prochaine version disponible : **V056**
 | `PATCH` | `/v1/technicians/{id}/availability` | `PARTNER` | Basculer disponibilité |
 | `DELETE` | `/v1/technicians/{id}` | `PARTNER` | Supprimer (soft delete) |
 
+### Mandat de gestion (Agence ↔ Bailleur)
+
+> Acte administratif **exclusif entre l'agence et le bailleur** — jamais visible par les clients. Requiert qu'un lien `bailleur_agency_links` approuvé existe avant création. Un seul mandat `ACTIVE` ou `PENDING_SIGNATURE` autorisé par couple agence↔bailleur.
+> **Référence auto-générée :** format `MAN-{YEAR}-{6-char-UUID}` (ex. `MAN-2026-A1B2C3`).
+> **Type `MANDATE` bloqué dans `POST /v1/contracts`** — utiliser uniquement `/v1/mandates`.
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/mandates` | `PARTNER` | Créer mandat (DRAFT) — `ownerId` + `startDate` obligatoires |
+| `GET` | `/v1/mandates` | `PARTNER` | Liste paginée de l'agence (filtre `?status=`) |
+| `GET` | `/v1/mandates/{id}` | `PARTNER` | Détail |
+| `PATCH` | `/v1/mandates/{id}/submit` | `PARTNER` | DRAFT → PENDING_SIGNATURE |
+| `PATCH` | `/v1/mandates/{id}/activate` | `ADMIN` | PENDING_SIGNATURE → ACTIVE |
+| `PATCH` | `/v1/mandates/{id}/terminate` | `PARTNER` | ACTIVE → TERMINATED (body `terminationReason` obligatoire) |
+| `PATCH` | `/v1/mandates/{id}/cancel` | `PARTNER` | DRAFT/PENDING_SIGNATURE → CANCELLED |
+
 ### Bailleur
 
 > **Flux mobile simplifié** : `CLIENT` connecté → choisit une agence (`GET /v1/agencies`) → soumet une demande avec sa pièce d'identité + description libre (`POST /v1/bailleur/apply`) → agence vérifie les biens hors-app → approuve ou rejette → rôle `UBAX_OWNER` ajouté automatiquement → l'agence crée les biens via `POST /v1/properties` en rattachant le bailleur comme propriétaire.
@@ -514,18 +623,23 @@ Prochaine version disponible : **V056**
 
 ### Reservation
 
+> **Statuts :** `PENDING → CONFIRMED → COMPLETED | NO_SHOW` · `PENDING | CONFIRMED → CANCELLED`  
+> **`DELETE /v1/reservations/{id}`** : requiert un body JSON `{ "reason": "..." }` (motif obligatoire) — seules les réservations `PENDING` sont annulables par le client.  
+> **`PATCH …/cancel` (hôtel)** : annule une réservation `PENDING` ou `CONFIRMED` — body `{ "reason": "..." }` obligatoire.  
+> **Accès `GET /v1/reservations/{id}`** : CLIENT = propriétaire uniquement (403 sinon) · PARTNER = biens de son hôtel uniquement.
+
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `POST` | `/v1/reservations` | `CLIENT` | Soumettre une réservation |
-| `GET` | `/v1/reservations/mine` | `CLIENT` | Mes réservations |
-| `GET` | `/v1/reservations/{id}` | `CLIENT/PARTNER` | Détail |
-| `DELETE` | `/v1/reservations/{id}` | `CLIENT` | Annuler (PENDING uniquement) |
-| `GET` | `/v1/reservations/hotel` | `PARTNER` (hôtel) | Réservations de mon hôtel |
-| `PATCH` | `/v1/reservations/{id}/confirm` | `PARTNER` (hôtel) | Confirmer |
-| `PATCH` | `/v1/reservations/{id}/cancel` | `PARTNER` (hôtel) | Annuler côté hôtel |
-| `PATCH` | `/v1/reservations/{id}/complete` | `PARTNER` (hôtel) | Marquer séjour terminé |
-| `PATCH` | `/v1/reservations/{id}/no-show` | `PARTNER` (hôtel) | Marquer no-show |
-| `GET` | `/v1/reservations` | `ADMIN/SUPER_ADMIN` | Toutes les réservations |
+| `POST` | `/v1/reservations` | `CLIENT` | Soumettre une réservation (`checkInDate`/`checkOutDate` futures, `guestCount` ≥ 1) |
+| `GET` | `/v1/reservations/mine` | `CLIENT` | Mes réservations (paginé, tri `createdAt` DESC) |
+| `GET` | `/v1/reservations/{id}` | `CLIENT/PARTNER` | Détail (accès restreint au propriétaire ou à l'hôtelier concerné) |
+| `DELETE` | `/v1/reservations/{id}` | `CLIENT` | Annuler — `PENDING` uniquement · body JSON `{ "reason": "..." }` requis |
+| `GET` | `/v1/reservations/hotel` | `PARTNER` (hôtel) | Réservations de mon hôtel (filtre `?status=` optionnel) |
+| `PATCH` | `/v1/reservations/{id}/confirm` | `PARTNER` (hôtel) | Confirmer (`PENDING → CONFIRMED`) |
+| `PATCH` | `/v1/reservations/{id}/cancel` | `PARTNER` (hôtel) | Annuler (`PENDING|CONFIRMED → CANCELLED`) · body `{ "reason": "..." }` requis |
+| `PATCH` | `/v1/reservations/{id}/complete` | `PARTNER` (hôtel) | Marquer séjour terminé (`CONFIRMED → COMPLETED`) |
+| `PATCH` | `/v1/reservations/{id}/no-show` | `PARTNER` (hôtel) | Marquer no-show (`CONFIRMED → NO_SHOW`) |
+| `GET` | `/v1/reservations` | `ADMIN/SUPER_ADMIN` | Toutes les réservations (filtre `?status=` optionnel) |
 
 ### Gestion admin des partenaires (back-office)
 
