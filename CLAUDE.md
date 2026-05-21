@@ -304,8 +304,9 @@ public class ModuleController {
 | V054 | `simplify_bailleur_application.sql` | Simplification module bailleur : ajout colonne `description TEXT` sur `bailleur_applications`, suppression colonnes `conflict_detected`/`conflict_note`, suppression table `bailleur_application_properties` |
 | V055 | `add_id_docs_and_nullable_email_to_bailleur.sql` | `email` nullable sur `bailleur_applications` (clients sans email) + colonnes `id_doc_recto_url TEXT` et `id_doc_verso_url TEXT` (pièce d'identité recto/verso) |
 | V056 | `create_management_contracts.sql` | Table `management_contracts` (agence↔bailleur, statuts DRAFT/PENDING_SIGNATURE/ACTIVE/TERMINATED/CANCELLED, FKs agency/owner/created_by/terminated_by, indexes agency/owner/status) |
+| V057 | `fix_tenant_employment_status_constraint.sql` | Supprime la contrainte CHECK orpheline `tenants_employment_status_check` (non présente dans les migrations, créée par une ancienne session Hibernate) · Ajoute `EMPLOYED` dans `la_code_list` (valeur envoyée par le mobile) · Migre les enregistrements `EMPLOYEE` → `EMPLOYED` · Désactive `EMPLOYEE` (is_system_assign=false) |
 
-Prochaine version disponible : **V057**
+Prochaine version disponible : **V058**
 
 ---
 
