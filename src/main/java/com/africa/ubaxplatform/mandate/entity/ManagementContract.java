@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -51,6 +52,7 @@ public class ManagementContract extends BaseEntity {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
+  @Builder.Default
   private MandateStatus status = MandateStatus.DRAFT;
 
   @Column(name = "start_date", nullable = false)

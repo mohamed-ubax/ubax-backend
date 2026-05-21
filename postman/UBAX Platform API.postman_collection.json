@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "b4c3560e-e674-4852-9e0a-9c34e9097fd3",
+    "_postman_id": "d15f01d2-68a0-4d19-bcc7-fe8b2421be08",
     "name": "UBAX Platform API",
-    "description": "Collection complète des APIs UBAX Platform\n\nBase URL: {{base_url}}\nAuthentification: Keycloak OAuth2 (JWT Bearer Token)\n\nVariables d'environnement requises:\n- base_url: http://localhost:9999/api\n- access_token: (auto-rempli par Login)\n- refresh_token: (auto-rempli par Login)\n- keycloak_user_id\n- admin_user_id\n- tenant_id\n- partner_application_id\n- property_id\n- media_id\n- document_id\n- payment_id\n- expense_id\n- bailleur_application_id\n- reservation_id\n- contract_id\n- ticket_id\n- hotel_id\n- owner_user_id\n- team_member_id\n- technician_id\n- agency_id\n- role\n- tenant_doc_upload_url\n- tenant_id_document_url\n- tenant_income_proof_url\n- tenant_address_proof_url",
+    "description": "Collection complète des APIs UBAX Platform\n\nBase URL: {{base_url}}\nAuthentification: Keycloak OAuth2 (JWT Bearer Token)\n\nVariables d'environnement requises:\n- base_url: http://localhost:9999/api\n- access_token: (auto-rempli par Login)\n- refresh_token: (auto-rempli par Login)\n- keycloak_user_id\n- admin_user_id\n- tenant_id\n- partner_application_id\n- property_id\n- media_id\n- document_id\n- payment_id\n- expense_id\n- bailleur_application_id\n- reservation_id\n- contract_id\n- ticket_id\n- hotel_id\n- owner_user_id\n- team_member_id\n- technician_id\n- agency_id\n- role\n- tenant_doc_upload_url\n- tenant_id_document_url\n- tenant_income_proof_url\n- tenant_address_proof_url\n- mandate_id: (auto-rempli par Creer un mandat)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "28441649",
-    "_collection_link": "https://go.postman.co/collection/28441649-b4c3560e-e674-4852-9e0a-9c34e9097fd3?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/28441649-d15f01d2-68a0-4d19-bcc7-fe8b2421be08?source=collection_link"
   },
   "item": [
     {
@@ -29,7 +29,9 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -148,7 +150,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"phone\": \"+221778787778\",\n  \"password\": \"password123\"\n}"
+                  "raw": "{\n  \"phone\": \"+221773880047\",\n  \"password\": \"password123\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/auth/login/phone",
@@ -678,6 +680,50 @@
             "description": "SUPER_ADMIN : Désactiver un compte administrateur (soft delete)."
           },
           "response": []
+        },
+        {
+          "name": "Lister les clients (filtres agencyId / hotelId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/admin/clients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "agencyId",
+                  "value": "{{agency_id}}",
+                  "disabled": true,
+                  "description": "Clients ayant un contrat sur un bien de cette agence"
+                },
+                {
+                  "key": "hotelId",
+                  "value": "{{hotel_id}}",
+                  "disabled": true,
+                  "description": "Clients ayant une reservation dans cet hotel (agencyId prioritaire si les deux sont fournis)"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN/SUPER_ADMIN. Liste paginee de tous les clients actifs.\n- Sans filtre : tous les UBAX_CLIENT\n- ?agencyId= : clients ayant au moins un contrat sur un bien de l'agence\n- ?hotelId= : clients ayant au moins une reservation dans l'hotel\nLes deux filtres sont mutuellement exclusifs (agencyId prioritaire)."
+          },
+          "response": []
         }
       ],
       "description": "Gestion des administrateurs internes UBAX (SUPER_ADMIN uniquement sauf listage)"
@@ -1122,11 +1168,26 @@
                     "header": [],
                     "url": {
                       "raw": "{{base_url}}/v1/storage/presign/tenant-document?contentType=application/pdf&expires=900",
-                      "host": ["{{base_url}}"],
-                      "path": ["v1", "storage", "presign", "tenant-document"],
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "storage",
+                        "presign",
+                        "tenant-document"
+                      ],
                       "query": [
-                        { "key": "contentType", "value": "application/pdf", "description": "Formats acceptés : application/pdf, image/jpeg, image/png, image/webp" },
-                        { "key": "expires", "value": "900", "description": "Durée de validité en secondes (max 3600)" }
+                        {
+                          "key": "contentType",
+                          "value": "application/pdf",
+                          "description": "Formats acceptés : application/pdf, image/jpeg, image/png, image/webp"
+                        },
+                        {
+                          "key": "expires",
+                          "value": "900",
+                          "description": "Durée de validité en secondes (max 3600)"
+                        }
                       ]
                     },
                     "description": "Génère une URL PUT présignée pour uploader la pièce d'identité directement vers MinIO.\n\nLe script de test sauvegarde automatiquement :\n- `tenant_doc_upload_url` → URL PUT à usage unique (expire dans `expires` secondes)\n- `tenant_id_document_url` → URL publique à passer dans le dossier locataire\n\n**Étape suivante :** requête « 2 – PUT Upload vers MinIO »"
@@ -1136,18 +1197,27 @@
                 {
                   "name": "2 – PUT Upload vers MinIO (pièce d'identité)",
                   "request": {
-                    "auth": { "type": "noauth" },
+                    "auth": {
+                      "type": "noauth"
+                    },
                     "method": "PUT",
                     "header": [
-                      { "key": "Content-Type", "value": "application/pdf" }
+                      {
+                        "key": "Content-Type",
+                        "value": "application/pdf"
+                      }
                     ],
                     "body": {
                       "mode": "file",
-                      "file": { "src": "" }
+                      "file": {
+                        "src": ""
+                      }
                     },
                     "url": {
                       "raw": "{{tenant_doc_upload_url}}",
-                      "host": ["{{tenant_doc_upload_url}}"]
+                      "host": [
+                        "{{tenant_doc_upload_url}}"
+                      ]
                     },
                     "description": "Upload le fichier directement vers MinIO via l'URL présignée obtenue à l'étape précédente.\n\n**Important :**\n- Aucun header Authorization (l'URL présignée contient déjà la signature)\n- `Content-Type` doit correspondre au `contentType` utilisé pour générer la presigned URL\n- Sélectionner le fichier dans l'onglet « Body → file »\n- L'URL est valide pendant la durée définie à l'étape 1 (900s par défaut)\n\n**Étape suivante :** créer le dossier locataire avec `{{tenant_id_document_url}}`"
                   },
@@ -1168,7 +1238,9 @@
                           "    }",
                           "}"
                         ],
-                        "type": "text/javascript"
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
                       }
                     }
                   ],
@@ -1181,8 +1253,8 @@
                         {
                           "key": "file",
                           "type": "file",
-                          "src": "",
-                          "description": "Pièce d'identité (PDF, JPEG, PNG, WEBP – max 20 Mo)"
+                          "description": "Pièce d'identité (PDF, JPEG, PNG, WEBP – max 20 Mo)",
+                          "src": "/C:/Users/snbam/Documents/img/piéce d'identité.png"
                         },
                         {
                           "key": "bucket",
@@ -1193,8 +1265,14 @@
                     },
                     "url": {
                       "raw": "{{base_url}}/v1/storage/upload",
-                      "host": ["{{base_url}}"],
-                      "path": ["v1", "storage", "upload"]
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "storage",
+                        "upload"
+                      ]
                     },
                     "description": "Alternative à la presigned URL : le fichier transite par le backend puis est stocké dans MinIO.\n\nRecommandé pour les apps mobiles (pas de requête PUT séparée).\n\nLe script de test sauvegarde automatiquement `tenant_id_document_url`.\n\n**Formats acceptés :** application/pdf, image/jpeg, image/png, image/webp – max 20 Mo"
                   },
@@ -1226,11 +1304,24 @@
                     "header": [],
                     "url": {
                       "raw": "{{base_url}}/v1/storage/presign/tenant-document?contentType=application/pdf&expires=900",
-                      "host": ["{{base_url}}"],
-                      "path": ["v1", "storage", "presign", "tenant-document"],
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "storage",
+                        "presign",
+                        "tenant-document"
+                      ],
                       "query": [
-                        { "key": "contentType", "value": "application/pdf" },
-                        { "key": "expires", "value": "900" }
+                        {
+                          "key": "contentType",
+                          "value": "application/pdf"
+                        },
+                        {
+                          "key": "expires",
+                          "value": "900"
+                        }
                       ]
                     },
                     "description": "Génère une presigned URL pour le justificatif de revenus (bulletin de salaire, relevé bancaire…).\n\nOptionnel — non requis pour atteindre PENDING_REVIEW (contexte marché africain : travailleurs informels sans justificatif).\n\nSauvegarde `tenant_income_proof_url` pour l'utiliser dans le dossier locataire."
@@ -1244,10 +1335,21 @@
                     "header": [],
                     "url": {
                       "raw": "{{base_url}}/v1/storage/presign/read?fileUrl={{tenant_id_document_url}}",
-                      "host": ["{{base_url}}"],
-                      "path": ["v1", "storage", "presign", "read"],
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "storage",
+                        "presign",
+                        "read"
+                      ],
                       "query": [
-                        { "key": "fileUrl", "value": "{{tenant_id_document_url}}", "description": "URL du fichier telle que stockée en base (tenant_id_document_url, tenant_income_proof_url, etc.)" }
+                        {
+                          "key": "fileUrl",
+                          "value": "{{tenant_id_document_url}}",
+                          "description": "URL du fichier telle que stockée en base (tenant_id_document_url, tenant_income_proof_url, etc.)"
+                        }
                       ]
                     },
                     "description": "Génère une URL GET temporaire (180 secondes) pour consulter un document KYC stocké dans le bucket privé `tenant-documents`.\n\nUtiliser l'URL retournée directement dans un navigateur ou une image preview côté frontend.\n\n**TTL :** 180 s (le plus court — données KYC sensibles)"
@@ -1273,7 +1375,9 @@
                       "    }",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -1287,13 +1391,23 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"employmentStatus\": \"SELF_EMPLOYED\",\n    \"employerName\": null,\n    \"monthlyIncome\": 300000,\n    \"hasGuarantor\": false,\n    \"idDocumentUrl\": \"{{tenant_id_document_url}}\",\n    \"idDocumentType\": \"CNI\",\n    \"idDocumentNumber\": \"SN-1234567890\",\n    \"idDocumentExpiry\": \"2030-12-31\",\n    \"incomeProofUrl\": \"{{tenant_income_proof_url}}\",\n    \"addressProofUrl\": \"{{tenant_address_proof_url}}\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "raw": "{\n\t \"propertyId\": \"3a7d0ae5-a747-4794-b02e-c84231501dae\",\n    \"employmentStatus\": \"SELF_EMPLOYED\",\n    \"employerName\": null,\n    \"monthlyIncome\": 300000,\n    \"hasGuarantor\": false,\n    \"idDocumentUrl\": \"{{tenant_id_document_url}}\",\n    \"idDocumentType\": \"CNI\",\n    \"idDocumentNumber\": \"XZZZTBPZZZFW4 \",\n    \"idDocumentExpiry\": \"2030-12-31\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "profile"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "profile"
+                  ]
                 },
                 "description": "CLIENT : Créer un profil locataire (dossier KYC).\n\nSi `idDocumentUrl` + `idDocumentNumber` + `idDocumentExpiry` sont fournis → statut `PENDING_REVIEW` immédiat.\nSinon → statut `INCOMPLETE` (documents à compléter via PATCH).\n\n`incomeProofUrl` et `addressProofUrl` sont optionnels (marché africain : travailleurs informels sans justificatif de revenus).\n\n**Pré-requis :** exécuter « Upload Documents KYC » pour remplir `{{tenant_id_document_url}}`"
               },
@@ -1306,8 +1420,14 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "profile"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "profile"
+                  ]
                 },
                 "description": "Récupérer mon profil locataire."
               },
@@ -1326,12 +1446,22 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n    \"employmentStatus\": \"SELF_EMPLOYED\",\n    \"idDocumentUrl\": \"{{tenant_id_document_url}}\",\n    \"idDocumentType\": \"CNI\",\n    \"idDocumentNumber\": \"SN-1234567890\",\n    \"idDocumentExpiry\": \"2030-12-31\",\n    \"incomeProofUrl\": \"{{tenant_income_proof_url}}\",\n    \"addressProofUrl\": \"{{tenant_address_proof_url}}\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{base_url}}/v1/tenants/profile",
-                  "host": ["{{base_url}}"],
-                  "path": ["v1", "tenants", "profile"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "tenants",
+                    "profile"
+                  ]
                 },
                 "description": "CLIENT : Mettre à jour mon profil locataire.\n\nSert aussi à re-soumettre un dossier INCOMPLETE ou REJECTED — si les 3 champs d'identité sont présents après la mise à jour, le statut passe automatiquement à PENDING_REVIEW.\n\n**Pré-requis :** exécuter « Upload Documents KYC » pour remplir les variables `{{tenant_id_document_url}}` etc."
               },
@@ -2603,7 +2733,9 @@
                   "    }",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -2617,7 +2749,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tenantId\": \"{{tenant_id}}\",\n  \"propertyId\": \"{{property_id}}\",\n  \"amount\": 350000,\n  \"paymentType\": \"RENT\",\n  \"paymentMethod\": \"WAVE\",\n  \"paymentDate\": \"2026-05-01\",\n  \"periodStart\": \"2026-05-01\",\n  \"periodEnd\": \"2026-05-31\",\n  \"reference\": \"WAVE-2026050001\",\n  \"notes\": \"Loyer mois de mai 2026\"\n}"
+              "raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"propertyId\": \"{{property_id}}\",\n    \"contractId\": \"1abf05cb-71a1-4be8-9a2e-a952ddd36e4d\",\n    \"paymentType\": \"RENT\",\n    \"paymentMethod\": \"MOBILE_MONEY\",\n    \"amount\": 2150000,\n    \"amountPaid\": 2150000,\n    \"dueDate\": \"2026-07-05\",\n    \"paidDate\": \"2026-07-01\",\n    \"periodLabel\": \"Juillet 2026\",\n    \"reference\": \"WAVE-2026070001\",\n    \"note\": \"Loyer + charges mois de juillet 2026\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/payments",
@@ -2965,28 +3097,223 @@
     },
     {
       "name": "Bailleur",
+      "description": "Gestion complete des demandes d adhesion bailleur.\n\nFLUX CLIENT -> OWNER (executer dans l ordre) :\n  Etape 0 : Choisir une agence       GET /v1/agencies\n  Etape 1 : Presigned URL recto       GET /v1/storage/presign/bailleur-document\n  Etape 2 : Upload recto -> MinIO     PUT {{bailleur_upload_url_recto}}\n  Etape 3 : Presigned URL verso       GET /v1/storage/presign/bailleur-document\n  Etape 4 : Upload verso -> MinIO     PUT {{bailleur_upload_url_verso}}\n  Etape 5 : Soumettre demande         POST /v1/bailleur/apply\n  Etape 6 : Suivre le statut          GET /v1/bailleur/my-applications\n  Etape 7 : Mes agences (post-appro)  GET /v1/bailleur/my-agencies\n\nFLUX AGENCE (DIRECTEUR_AGENCE) : lister, consulter, approuver/rejeter, voir bailleurs.\nFLUX ADMIN : vue globale toutes agences.",
       "item": [
         {
-          "name": "Public",
+          "name": "Flux CLIENT - Deposer une demande bailleur",
+          "description": "Executer les etapes de haut en bas.\nLes variables d environnement sont auto-remplies par les scripts de test.",
           "item": [
             {
-              "name": "Soumettre une demande d'adhésion bailleur",
+              "name": "Etape 0 - Choisir une agence",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/agencies",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "agencies"
+                  ],
+                  "query": [
+                    {
+                      "key": "city",
+                      "value": "Dakar",
+                      "disabled": true,
+                      "description": "Filtrer par ville (optionnel)"
+                    },
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "CLIENT / OWNER authentifie.\nParcourir la liste des agences actives et noter l agencyId de l agence choisie.\nLe script sauvegarde automatiquement le premier id dans {{agency_id}}."
+              },
+              "response": [],
               "event": [
                 {
                   "listen": "test",
                   "script": {
+                    "type": "text/javascript",
                     "exec": [
-                      "if (pm.response.code === 200 || pm.response.code === 201) {",
-                      "    var json = pm.response.json();",
-                      "    if (json.data && json.data.id) {",
-                      "        pm.environment.set('bailleur_application_id', json.data.id);",
+                      "if (pm.response.code === 200) {",
+                      "    var j = pm.response.json();",
+                      "    if (j.data && j.data.content && j.data.content.length > 0) {",
+                      "        pm.environment.set('agency_id', j.data.content[0].id);",
+                      "        console.log('agency_id sauvegarde : ' + j.data.content[0].id);",
                       "    }",
                       "}"
-                    ],
-                    "type": "text/javascript"
+                    ]
                   }
                 }
-              ],
+              ]
+            },
+            {
+              "name": "Etape 1 - Presigned URL recto piece identite",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/storage/presign/bailleur-document",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "bailleur-document"
+                  ],
+                  "query": [
+                    {
+                      "key": "contentType",
+                      "value": "image/jpeg",
+                      "description": "image/jpeg | image/png | image/webp | application/pdf"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "900",
+                      "disabled": true,
+                      "description": "Validite en secondes (max 3600)"
+                    }
+                  ]
+                },
+                "description": "Obtenir une URL PUT presignee pour le RECTO de la piece d identite.\nLe script sauvegarde :\n  - uploadUrl  -> {{bailleur_upload_url_recto}}  (a utiliser a l etape 2)\n  - publicUrl  -> {{bailleur_doc_recto_url}}     (a inclure dans le body etape 5)\n\nDuree de validite : 900 secondes (15 min) — executer l etape 2 immediatement."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var j = pm.response.json();",
+                      "    if (j.data) {",
+                      "        pm.environment.set('bailleur_upload_url_recto', j.data.uploadUrl);",
+                      "        pm.environment.set('bailleur_doc_recto_url', j.data.publicUrl);",
+                      "        console.log('Recto -> upload: ' + j.data.uploadUrl);",
+                      "        console.log('Recto -> public: ' + j.data.publicUrl);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Etape 2 - PUT recto vers MinIO (upload fichier binaire)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "image/jpeg",
+                    "description": "Adapter selon le type du fichier uploade"
+                  }
+                ],
+                "url": {
+                  "raw": "{{bailleur_upload_url_recto}}"
+                },
+                "body": {
+                  "mode": "file",
+                  "file": {}
+                },
+                "description": "Upload DIRECT vers MinIO - ne passe PAS par le backend UBAX.\n\nConfiguration Postman :\n  - URL    : {{bailleur_upload_url_recto}} (auto-rempli par l etape 1)\n  - Auth   : No Auth\n  - Body   : binary -> selectionner le fichier image RECTO\n  - Header : Content-Type = image/jpeg (adapter au type reel)\n\nReponse attendue : 200 OK avec corps vide (comportement normal MinIO/S3).\nLe publicUrl est deja sauvegarde dans {{bailleur_doc_recto_url}} depuis l etape 1.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Etape 3 - Presigned URL verso piece identite",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/storage/presign/bailleur-document",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "storage",
+                    "presign",
+                    "bailleur-document"
+                  ],
+                  "query": [
+                    {
+                      "key": "contentType",
+                      "value": "image/jpeg",
+                      "description": "image/jpeg | image/png | image/webp | application/pdf"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "900",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Obtenir une URL PUT presignee pour le VERSO de la piece d identite.\nLe script sauvegarde :\n  - uploadUrl  -> {{bailleur_upload_url_verso}}  (a utiliser a l etape 4)\n  - publicUrl  -> {{bailleur_doc_verso_url}}     (a inclure dans le body etape 5)"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var j = pm.response.json();",
+                      "    if (j.data) {",
+                      "        pm.environment.set('bailleur_upload_url_verso', j.data.uploadUrl);",
+                      "        pm.environment.set('bailleur_doc_verso_url', j.data.publicUrl);",
+                      "        console.log('Verso -> upload: ' + j.data.uploadUrl);",
+                      "        console.log('Verso -> public: ' + j.data.publicUrl);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Etape 4 - PUT verso vers MinIO (upload fichier binaire)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "image/jpeg",
+                    "description": "Adapter selon le type du fichier uploade"
+                  }
+                ],
+                "url": {
+                  "raw": "{{bailleur_upload_url_verso}}"
+                },
+                "body": {
+                  "mode": "file",
+                  "file": {}
+                },
+                "description": "Upload DIRECT vers MinIO - ne passe PAS par le backend UBAX.\n\nConfiguration Postman :\n  - URL    : {{bailleur_upload_url_verso}} (auto-rempli par l etape 3)\n  - Auth   : No Auth\n  - Body   : binary -> selectionner le fichier image VERSO\n  - Header : Content-Type = image/jpeg (adapter au type reel)\n\nReponse attendue : 200 OK avec corps vide (comportement normal MinIO/S3).\nLe publicUrl est deja sauvegarde dans {{bailleur_doc_verso_url}} depuis l etape 3.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Etape 5 - Soumettre la demande bailleur",
               "request": {
                 "method": "POST",
                 "header": [
@@ -2995,15 +3322,6 @@
                     "value": "application/json"
                   }
                 ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"agencyId\": \"{{agency_id}}\",\n  \"idType\": \"CNI\",\n  \"idNumber\": \"1234567890\",\n  \"properties\": [\n    {\n      \"description\": \"Villa 4 chambres a Almadies\",\n      \"address\": \"12 Rue des Almadies, Dakar\",\n      \"city\": \"Dakar\",\n      \"propertyType\": \"VILLA\",\n      \"estimatedRent\": 350000\n    }\n  ],\n  \"message\": \"Je souhaite confier la gestion de mes biens a votre agence.\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/apply",
                   "host": [
@@ -3015,22 +3333,102 @@
                     "apply"
                   ]
                 },
-                "description": "CLIENT authentifie (JWT requis) : Soumettre une demande d adhesion bailleur.\nfirstName, lastName, phone, email sont extraits automatiquement du compte — seuls agencyId, idType, idNumber et properties sont requis.\nidType : CNI | PASSEPORT | PERMIS_CONDUIRE | TITRE_SEJOUR | CARTE_CONSULAIRE\nFlux : GET /v1/agencies → choisir une agence → POST ici."
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"agencyId\": \"{{agency_id}}\",\n  \"idType\": \"CNI\",\n  \"idNumber\": \"CI-1234567890\",\n  \"description\": \"Je suis proprietaire de trois appartements en centre-ville que je souhaite confier a votre agence pour gestion locative et encaissement des loyers mensuels.\",\n  \"email\": \"bailleur@example.com\",\n  \"idDocRectoUrl\": \"{{bailleur_doc_recto_url}}\",\n  \"idDocVersoUrl\": \"{{bailleur_doc_verso_url}}\"\n}"
+                },
+                "description": "CLIENT authentifie. Soumet la demande d adhesion bailleur.\n\nVariables auto-remplies par les etapes precedentes :\n  {{agency_id}}              <- etape 0\n  {{bailleur_doc_recto_url}} <- etape 1\n  {{bailleur_doc_verso_url}} <- etape 3\n\nChamps OBLIGATOIRES : agencyId, idType, idNumber, description (min 10 mots).\nChamps OPTIONNELS   : email (si compte sans email), idDocRectoUrl, idDocVersoUrl.\n\n201 -> demande creee en statut PENDING.\nL bailleur_application_id est auto-sauvegarde pour le suivi."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var j = pm.response.json();",
+                      "    if (j.data && j.data.id) {",
+                      "        pm.environment.set('bailleur_application_id', j.data.id);",
+                      "        console.log('Demande soumise, id : ' + j.data.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Etape 6 - Suivre le statut de la demande",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/bailleur/my-applications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "my-applications"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "PENDING",
+                      "disabled": true,
+                      "description": "PENDING | APPROVED | REJECTED | CANCELLED"
+                    },
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "10",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "OWNER. Affiche les demandes soumises et leur statut courant.\nAppeler periodiquement depuis l app mobile pour notifier le bailleur.\n\nStatuts possibles : PENDING (en attente) | APPROVED | REJECTED | CANCELLED."
+              },
+              "response": []
+            },
+            {
+              "name": "Etape 7 - Mes agences partenaires (apres approbation)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/bailleur/my-agencies",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "my-agencies"
+                  ]
+                },
+                "description": "OWNER. Liste les agences auxquelles le bailleur est lie (demandes APPROVED).\nDisponible uniquement apres approbation par le DIRECTEUR_AGENCE.\n\nApres approbation :\n  - Le compte CLIENT est promu OWNER (role UBAX_OWNER ajoute sur Keycloak)\n  - L agence peut creer des biens via POST /v1/properties avec l ownerId du bailleur"
               },
               "response": []
             }
           ]
         },
         {
-          "name": "Agence",
+          "name": "Flux Agence - Traiter les demandes (DIRECTEUR_AGENCE)",
+          "description": "PARTNER + DIRECTEUR_AGENCE. Gestion des demandes bailleur recues par l agence.",
           "item": [
             {
-              "name": "Lister les demandes reçues",
+              "name": "Lister les demandes recues",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/v1/bailleur/agency/applications?page=0&size=20",
+                  "raw": "{{base_url}}/v1/bailleur/agency/applications",
                   "host": [
                     "{{base_url}}"
                   ],
@@ -3043,25 +3441,38 @@
                   "query": [
                     {
                       "key": "page",
-                      "value": "0"
+                      "value": "0",
+                      "disabled": true
                     },
                     {
                       "key": "size",
-                      "value": "20"
-                    },
-                    {
-                      "key": "status",
-                      "value": "PENDING",
+                      "value": "20",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "PARTNER + DIRECTEUR_AGENCE : Lister les demandes d'adhésion bailleur reçues par l'agence.\nStatuts : PENDING | APPROVED | REJECTED | CANCELLED"
+                "description": "PARTNER + DIRECTEUR_AGENCE. Liste paginee des demandes d adhesion bailleur recues par l agence."
               },
-              "response": []
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var j = pm.response.json();",
+                      "    if (j.data && j.data.content && j.data.content.length > 0) {",
+                      "        pm.environment.set('bailleur_application_id', j.data.content[0].id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ]
             },
             {
-              "name": "Détail d'une demande",
+              "name": "Detail d'une demande",
               "request": {
                 "method": "GET",
                 "header": [],
@@ -3078,12 +3489,12 @@
                     "{{bailleur_application_id}}"
                   ]
                 },
-                "description": "PARTNER + DIRECTEUR_AGENCE : Détail d'une demande d'adhésion bailleur."
+                "description": "PARTNER + DIRECTEUR_AGENCE. Detail complet de la demande :\ninformations bailleur, piece d identite (recto/verso), description libre et statut."
               },
               "response": []
             },
             {
-              "name": "Approuver une demande",
+              "name": "Approuver la demande",
               "request": {
                 "method": "PATCH",
                 "header": [
@@ -3092,10 +3503,6 @@
                     "value": "application/json"
                   }
                 ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"decision\": \"APPROVED\",\n  \"comment\": \"Dossier complet. Bienvenue dans notre portefeuille bailleurs.\"\n}"
-                },
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/agency/applications/{{bailleur_application_id}}/decision",
                   "host": [
@@ -3110,12 +3517,16 @@
                     "decision"
                   ]
                 },
-                "description": "PARTNER + DIRECTEUR_AGENCE : Approuver une demande bailleur.\nCrée automatiquement un compte OWNER et le lien bailleur↔agence."
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"comment\": \"Dossier complet et verifie. Biens confirmes lors de la visite terrain.\"\n}"
+                },
+                "description": "PARTNER + DIRECTEUR_AGENCE. Approuve la demande en statut PENDING.\n\nEffets automatiques :\n  - Nouveau bailleur : creation compte Keycloak + role UBAX_OWNER + SMS mot de passe\n  - Bailleur existant : lien bailleur<->agence cree uniquement\n  - Statut -> APPROVED\n\n409 si la demande est deja traitee (statut != PENDING)."
               },
               "response": []
             },
             {
-              "name": "Rejeter une demande",
+              "name": "Rejeter la demande",
               "request": {
                 "method": "PATCH",
                 "header": [
@@ -3124,10 +3535,6 @@
                     "value": "application/json"
                   }
                 ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"decision\": \"REJECTED\",\n  \"comment\": \"Zone géographique hors de notre périmètre d'intervention.\"\n}"
-                },
                 "url": {
                   "raw": "{{base_url}}/v1/bailleur/agency/applications/{{bailleur_application_id}}/decision",
                   "host": [
@@ -3142,14 +3549,52 @@
                     "decision"
                   ]
                 },
-                "description": "PARTNER + DIRECTEUR_AGENCE : Rejeter une demande bailleur (commentaire obligatoire)."
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"REJECT\",\n  \"comment\": \"Documents non conformes. La piece d identite fournie est illisible.\"\n}"
+                },
+                "description": "PARTNER + DIRECTEUR_AGENCE. Rejette la demande PENDING. Un commentaire est recommande."
+              },
+              "response": []
+            },
+            {
+              "name": "Bailleurs approuves de l'agence (liste ownerId)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/bailleur/agency/bailleurs",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "bailleur",
+                    "agency",
+                    "bailleurs"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "size",
+                      "value": "20",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "PARTNER + DIRECTEUR_AGENCE. Liste paginee des bailleurs (OWNER) approuves lies a l agence.\nL id retourne pour chaque bailleur = ownerId a passer dans POST /v1/properties."
               },
               "response": []
             }
           ]
         },
         {
-          "name": "Admin",
+          "name": "Vue Admin - Toutes les demandes",
+          "description": "ADMIN / SUPER_ADMIN. Vue globale toutes agences confondues.",
           "item": [
             {
               "name": "Vue globale toutes agences",
@@ -3157,7 +3602,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/v1/bailleur/admin/applications?page=0&size=20",
+                  "raw": "{{base_url}}/v1/bailleur/admin/applications",
                   "host": [
                     "{{base_url}}"
                   ],
@@ -3170,87 +3615,23 @@
                   "query": [
                     {
                       "key": "page",
-                      "value": "0"
+                      "value": "0",
+                      "disabled": true
                     },
                     {
                       "key": "size",
-                      "value": "20"
-                    },
-                    {
-                      "key": "status",
-                      "value": "PENDING",
+                      "value": "20",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "ADMIN/SUPER_ADMIN : Vue globale de toutes les demandes bailleurs toutes agences confondues."
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "OWNER Mobile",
-          "item": [
-            {
-              "name": "Mes demandes d adhesion (OWNER)",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_url}}/v1/bailleur/my-applications?page=0&size=20",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "bailleur",
-                    "my-applications"
-                  ],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "0"
-                    },
-                    {
-                      "key": "size",
-                      "value": "20"
-                    },
-                    {
-                      "key": "status",
-                      "value": "PENDING",
-                      "disabled": true
-                    }
-                  ]
-                },
-                "description": "OWNER : Lister mes demandes d adhesion bailleur avec leur statut.\nStatuts : PENDING | APPROVED | REJECTED | CANCELLED"
-              },
-              "response": []
-            },
-            {
-              "name": "Mes agences partenaires (OWNER)",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_url}}/v1/bailleur/my-agencies",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v1",
-                    "bailleur",
-                    "my-agencies"
-                  ]
-                },
-                "description": "OWNER : Lister les agences auxquelles je suis lie en tant que bailleur. Utilise pour rattacher un bien a une agence."
+                "description": "ADMIN / SUPER_ADMIN. Liste paginee de toutes les demandes bailleur, toutes agences confondues."
               },
               "response": []
             }
           ]
         }
-      ],
-      "description": "Gestion des demandes d'adhésion bailleur (propriétaires souhaitant confier leur bien à une agence)\n\nFlux mobile CLIENT → OWNER :\n1. GET /v1/agencies → choisir une agence\n2. POST /v1/bailleur/apply (JWT CLIENT) → demande soumise\n3. DIRECTEUR_AGENCE approuve → rôle UBAX_OWNER ajouté automatiquement\n4. OWNER refresh token → formulaire bien débloqué\n\nMobile OWNER suivi : GET /v1/bailleur/my-applications | GET /v1/bailleur/my-agencies"
+      ]
     },
     {
       "name": "Storage",
@@ -3274,11 +3655,11 @@
                     {
                       "key": "file",
                       "type": "file",
-                      "value": ""
+                      "src": "/C:/Users/snbam/Downloads/istockphoto-2179869620-1024x1024.jpg"
                     },
                     {
                       "key": "bucket",
-                      "value": "tenant-documents",
+                      "value": "ticket-attachments",
                       "type": "text",
                       "description": "Bucket cible"
                     },
@@ -3286,7 +3667,8 @@
                       "key": "folder",
                       "value": "kyc",
                       "type": "text",
-                      "description": "Sous-dossier (optionnel)"
+                      "description": "Sous-dossier (optionnel)",
+                      "disabled": true
                     }
                   ]
                 },
@@ -3666,6 +4048,40 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "Presigned URL - piece d'identite bailleur (recto/verso)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/storage/presign/bailleur-document",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "storage",
+                "presign",
+                "bailleur-document"
+              ],
+              "query": [
+                {
+                  "key": "contentType",
+                  "value": "image/jpeg",
+                  "description": "image/jpeg | image/png | image/webp | application/pdf"
+                },
+                {
+                  "key": "expires",
+                  "value": "900",
+                  "disabled": true,
+                  "description": "Duree de validite en secondes (max 3600)"
+                }
+              ]
+            },
+            "description": "Authentifie. Presigned URL PUT pour photo de piece d'identite bailleur (recto OU verso).\nAppeler deux fois (une par face). Inclure les publicUrl dans idDocRectoUrl et idDocVersoUrl\ndu body POST /v1/bailleur/apply.\nBucket : bailleur-documents. Types MIME : image/jpeg, image/png, image/webp, application/pdf."
+          },
+          "response": []
         },
         {
           "name": "Presign Read (GET)",
@@ -4576,7 +4992,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"propertyId\": \"{{property_id}}\",\n  \"ownerId\": \"{{owner_user_id}}\",\n  \"tenantId\": \"{{tenant_id}}\",\n  \"contractType\": \"LEASE\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2027-06-30\",\n  \"monthlyRent\": 350000,\n  \"monthlyCharges\": 15000,\n  \"depositAmount\": 700000,\n  \"agencyCommissionRate\": 5,\n  \"paymentDay\": 5,\n  \"specialClauses\": \"Animaux interdits\",\n  \"terminationConditions\": \"Preavis de 3 mois\"\n}",
+              "raw": "{\n  \"propertyId\": \"{{property_id}}\",\n  \"ownerId\": \"{{owner_user_id}}\",\n  \"tenantId\": \"{{tenant_id}}\",\n  \"contractType\": \"LEASE\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2027-06-30\",\n  \"monthlyRent\": 2000000,\n  \"monthlyCharges\": 150000,\n  \"depositAmount\": 40000000,\n  \"agencyCommissionRate\": 5,\n  \"paymentDay\": 5,\n  \"specialClauses\": \"Bail meublé – Villa Les Jardins d'Almadies. Loyer payable le 5 de chaque mois.\",\n  \"terminationConditions\": \"Preavis de 3 mois\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4630,6 +5046,26 @@
               ]
             },
             "description": "PARTNER/OWNER/ADMIN - Lister les contrats. Filtrable par statut."
+          },
+          "response": []
+        },
+        {
+          "name": "KPIs contrats (stats)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "stats"
+              ]
+            },
+            "description": "PARTNER/OWNER/ADMIN. Statistiques contrats : total, actifs (ACTIVE), en attente (PENDING_SIGNATURE), resilies (TERMINATED), annules (CANCELLED)."
           },
           "response": []
         },
@@ -4782,6 +5218,227 @@
               ]
             },
             "description": "PARTNER/OWNER/ADMIN - Annuler un contrat DRAFT ou PENDING_SIGNATURE."
+          },
+          "response": []
+        },
+        {
+          "name": "Régénérer le PDF d'un contrat",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/contracts/{{contract_id}}/generate-pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "contracts",
+                "{{contract_id}}",
+                "generate-pdf"
+              ]
+            },
+            "description": "{{base_url}}/v1/contracts/{{contract_id}}/generate-pdf"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mandats de gestion",
+      "description": "Acte administratif exclusif agence<->bailleur — jamais visible par les clients.\nPrerequis : lien bailleur approuve (POST /v1/bailleur/apply -> APPROVED).\nContrainte : un seul mandat ACTIVE ou PENDING_SIGNATURE par couple agence<->bailleur.\nReference auto-generee : MAN-{YEAR}-{6-char-UUID} (ex: MAN-2026-A1B2C3).\n\nCycle de vie :\nDRAFT -> [submit] -> PENDING_SIGNATURE -> [activate (ADMIN)] -> ACTIVE -> [terminate] -> TERMINATED\n  |                        |\n[cancel]               [cancel]\nCANCELLED            CANCELLED",
+      "item": [
+        {
+          "name": "Creer un mandat (DRAFT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mandates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mandates"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerId\": \"{{owner_user_id}}\",\n  \"startDate\": \"2026-06-01\",\n  \"endDate\": \"2027-05-31\",\n  \"commissionRate\": 8.5,\n  \"specialClauses\": \"Gestion locative complete incluant recherche locataire, etat des lieux et encaissement des loyers.\",\n  \"terminationConditions\": \"Resiliation avec preavis de 3 mois par lettre recommandee.\"\n}"
+            },
+            "description": "PARTNER. Cree un mandat de gestion agence<->bailleur en statut DRAFT.\nLe bailleur doit etre approuve par l'agence (bailleur_agency_links).\nChamps obligatoires : ownerId, startDate.\n409 si un mandat ACTIVE ou PENDING_SIGNATURE existe deja pour ce couple agence<->bailleur.\nReference MAN-{YEAR}-{6-char-UUID} generee automatiquement."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var j = pm.response.json();",
+                  "    if (j.data && j.data.id) {",
+                  "        pm.environment.set('mandate_id', j.data.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lister les mandats de l'agence",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/mandates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mandates"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "DRAFT",
+                  "disabled": true,
+                  "description": "DRAFT | PENDING_SIGNATURE | ACTIVE | TERMINATED | CANCELLED"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "PARTNER. Liste paginee des mandats de l'agence du caller. Filtre optionnel ?status="
+          },
+          "response": []
+        },
+        {
+          "name": "Detail d'un mandat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/mandates/{{mandate_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mandates",
+                "{{mandate_id}}"
+              ]
+            },
+            "description": "PARTNER. Detail complet du mandat. 403 si mandat d'une autre agence. 404 si introuvable."
+          },
+          "response": []
+        },
+        {
+          "name": "Soumettre pour signature (DRAFT -> PENDING_SIGNATURE)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/mandates/{{mandate_id}}/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mandates",
+                "{{mandate_id}}",
+                "submit"
+              ]
+            },
+            "description": "PARTNER. Passe DRAFT -> PENDING_SIGNATURE. 400 si statut actuel != DRAFT."
+          },
+          "response": []
+        },
+        {
+          "name": "Activer le mandat (PENDING_SIGNATURE -> ACTIVE)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/mandates/{{mandate_id}}/activate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mandates",
+                "{{mandate_id}}",
+                "activate"
+              ]
+            },
+            "description": "ADMIN. Passe PENDING_SIGNATURE -> ACTIVE. 400 si statut actuel != PENDING_SIGNATURE."
+          },
+          "response": []
+        },
+        {
+          "name": "Resilier le mandat (ACTIVE -> TERMINATED)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mandates/{{mandate_id}}/terminate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mandates",
+                "{{mandate_id}}",
+                "terminate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"terminationReason\": \"Non-respect des clauses contractuelles. Documents non fournis dans les delais impartis.\"\n}"
+            },
+            "description": "PARTNER. Passe ACTIVE -> TERMINATED. terminationReason obligatoire. 400 si statut != ACTIVE ou motif absent."
+          },
+          "response": []
+        },
+        {
+          "name": "Annuler le mandat (DRAFT|PENDING_SIGNATURE -> CANCELLED)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/mandates/{{mandate_id}}/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mandates",
+                "{{mandate_id}}",
+                "cancel"
+              ]
+            },
+            "description": "PARTNER. Annule DRAFT ou PENDING_SIGNATURE. 400 si statut = ACTIVE, TERMINATED ou CANCELLED."
           },
           "response": []
         }
@@ -5788,6 +6445,43 @@
             "description": "CLIENT/OWNER/PARTNER/ADMIN : Lister les agences actives. Filtre optionnel ?city= (insensible a la casse).\nUtilise dans le flux mobile avant POST /v1/bailleur/apply."
           },
           "response": []
+        },
+        {
+          "name": "Lister les hotels disponibles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hotels",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "hotels"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Dakar",
+                  "disabled": true,
+                  "description": "Filtrer par ville (insensible a la casse)"
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Mobile. CLIENT/OWNER/PARTNER/ADMIN. Hotels actifs. Filtre optionnel ?city="
+          },
+          "response": []
         }
       ],
       "description": "Consultation des agences disponibles — utilisé depuis l'application mobile dans le flux adhésion bailleur"
@@ -6094,6 +6788,133 @@
         }
       ],
       "description": "Gestion des prestataires / techniciens externes (PARTNER agence ou hotel).\nLes techniciens n ont pas de compte sur la plateforme. Assignables aux tickets SAV via technicienId dans PATCH /v1/tickets/{id}/schedule."
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {
+          "name": "Client",
+          "item": [
+            {
+              "name": "Soumettre une reservation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"propertyId\": \"{{property_id}}\",\n  \"checkInDate\": \"2026-06-10\",\n  \"checkOutDate\": \"2026-06-15\",\n  \"guestCount\": 2,\n  \"notes\": \"Chambre avec vue si possible\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations"
+                  ]
+                },
+                "description": "CLIENT - Soumettre une demande de reservation hoteliere."
+              },
+              "response": []
+            },
+            {
+              "name": "Mes reservations",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/mine?page=0&size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "mine"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "0"
+                    },
+                    {
+                      "key": "size",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "CLIENT - Liste paginee des reservations du client connecte."
+              },
+              "response": []
+            },
+            {
+              "name": "Detail reservation",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}"
+                  ]
+                },
+                "description": "CLIENT ou PARTNER - Detail complet d une reservation."
+              },
+              "response": []
+            },
+            {
+              "name": "Annuler ma reservation",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v1/reservations/{{reservation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "reservations",
+                    "{{reservation_id}}"
+                  ]
+                },
+                "description": "CLIENT - Annuler une reservation PENDING uniquement.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Changement de plans\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "Health & Monitoring",

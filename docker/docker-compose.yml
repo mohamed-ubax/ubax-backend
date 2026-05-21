@@ -127,6 +127,8 @@ services:
         mc mb --ignore-existing ubax/documents-generated
         mc mb --ignore-existing ubax/ticket-attachments
         mc mb --ignore-existing ubax/partner-documents
+        mc mb --ignore-existing ubax/bailleur-documents
+        mc mb --ignore-existing ubax/technicien-avatars
 
         # Accès public en lecture pour les médias non-sensibles
         mc anonymous set download ubax/users-avatars
