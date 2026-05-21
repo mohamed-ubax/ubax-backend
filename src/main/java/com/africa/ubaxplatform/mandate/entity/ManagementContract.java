@@ -76,4 +76,7 @@ public class ManagementContract extends BaseEntity {
 
   @Column(name = "termination_reason", columnDefinition = "TEXT")
   private String terminationReason;
+
+  @Column(name = "deleted_at")
+  private LocalDateTime deletedAt;
 }
