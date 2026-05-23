@@ -73,6 +73,16 @@ src/main/java/com/africa/ubaxplatform/
 │   ├── mapper/         ReservationMapper
 │   ├── repository/     ReservationRepository
 │   └── service/
+├── visitappointment/ ✅ Réservation de visites immobilières (client + agence)
+│   ├── codeList/       VisitRequestStatus (PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED)
+│   ├── controller/     PropertyVisitClientController, PropertyVisitAgencyController
+│   ├── dto/            CreateVisitRequestDto, ConfigureVisitAvailabilityDto, ConfirmVisitRequestDto,
+│   │                   RejectVisitRequestDto, UpdateBlackoutDatesDto, VisitRequestResponse,
+│   │                   VisitAvailabilityResponse
+│   ├── entity/         PropertyVisitRequest, AgencyVisitAvailability
+│   ├── mapper/         VisitRequestMapper
+│   ├── repository/     PropertyVisitRequestRepository, AgencyVisitAvailabilityRepository
+│   └── service/        PropertyVisitService (interface) + PropertyVisitServiceImpl
 ├── ticketing/      ✅ Tickets SAV complets — entités, controller, service, repos, DTOs
 │   ├── codeList/       TicketStatus (enum), MessageType (enum)
 │   ├── controller/     TicketController
@@ -305,8 +315,10 @@ public class ModuleController {
 | V055 | `add_id_docs_and_nullable_email_to_bailleur.sql` | `email` nullable sur `bailleur_applications` (clients sans email) + colonnes `id_doc_recto_url TEXT` et `id_doc_verso_url TEXT` (pièce d'identité recto/verso) |
 | V056 | `create_management_contracts.sql` | Table `management_contracts` (agence↔bailleur, statuts DRAFT/PENDING_SIGNATURE/ACTIVE/TERMINATED/CANCELLED, FKs agency/owner/created_by/terminated_by, indexes agency/owner/status) |
 | V057 | `fix_tenant_employment_status_constraint.sql` | Supprime la contrainte CHECK orpheline `tenants_employment_status_check` (non présente dans les migrations, créée par une ancienne session Hibernate) · Ajoute `EMPLOYED` dans `la_code_list` (valeur envoyée par le mobile) · Migre les enregistrements `EMPLOYEE` → `EMPLOYED` · Désactive `EMPLOYEE` (is_system_assign=false) |
+| V058 | `create_property_visit_requests_and_availabilities.sql` | Tables `property_visit_requests`, `agency_visit_availabilities`, `visit_slot_occupancy` — module réservation de visites |
+| V059 | `seed_visit_request_code_lists.sql` | Seed `la_code_list` (VISIT_REQUEST_STATUS : PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED) |
 
-Prochaine version disponible : **V058**
+Prochaine version disponible : **V060**
 
 ---
 
@@ -518,6 +530,28 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 | `DELETE` | `/v1/properties/{id}/boost` | `ADMIN` | Retirer boost |
 | `PATCH` | `/v1/properties/{id}/expiration` | `ADMIN` | Fixer expiration |
 | `DELETE` | `/v1/properties/{id}/expiration` | `ADMIN` | Retirer expiration |
+
+### Property Visits - Client
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/property-visits/available-slots/{propertyId}` | Public | Consulter créneaux disponibles pour 30 jours |
+| `POST` | `/v1/property-visits` | `CLIENT/OWNER` | Créer une demande de visite |
+| `GET` | `/v1/property-visits/mine` | `CLIENT/OWNER` | Lister mes demandes de visite |
+| `GET` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Détail de ma demande de visite |
+| `DELETE` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Annuler une demande PENDING |
+
+### Property Visits - Agency
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `POST` | `/v1/agency/property-visits/config` | `PARTNER` | Configurer les disponibilités de visite par bien |
+| `GET` | `/v1/agency/property-visits/config/{propertyId}` | `PARTNER` | Récupérer la configuration de disponibilité |
+| `PUT` | `/v1/agency/property-visits/config/{propertyId}/blackout-dates` | `PARTNER` | Mettre à jour les dates d’indisponibilité |
+| `GET` | `/v1/agency/property-visits` | `PARTNER` | Lister les demandes de visite de mon agence |
+| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/confirm` | `PARTNER` | Confirmer une demande de visite |
+| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/reject` | `PARTNER` | Rejeter une demande de visite |
+| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/assign-agent/{agentId}` | `PARTNER` | Assigner un agent à la demande |
 
 ### Payment & Expense
 
