@@ -4,6 +4,7 @@ import com.africa.ubaxplatform.auth.entity.User;
 import com.africa.ubaxplatform.reservation.codeList.ReservationStatus;
 import com.africa.ubaxplatform.reservation.entity.Reservation;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -64,4 +65,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
       @Param("propertyId") UUID propertyId,
       @Param("checkInDate") LocalDate checkInDate,
       @Param("checkOutDate") LocalDate checkOutDate);
+
+  @Query(
+      """
+    SELECT r FROM Reservation r
+    JOIN FETCH r.client
+    JOIN FETCH r.property p
+    JOIN FETCH p.owner o
+    LEFT JOIN FETCH o.hotel
+    WHERE r.id = :id
+    AND r.deletedAt IS NULL
+""")
+  Optional<Reservation> findByIdWithDetails(@Param("id") UUID id);
 }

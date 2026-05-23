@@ -51,7 +51,7 @@ public class ReservationServiceImpl implements ReservationService {
 
   private Reservation resolveReservation(UUID id) throws CustomException {
     return reservationRepo
-        .findById(id)
+        .findByIdWithDetails(id)
         .filter(r -> r.getDeletedAt() == null)
         .orElseThrow(
             () ->
@@ -182,7 +182,8 @@ public class ReservationServiceImpl implements ReservationService {
     Reservation reservation = resolveReservation(id);
 
     boolean isClient = reservation.getClient().getId().equals(caller.getId());
-    var propertyHotel = reservation.getProperty().getHotel();
+    var propertyHotel = reservation.getProperty().getOwner().getHotel(); // ← corrigé
+
     boolean isHotelOwner =
         caller.getHotel() != null
             && propertyHotel != null
