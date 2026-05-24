@@ -22,6 +22,7 @@
 </head>
 <body>
 <div class="page">
+
   <div class="header">
     <div class="brand">UBAX</div>
     <div class="doc-type">Reçu de Paiement</div>
@@ -33,8 +34,15 @@
   <div class="amount-box">
     <div class="amount-label">Montant encaissé</div>
     <div class="amount-value"
-         th:with="totalAmt=(payment.amountPaid != null ? payment.amountPaid : payment.amount)"
-         th:text="${#numbers.formatDecimal(totalAmt, 1, 'COMMA', 0, 'POINT')} + ' XOF'">0 XOF</div>
+         th:if="${payment.amountPaid != null}"
+         th:text="${#numbers.formatDecimal(payment.amountPaid, 1, 'COMMA', 0, 'POINT')} + ' XOF'">
+      0 XOF
+    </div>
+    <div class="amount-value"
+         th:if="${payment.amountPaid == null}"
+         th:text="${#numbers.formatDecimal(payment.amount, 1, 'COMMA', 0, 'POINT')} + ' XOF'">
+      0 XOF
+    </div>
   </div>
 
   <table>
@@ -54,6 +62,10 @@
       <td class="label">Date de paiement :</td>
       <td th:text="${#temporals.format(payment.paidDate, 'dd/MM/yyyy')}">—</td>
     </tr>
+    <tr th:if="${payment.dueDate != null}">
+      <td class="label">Date d&#39;&#233;ch&#233;ance :</td>
+      <td th:text="${#temporals.format(payment.dueDate, 'dd/MM/yyyy')}">—</td>
+    </tr>
     <tr th:if="${tenant != null and tenant.user != null}">
       <td class="label">Payeur :</td>
       <td th:text="${tenant.user.fullName}">—</td>
@@ -63,8 +75,12 @@
       <td th:text="${property.title + ' – ' + property.city}">—</td>
     </tr>
     <tr th:if="${contract != null}">
-      <td class="label">Réf. Contrat :</td>
+      <td class="label">R&#233;f. Contrat :</td>
       <td th:text="${contract.referenceNumber}">—</td>
+    </tr>
+    <tr th:if="${agency != null}">
+      <td class="label">Agence :</td>
+      <td th:text="${agency.name}">—</td>
     </tr>
     <tr th:if="${payment.note != null}">
       <td class="label">Note :</td>
@@ -76,6 +92,7 @@
     UBAX Platform – Reçu <span th:text="${payment.reference}">—</span> – Conservez ce document.<br/>
     support@ubax.io · ubax.io
   </div>
+
 </div>
 </body>
 </html>
