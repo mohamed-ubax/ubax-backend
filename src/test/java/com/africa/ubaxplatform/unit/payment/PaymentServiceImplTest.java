@@ -1,11 +1,7 @@
 package com.africa.ubaxplatform.unit.payment;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doThrow;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,7 +14,10 @@ import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
-import com.africa.ubaxplatform.document.service.interfaces.DocumentService;
+import com.africa.ubaxplatform.document.generator.InvoiceGenerator;
+import com.africa.ubaxplatform.document.generator.ReceiptGenerator;
+import com.africa.ubaxplatform.document.repository.DocumentRepository;
+import com.africa.ubaxplatform.document.service.impl.DocumentServiceImpl;
 import com.africa.ubaxplatform.payment.codeList.PaymentMethod;
 import com.africa.ubaxplatform.payment.codeList.PaymentStatus;
 import com.africa.ubaxplatform.payment.codeList.PaymentType;
@@ -26,9 +25,11 @@ import com.africa.ubaxplatform.payment.dto.PaymentCreateRequest;
 import com.africa.ubaxplatform.payment.dto.PaymentResponse;
 import com.africa.ubaxplatform.payment.dto.PaymentStatusUpdateRequest;
 import com.africa.ubaxplatform.payment.entity.Payment;
+import com.africa.ubaxplatform.payment.event.PaymentPaidEvent;
 import com.africa.ubaxplatform.payment.repository.PaymentRepository;
 import com.africa.ubaxplatform.payment.service.impl.PaymentServiceImpl;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
+import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import com.africa.ubaxplatform.tenant.repository.TenantRepository;
 import com.africa.ubaxplatform.testHelper.SharedTestFixtures;
 import java.math.BigDecimal;
@@ -41,9 +42,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -57,16 +60,29 @@ class PaymentServiceImplTest {
   @Mock private PropertyRepository propertyRepo;
   @Mock private TenantRepository tenantRepo;
   @Mock private ContractRepository contractRepo;
-  @Mock private DocumentService documentService;
+  @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private DocumentRepository documentRepo;
+  @Mock private ReceiptGenerator receiptGenerator;
+  @Mock private MinioService minioService;
+  @Mock private InvoiceGenerator invoiceGenerator;
 
   @InjectMocks private PaymentServiceImpl service;
-
+  private DocumentServiceImpl documentService;
   private Agency agency;
   private User caller;
   private Payment pendingPayment;
 
   @BeforeEach
   void setUp() {
+    documentService =
+        new DocumentServiceImpl(
+            documentRepo,
+            contractRepo,
+            paymentRepo,
+            null,
+            invoiceGenerator,
+            receiptGenerator,
+            minioService);
     agency = SharedTestFixtures.buildAgency();
     caller = SharedTestFixtures.buildPartnerUser();
     pendingPayment = SharedTestFixtures.buildPayment(agency, caller, PaymentStatus.PENDING);
@@ -113,6 +129,47 @@ class PaymentServiceImplTest {
 
       assertThat(resp).isNotNull();
       assertThat(resp.status()).isEqualTo(PaymentStatus.PAID);
+    }
+
+    @Test
+    @DisplayName(
+        "Succès – paiement complet → statut PAID et reçu PDF généré automatiquement dans MinIO")
+    void create_fullPayment_statusPaidAndReceiptGeneratedAutomatically() throws CustomException {
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(paymentRepo.save(any(Payment.class)))
+          .thenAnswer(
+              inv -> {
+                Payment p = inv.getArgument(0);
+                SharedTestFixtures.injectId(p, SharedTestFixtures.PAYMENT_ID);
+                return p;
+              });
+      when(receiptGenerator.generate(any())).thenReturn(new byte[] {1, 2, 3});
+      when(minioService.uploadFile(any(), any(), any(), anyLong(), any()))
+          .thenReturn("https://minio/documents-generated/recus/test/recu.pdf");
+      when(documentRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+      PaymentCreateRequest req =
+          buildRequest(LocalDate.now().plusDays(5), LocalDate.now(), BigDecimal.valueOf(350_000));
+      PaymentResponse resp = service.create(SharedTestFixtures.KEYCLOAK_ID, req);
+
+      assertThat(resp.status()).isEqualTo(PaymentStatus.PAID);
+
+      // Capturer et exécuter le listener sur le vrai DocumentServiceImpl
+      ArgumentCaptor<PaymentPaidEvent> eventCaptor =
+          ArgumentCaptor.forClass(PaymentPaidEvent.class);
+      verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+      assertThatCode(() -> documentService.onPaymentPaid(eventCaptor.getValue()))
+          .doesNotThrowAnyException();
+
+      verify(minioService)
+          .uploadFile(
+              eq("documents-generated"),
+              argThat(path -> path.startsWith("recus/")),
+              any(),
+              anyLong(),
+              eq("application/pdf"));
     }
 
     @Test
@@ -482,7 +539,7 @@ class PaymentServiceImplTest {
 
     @Test
     @DisplayName("Succès – génération reçu échoue silencieusement (pas de propagation)")
-    void updateStatus_toPaid_receiptFailureSilent() throws Exception {
+    void updateStatus_toPaid_receiptFailureSilent() throws CustomException {
       Payment paidPayment = SharedTestFixtures.buildPayment(agency, caller, PaymentStatus.PENDING);
       PaymentStatusUpdateRequest req =
           new PaymentStatusUpdateRequest(PaymentStatus.PAID, null, null, null, null, null);
@@ -492,12 +549,21 @@ class PaymentServiceImplTest {
       when(paymentRepo.findById(SharedTestFixtures.PAYMENT_ID))
           .thenReturn(Optional.of(paidPayment));
       when(paymentRepo.save(any(Payment.class))).thenReturn(paidPayment);
-      doThrow(new RuntimeException("MinIO KO")).when(documentService).generateReceipt(any(), any());
+      when(documentRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+      when(receiptGenerator.generate(any())).thenThrow(new RuntimeException("MinIO KO"));
 
       PaymentResponse resp =
           service.updateStatus(SharedTestFixtures.PAYMENT_ID, SharedTestFixtures.KEYCLOAK_ID, req);
 
-      assertThat(resp).isNotNull();
+      assertThat(resp.status()).isEqualTo(PaymentStatus.PAID);
+
+      ArgumentCaptor<PaymentPaidEvent> eventCaptor =
+          ArgumentCaptor.forClass(PaymentPaidEvent.class);
+      verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+      // Le listener absorbe l'exception silencieusement
+      assertThatCode(() -> documentService.onPaymentPaid(eventCaptor.getValue()))
+          .doesNotThrowAnyException();
     }
 
     @Test

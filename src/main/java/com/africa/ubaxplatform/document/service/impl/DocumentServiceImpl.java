@@ -14,6 +14,7 @@ import com.africa.ubaxplatform.document.generator.ReceiptGenerator;
 import com.africa.ubaxplatform.document.repository.DocumentRepository;
 import com.africa.ubaxplatform.document.service.interfaces.DocumentService;
 import com.africa.ubaxplatform.payment.entity.Payment;
+import com.africa.ubaxplatform.payment.event.PaymentPaidEvent;
 import com.africa.ubaxplatform.payment.repository.PaymentRepository;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import java.io.ByteArrayInputStream;
@@ -23,7 +24,10 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Service
 @RequiredArgsConstructor
@@ -176,5 +180,50 @@ public class DocumentServiceImpl implements DocumentService {
     String year = String.valueOf(Year.now().getValue());
     String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
     return "DOC-" + year + "-" + prefix + "-" + suffix;
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Override
+  public void onPaymentPaid(PaymentPaidEvent event) {
+    Payment payment = event.payment();
+    User triggeredBy = event.triggeredBy();
+
+    log.info("[DOC] Génération automatique du reçu pour paymentId={}", payment.getId());
+
+    Document record =
+        initDocument(DocumentType.RECEIPT, payment.getId(), RefType.PAYMENT, triggeredBy);
+    record.setTitle("Reçu – " + payment.getPeriodLabel() + " – " + payment.getReference());
+    record = documentRepo.save(record);
+
+    try {
+      byte[] pdf = receiptGenerator.generate(payment);
+      String fileName = "recu-" + payment.getReference() + ".pdf";
+      String objectName = "recus/" + payment.getId() + "/" + fileName; // ← nouveau répertoire
+      String url =
+          minioService.uploadFile(
+              BUCKET, objectName, new ByteArrayInputStream(pdf), pdf.length, "application/pdf");
+
+      record.setFileUrl(url);
+      record.setFileName(fileName);
+      record.setFileSize((long) pdf.length);
+      record.setReferenceNumber(generateRef("RCP"));
+      record.setStatus(DocumentStatus.GENERATED);
+
+      // Optionnel : mettre à jour le receiptUrl sur le payment
+      payment.setReceiptUrl(url);
+      paymentRepo.save(payment);
+
+      log.info("[DOC] Reçu généré automatiquement : paymentId={}, url={}", payment.getId(), url);
+    } catch (Exception e) {
+      record.setStatus(DocumentStatus.FAILED);
+      record.setErrorMessage(e.getMessage());
+      log.error(
+          "[DOC] Échec génération reçu automatique paymentId={} : {}",
+          payment.getId(),
+          e.getMessage());
+    }
+
+    documentRepo.save(record);
   }
 }
