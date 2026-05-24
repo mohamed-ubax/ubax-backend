@@ -246,7 +246,7 @@ jobs:
       - name: Wait & retry until backend is healthy
         run: |
           echo "Waiting for backend to become healthy (max 2 min)..."
-          for i in $(seq 1 12); do
+          for i in $(seq 1 42); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
               http://${{ secrets.VPS_HOST }}/api/actuator/health)
             echo "Attempt $i/12 – HTTP $STATUS"
