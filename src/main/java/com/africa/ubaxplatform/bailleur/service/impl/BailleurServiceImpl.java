@@ -255,6 +255,7 @@ public class BailleurServiceImpl implements BailleurService {
                   .agencyLogo(agency != null ? agency.getLogoUrl() : null)
                   .agencyPhone(agency != null ? agency.getPhone() : null)
                   .agencyEmail(agency != null ? agency.getEmail() : null)
+                  .agencyDescription(agency != null ? agency.getDescription() : null)
                   .linkedAt(link.getJoinedAt())
                   .build();
             })

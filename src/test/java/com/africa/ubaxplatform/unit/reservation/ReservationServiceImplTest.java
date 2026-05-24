@@ -115,7 +115,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Succès – réservation créée pour un bien PUBLISHED")
     void create_publishedProperty_success() throws CustomException {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(hotelProperty));
@@ -169,7 +169,8 @@ class ReservationServiceImplTest {
     @DisplayName("Echec – utilisateur introuvable → USER_NOT_FOUND")
     void create_userNotFound_throwsCustomException() {
       CreateReservationRequest req = buildCreateRequest();
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.empty());
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.empty());
 
       assertThatThrownBy(() -> service.create(SharedTestFixtures.KEYCLOAK_ID, req))
           .isInstanceOf(CustomException.class)
@@ -179,7 +180,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Echec – bien introuvable → PROPERTY_GET_FAILURE_NOT_FOUND")
     void create_propertyNotFound_throwsCustomException() {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID)).thenReturn(Optional.empty());
 
@@ -203,7 +204,7 @@ class ReservationServiceImplTest {
               .build();
       SharedTestFixtures.injectId(draftProp, SharedTestFixtures.PROPERTY_ID);
 
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(draftProp));
@@ -217,7 +218,7 @@ class ReservationServiceImplTest {
     @DisplayName(
         "Echec – chevauchement avec réservation confirmée → RESERVATION_CREATE_FAILURE_UNAVAILABLE")
     void create_overlappingDates_throwsBadRequest() {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(propertyRepo.findById(SharedTestFixtures.PROPERTY_ID))
           .thenReturn(Optional.of(hotelProperty));
@@ -237,7 +238,7 @@ class ReservationServiceImplTest {
     @DisplayName("Succès – liste paginée des réservations du client")
     void getMyReservations_success() throws CustomException {
       Page<Reservation> page = new PageImpl<>(java.util.List.of(pendingReservation));
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(reservationRepo.findByClientIdAndDeletedAtIsNull(
               SharedTestFixtures.USER_ID, PageRequest.of(0, 10)))
@@ -251,7 +252,8 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Echec – utilisateur introuvable → USER_NOT_FOUND")
     void getMyReservations_userNotFound_throwsCustomException() {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID)).thenReturn(Optional.empty());
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.empty());
 
       assertThatThrownBy(
               () ->
@@ -268,7 +270,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Succès – accès accordé au client propriétaire")
     void getById_client_success() throws CustomException {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
@@ -281,7 +283,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Succès – accès accordé à l'hôtelier propriétaire du bien")
     void getById_hotelOwner_success() throws CustomException {
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
 
@@ -294,7 +296,7 @@ class ReservationServiceImplTest {
     @DisplayName("Echec – accès refusé (ni client ni hôtelier) → USER_FORBIDDEN")
     void getById_unauthorized_throwsForbidden() {
       User stranger = SharedTestFixtures.buildUserWithoutAgency("stranger-kc", UUID.randomUUID());
-      when(userRepo.findByKeycloakId("stranger-kc")).thenReturn(Optional.of(stranger));
+      when(userRepo.findByKeycloakIdWithHotel("stranger-kc")).thenReturn(Optional.of(stranger));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
 
@@ -306,7 +308,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Echec – réservation introuvable → RESERVATION_GET_FAILURE_NOT_FOUND")
     void getById_notFound_throwsCustomException() {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID)).thenReturn(Optional.empty());
 
@@ -324,7 +326,7 @@ class ReservationServiceImplTest {
     @DisplayName("Succès – client annule une réservation PENDING")
     void cancelByClient_pending_success() throws CustomException {
       CancelReservationRequest req = new CancelReservationRequest("Changement de plans");
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
@@ -354,7 +356,7 @@ class ReservationServiceImplTest {
       SharedTestFixtures.injectId(confirmed, RESERVATION_ID);
 
       CancelReservationRequest req = new CancelReservationRequest("Trop tard");
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID)).thenReturn(Optional.of(confirmed));
 
@@ -370,7 +372,7 @@ class ReservationServiceImplTest {
     void cancelByClient_notOwner_throwsForbidden() {
       User otherClient = SharedTestFixtures.buildUserWithoutAgency("other-kc", UUID.randomUUID());
       CancelReservationRequest req = new CancelReservationRequest("Test");
-      when(userRepo.findByKeycloakId("other-kc")).thenReturn(Optional.of(otherClient));
+      when(userRepo.findByKeycloakIdWithHotel("other-kc")).thenReturn(Optional.of(otherClient));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
 
@@ -388,7 +390,7 @@ class ReservationServiceImplTest {
     @DisplayName("Succès – liste paginée sans filtre de statut")
     void getHotelReservations_noFilter_success() throws CustomException {
       Page<Reservation> page = new PageImpl<>(java.util.List.of(pendingReservation));
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByHotelId(HOTEL_ID, PageRequest.of(0, 10))).thenReturn(page);
 
       var result = service.getHotelReservations("hotel-kc", null, PageRequest.of(0, 10));
@@ -400,7 +402,7 @@ class ReservationServiceImplTest {
     @DisplayName("Succès – liste filtrée par statut PENDING")
     void getHotelReservations_withStatus_success() throws CustomException {
       Page<Reservation> page = new PageImpl<>(java.util.List.of(pendingReservation));
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByHotelIdAndStatus(
               HOTEL_ID, ReservationStatus.PENDING, PageRequest.of(0, 10)))
           .thenReturn(page);
@@ -415,7 +417,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Echec – utilisateur non hôtelier → USER_UNAUTHORIZED")
     void getHotelReservations_notHotelPartner_throwsUnauthorized() {
-      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+      when(userRepo.findByKeycloakIdWithHotel(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(client));
 
       assertThatThrownBy(
@@ -434,7 +436,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Succès – PENDING → CONFIRMED")
     void confirm_pending_success() throws CustomException {
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
       when(reservationRepo.save(any(Reservation.class))).thenReturn(pendingReservation);
@@ -461,7 +463,7 @@ class ReservationServiceImplTest {
               .build();
       SharedTestFixtures.injectId(confirmed, RESERVATION_ID);
 
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID)).thenReturn(Optional.of(confirmed));
 
       assertThatThrownBy(() -> service.confirm("hotel-kc", RESERVATION_ID))
@@ -479,7 +481,7 @@ class ReservationServiceImplTest {
     @DisplayName("Succès – annulation d'une réservation PENDING par l'hôtel")
     void cancelByHotel_pending_success() throws CustomException {
       CancelReservationRequest req = new CancelReservationRequest("Overbooking");
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
       when(reservationRepo.save(any(Reservation.class))).thenReturn(pendingReservation);
@@ -507,7 +509,7 @@ class ReservationServiceImplTest {
       SharedTestFixtures.injectId(confirmed, RESERVATION_ID);
 
       CancelReservationRequest req = new CancelReservationRequest("Fermeture imprévue");
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID)).thenReturn(Optional.of(confirmed));
       when(reservationRepo.save(any(Reservation.class))).thenReturn(confirmed);
 
@@ -534,7 +536,7 @@ class ReservationServiceImplTest {
       SharedTestFixtures.injectId(completed, RESERVATION_ID);
 
       CancelReservationRequest req = new CancelReservationRequest("Erreur");
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID)).thenReturn(Optional.of(completed));
 
       assertThatThrownBy(() -> service.cancelByHotel("hotel-kc", RESERVATION_ID, req))
@@ -565,7 +567,7 @@ class ReservationServiceImplTest {
               .build();
       SharedTestFixtures.injectId(confirmed, RESERVATION_ID);
 
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID)).thenReturn(Optional.of(confirmed));
       when(reservationRepo.save(any(Reservation.class))).thenReturn(confirmed);
 
@@ -577,7 +579,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Echec – réservation PENDING → transition invalide")
     void complete_pending_throwsBadRequest() {
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
 
@@ -609,7 +611,7 @@ class ReservationServiceImplTest {
               .build();
       SharedTestFixtures.injectId(confirmed, RESERVATION_ID);
 
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID)).thenReturn(Optional.of(confirmed));
       when(reservationRepo.save(any(Reservation.class))).thenReturn(confirmed);
 
@@ -621,7 +623,7 @@ class ReservationServiceImplTest {
     @Test
     @DisplayName("Echec – réservation PENDING → transition invalide")
     void noShow_pending_throwsBadRequest() {
-      when(userRepo.findByKeycloakId("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
       when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
           .thenReturn(Optional.of(pendingReservation));
 
