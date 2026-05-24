@@ -10,13 +10,13 @@ import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.contract.entity.Contract;
 import com.africa.ubaxplatform.contract.repository.ContractRepository;
-import com.africa.ubaxplatform.document.service.interfaces.DocumentService;
 import com.africa.ubaxplatform.payment.codeList.PaymentStatus;
 import com.africa.ubaxplatform.payment.codeList.PaymentType;
 import com.africa.ubaxplatform.payment.dto.PaymentCreateRequest;
 import com.africa.ubaxplatform.payment.dto.PaymentResponse;
 import com.africa.ubaxplatform.payment.dto.PaymentStatusUpdateRequest;
 import com.africa.ubaxplatform.payment.entity.Payment;
+import com.africa.ubaxplatform.payment.event.PaymentPaidEvent;
 import com.africa.ubaxplatform.payment.mapper.PaymentMapper;
 import com.africa.ubaxplatform.payment.repository.PaymentRepository;
 import com.africa.ubaxplatform.payment.service.interfaces.PaymentService;
@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final PropertyRepository propertyRepo;
   private final TenantRepository tenantRepo;
   private final ContractRepository contractRepo;
-  private final DocumentService documentService;
+  private final ApplicationEventPublisher eventPublisher;
 
   // ── Helpers ────────────────────────────────────────────────────
 
@@ -176,8 +177,14 @@ public class PaymentServiceImpl implements PaymentService {
             .receiptUrl(req.receiptUrl())
             .note(req.note())
             .build();
+    Payment saved = paymentRepo.save(payment);
+    log.info("La confirmation a ete validee avec Succés");
+    if (saved.getStatus() == PaymentStatus.PAID) {
+      eventPublisher.publishEvent(new PaymentPaidEvent(saved, caller));
+      log.info("La génération du recu à reussie avec avec Succés");
+    }
 
-    return PaymentMapper.toResponse(paymentRepo.save(payment));
+    return PaymentMapper.toResponse(saved);
   }
 
   @Override
@@ -249,11 +256,7 @@ public class PaymentServiceImpl implements PaymentService {
     Payment saved = paymentRepo.save(payment);
 
     if (saved.getStatus() == PaymentStatus.PAID) {
-      try {
-        documentService.generateReceipt(saved.getId(), caller);
-      } catch (Exception e) {
-        log.error("Échec génération reçu paymentId={} : {}", saved.getId(), e.getMessage());
-      }
+      eventPublisher.publishEvent(new PaymentPaidEvent(saved, caller));
     }
 
     return PaymentMapper.toResponse(saved);
