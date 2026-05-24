@@ -41,4 +41,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   @Query(
       "SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r = :role AND u.deletedAt IS NULL")
   long countByRoleAndDeletedAtIsNull(@Param("role") UserRole role);
+
+  @Query(
+      """
+    SELECT u FROM User u
+    LEFT JOIN FETCH u.hotel
+    WHERE u.keycloakId = :keycloakId
+    AND u.deletedAt IS NULL
+""")
+  Optional<User> findByKeycloakIdWithHotel(@Param("keycloakId") String keycloakId);
 }

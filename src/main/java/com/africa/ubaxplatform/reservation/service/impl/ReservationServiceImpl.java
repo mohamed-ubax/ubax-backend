@@ -41,7 +41,7 @@ public class ReservationServiceImpl implements ReservationService {
 
   private User resolveUser(String keycloakId) throws CustomException {
     return userRepo
-        .findByKeycloakId(keycloakId)
+        .findByKeycloakIdWithHotel(keycloakId)
         .orElseThrow(
             () ->
                 new CustomException(

@@ -16,5 +16,6 @@ public class BailleurAgencyResponse {
   private String agencyLogo;
   private String agencyPhone;
   private String agencyEmail;
+  private String agencyDescription;
   private LocalDateTime linkedAt;
 }
