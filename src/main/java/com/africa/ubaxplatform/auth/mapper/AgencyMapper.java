@@ -14,6 +14,7 @@ public class AgencyMapper {
   public Agency toAgency(PartnerApplication app) {
     return Agency.builder()
         .name(app.getCompanyName())
+        .description(app.getDescription())
         .registrationNumber(app.getRegistrationNumber())
         .logoUrl(app.getLogoUrl())
         .address(app.getPostalAddress())
