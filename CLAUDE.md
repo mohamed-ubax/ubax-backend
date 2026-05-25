@@ -533,25 +533,100 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 
 ### Property Visits - Client
 
+> **Statuts :** `PENDING → CONFIRMED / REJECTED` · `PENDING → CANCELLED` (par le client) · `CONFIRMED → COMPLETED`  
+> **`DELETE /v1/property-visits/{visitRequestId}`** : retourne `204 No Content` — seules les demandes `PENDING` sont annulables (400 sinon). Libère automatiquement le créneau.  
+> **`GET /v1/property-visits/{visitRequestId}`** : CLIENT/OWNER = propriétaire uniquement (403 sinon).  
+> **`GET /v1/property-visits/available-slots/{propertyId}`** : accès public (no JWT). Param optionnel `?daysAhead=30`.
+
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `GET` | `/v1/property-visits/available-slots/{propertyId}` | Public | Consulter créneaux disponibles pour 30 jours |
+| `GET` | `/v1/property-visits/available-slots/{propertyId}` | Public | Créneaux disponibles pour les 30 prochains jours (`?daysAhead=N`) |
 | `POST` | `/v1/property-visits` | `CLIENT/OWNER` | Créer une demande de visite |
-| `GET` | `/v1/property-visits/mine` | `CLIENT/OWNER` | Lister mes demandes de visite |
-| `GET` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Détail de ma demande de visite |
-| `DELETE` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Annuler une demande PENDING |
+| `GET` | `/v1/property-visits/mine` | `CLIENT/OWNER` | Mes demandes (paginé, tri `createdAt` DESC) |
+| `GET` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Détail — 403 si pas demandeur |
+| `DELETE` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Annuler `PENDING` → `CANCELLED` · 204 No Content |
+
+#### DTOs clés — Visites client
+
+**`POST /v1/property-visits`** — `CreateVisitRequestDto`
+```json
+{
+  "propertyId": "uuid",
+  "requestedDate": "2026-06-10",
+  "requestedTimeSlot": "10:00-14:00",
+  "clientNotes": "Intéressé par la terrasse, visite rapide SVP"
+}
+```
+
+**`VisitRequestResponse`** (retourné par POST, GET /{id}, PATCH)
+```json
+{
+  "id": "uuid",
+  "propertyId": "uuid",
+  "propertyTitle": "Villa F5 Almadies",
+  "clientId": "uuid",
+  "clientName": "Jean Kouassi",
+  "agentId": "uuid",
+  "agentName": "Marie Amani",
+  "requestedDate": "2026-06-10",
+  "requestedTimeSlot": "10:00-14:00",
+  "status": "CONFIRMED",
+  "confirmedDate": "2026-06-10",
+  "confirmedTimeSlot": "10:00-14:00",
+  "rejectionReason": null,
+  "clientNotes": "...",
+  "createdAt": "2026-06-01T10:00:00",
+  "updatedAt": "2026-06-02T09:00:00"
+}
+```
 
 ### Property Visits - Agency
 
+> **Configuration des créneaux** : définit les jours et horaires de visite par bien. `timeSlots` : map `{dayOfWeek → [slots]}` (0=Dimanche…6=Samedi). `maxVisitsPerSlot` (défaut 3) = capacité max par créneau. `POST /config` est idempotent (remplace la config existante).  
+> **Dates fermées** : `PUT /config/{propertyId}/blackout-dates` remplace intégralement les blackout dates (envoyer `[]` pour tout supprimer).  
+> **Confirmation** : l’agence peut confirmer une date/créneau différents de ceux demandés (proposition alternative).  
+> **`assign-agent`** : `agentId` = UUID **base de données** (`user.id`, pas Keycloak ID) — utiliser `GET /v1/agency/team`.
+
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `POST` | `/v1/agency/property-visits/config` | `PARTNER` | Configurer les disponibilités de visite par bien |
+| `POST` | `/v1/agency/property-visits/config` | `PARTNER` | Configurer les créneaux de visite d’un bien (idempotent) |
 | `GET` | `/v1/agency/property-visits/config/{propertyId}` | `PARTNER` | Récupérer la configuration de disponibilité |
-| `PUT` | `/v1/agency/property-visits/config/{propertyId}/blackout-dates` | `PARTNER` | Mettre à jour les dates d’indisponibilité |
-| `GET` | `/v1/agency/property-visits` | `PARTNER` | Lister les demandes de visite de mon agence |
-| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/confirm` | `PARTNER` | Confirmer une demande de visite |
-| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/reject` | `PARTNER` | Rejeter une demande de visite |
-| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/assign-agent/{agentId}` | `PARTNER` | Assigner un agent à la demande |
+| `PUT` | `/v1/agency/property-visits/config/{propertyId}/blackout-dates` | `PARTNER` | Remplacer les dates d’indisponibilité |
+| `GET` | `/v1/agency/property-visits` | `PARTNER` | Demandes reçues (paginé, tri `createdAt` ASC) |
+| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/confirm` | `PARTNER` | `PENDING → CONFIRMED` · body `confirmedDate` + `confirmedTimeSlot` requis |
+| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/reject` | `PARTNER` | `PENDING → REJECTED` · body `reason` requis |
+| `PATCH` | `/v1/agency/property-visits/{visitRequestId}/assign-agent/{agentId}` | `PARTNER` | Assigner un agent (ne change pas le statut) |
+
+#### DTOs clés — Configuration visite (agence)
+
+**`POST /v1/agency/property-visits/config`** — `ConfigureVisitAvailabilityDto`
+```json
+{
+  "propertyId": "uuid",
+  "timeSlots": {
+    "1": ["10:00-14:00", "14:00-18:00"],
+    "2": ["10:00-14:00"],
+    "5": ["10:00-18:00"],
+    "6": ["10:00-14:00"]
+  },
+  "blackoutDates": ["2026-07-14", "2026-08-15"],
+  "maxVisitsPerSlot": 3
+}
+```
+
+**`PATCH …/confirm`** — `ConfirmVisitRequestDto`
+```json
+{
+  "confirmedDate": "2026-06-10",
+  "confirmedTimeSlot": "10:00-14:00",
+  "agencyNotes": "Veuillez arriver 5 min en avance"
+}
+```
+
+**`PATCH …/reject`** — `RejectVisitRequestDto`
+```json
+{ "reason": "Bien vendu, visite impossible" }
+```
 
 ### Payment & Expense
 

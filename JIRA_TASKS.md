@@ -3568,3 +3568,510 @@ Le module de ticketing SAV permet aux clients et propriétaires de déclarer des
 - [ ] Distinguer les messages AGENT vs CLIENT via `messageType`
 - [ ] Champ de saisie en bas avec bouton Envoyer
 - [ ] Rafraîchissement automatique ou pull-to-refresh
+
+---
+
+---
+
+## MODULE 13 — RÉSERVATION DE VISITES · PORTAIL AGENCE / CLIENT MOBILE
+
+**Epic :** `UBAX-FE-VISITS`  
+**Rôle requis (JWT) :** `UBAX_PARTNER` (agence) · `UBAX_CLIENT` · `UBAX_OWNER` · Public (consultation créneaux)
+
+### Objectif
+
+Le module de réservation de visites permet aux clients mobiles de consulter les créneaux disponibles pour un bien immobilier et de soumettre une demande de visite. L'agence configure ses disponibilités par bien (jours ouvrables, créneaux horaires, capacité max), gère les dates fermées et traite les demandes (confirmation, rejet, assignation d'agent).
+
+**Flux principal :**
+1. L'agence configure les créneaux de visite pour chacun de ses biens (`POST /v1/agency/property-visits/config`).
+2. Le client consulte les créneaux disponibles (`GET /v1/property-visits/available-slots/{propertyId}`) — public, sans JWT.
+3. Le client soumet une demande pour une date et un créneau (`POST /v1/property-visits`) → statut `PENDING`.
+4. L'agence reçoit la demande et la confirme (`PATCH …/confirm`) ou la rejette (`PATCH …/reject`) → `CONFIRMED` / `REJECTED`.
+5. L'agence assigne un agent immobilier à la visite (`PATCH …/assign-agent/{agentId}`).
+6. Après la visite, le statut est mis à `COMPLETED` (archive).
+
+**Périmètre frontend de ce module :**
+
+| Tâche | Action | Acteur |
+|-------|--------|--------|
+| UBAX-FE-1301 — Consulter les créneaux disponibles | Lecture | Grand public (sans compte) |
+| UBAX-FE-1302 — Demander une visite | Écriture | `CLIENT` · `OWNER` |
+| UBAX-FE-1303 — Mes demandes de visite | Lecture | `CLIENT` · `OWNER` |
+| UBAX-FE-1304 — Détail d'une demande de visite | Lecture | `CLIENT` · `OWNER` |
+| UBAX-FE-1305 — Annuler une demande de visite | Écriture | `CLIENT` · `OWNER` |
+| UBAX-FE-1306 — Configurer les créneaux d'un bien | Écriture | `PARTNER` |
+| UBAX-FE-1307 — Gérer les dates d'indisponibilité | Écriture | `PARTNER` |
+| UBAX-FE-1308 — Liste des demandes reçues (agence) | Lecture | `PARTNER` |
+| UBAX-FE-1309 — Confirmer une demande de visite | Écriture | `PARTNER` |
+| UBAX-FE-1310 — Rejeter une demande de visite | Écriture | `PARTNER` |
+| UBAX-FE-1311 — Assigner un agent à une visite | Écriture | `PARTNER` |
+
+**Points d'attention :**
+- `GET /v1/property-visits/available-slots/{propertyId}` est **public** — aucun JWT requis. Intégrer directement dans la fiche bien publique.
+- `DELETE /v1/property-visits/{visitRequestId}` retourne **204 No Content** (pas de body) — cas unique dans l'API, adapter le handler côté frontend.
+- `confirmedDate` / `confirmedTimeSlot` dans `PATCH …/confirm` peuvent être différents de ceux demandés (proposition alternative de l'agence).
+- `agentId` dans `PATCH …/assign-agent/{agentId}` est l'UUID **base de données** (`user.id`), **pas** le Keycloak ID — source : `GET /v1/agency/team`.
+- La configuration des créneaux (`timeSlots`) utilise les jours de semaine ISO (0=Dimanche, 1=Lundi … 6=Samedi).
+
+---
+
+### UBAX-FE-1301 · Consulter les créneaux disponibles pour un bien
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/property-visits/available-slots/{propertyId}` |
+| **Auth** | **Aucune** (public) |
+| **Path params** | `propertyId` : UUID du bien |
+| **Query params** | `daysAhead` : nombre de jours à scanner (défaut `30`) |
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "VISIT_AVAILABILITY_GET_SUCCESS",
+  "data": {
+    "propertyId": "550e8400-e29b-41d4-a716-446655440000",
+    "availableDates": ["2026-06-10", "2026-06-11", "2026-06-12"],
+    "slotsByDate": {
+      "2026-06-10": [
+        { "slot": "10:00-14:00", "available": 2, "almostFull": false },
+        { "slot": "14:00-18:00", "available": 1, "almostFull": true }
+      ],
+      "2026-06-11": [
+        { "slot": "10:00-14:00", "available": 3, "almostFull": false }
+      ]
+    }
+  }
+}
+```
+
+> **`almostFull = true`** quand il ne reste qu'une seule place — afficher un badge « Dernière place » pour créer de l'urgence.  
+> Les dates sans créneaux disponibles sont absentes de `slotsByDate` (blackout ou complets).
+
+**Erreurs possibles :**
+- `404 Not Found` — bien introuvable
+
+**Critères d'acceptation :**
+- [ ] Calendrier ou liste de dates avec les créneaux disponibles intégrée dans la fiche bien publique
+- [ ] Créneaux désactivés ou masqués si `available = 0`
+- [ ] Badge « Dernière place » (ou orange) si `almostFull = true`
+- [ ] Message « Aucun créneau disponible » si `availableDates` est vide
+- [ ] Appel automatique au chargement de la fiche bien (pas d'action utilisateur requise)
+- [ ] Paramètre `daysAhead` configurable si le besoin d'étendre la fenêtre de réservation est exprimé
+
+---
+
+### UBAX-FE-1302 · Demander une visite
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `POST /v1/property-visits` |
+| **Auth** | Bearer token · `UBAX_CLIENT`, `UBAX_OWNER` |
+| **Content-Type** | `application/json` |
+
+**Request body :**
+```json
+{
+  "propertyId": "550e8400-e29b-41d4-a716-446655440000",
+  "requestedDate": "2026-06-10",
+  "requestedTimeSlot": "10:00-14:00",
+  "clientNotes": "Très intéressé par la terrasse, visite rapide SVP"
+}
+```
+
+> **`clientNotes`** est optionnel.  
+> **`requestedTimeSlot`** doit être une valeur parmi les créneaux retournés par `GET /available-slots` — `400` si indisponible.
+
+**Response `201` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 201,
+  "message": "VISIT_REQUEST_CREATE_SUCCESS",
+  "data": {
+    "id": "uuid-demande",
+    "propertyId": "uuid",
+    "propertyTitle": "Villa F5 Almadies",
+    "clientId": "uuid",
+    "clientName": "Jean Kouassi",
+    "agentId": null,
+    "agentName": null,
+    "requestedDate": "2026-06-10",
+    "requestedTimeSlot": "10:00-14:00",
+    "status": "PENDING",
+    "confirmedDate": null,
+    "confirmedTimeSlot": null,
+    "rejectionReason": null,
+    "clientNotes": "Très intéressé par la terrasse, visite rapide SVP",
+    "createdAt": "2026-06-01T10:00:00",
+    "updatedAt": "2026-06-01T10:00:00"
+  }
+}
+```
+
+**Erreurs possibles :**
+- `400 Bad Request` — créneau indisponible ou complet, bien non publié, date passée
+- `401 Unauthorized` — token absent
+- `403 Forbidden` — rôle insuffisant
+
+**Critères d'acceptation :**
+- [ ] Bouton « Demander une visite » visible sur la fiche bien publique pour les utilisateurs connectés (CLIENT/OWNER)
+- [ ] Sélecteur de date parmi `availableDates` (pré-rempli depuis UBAX-FE-1301)
+- [ ] Sélecteur de créneau parmi les `slotsByDate[date]` disponibles — griser les créneaux `available = 0`
+- [ ] Champ texte optionnel `clientNotes` (ex. « Précisez votre demande »)
+- [ ] Validation frontend : `requestedDate` et `requestedTimeSlot` requis
+- [ ] Après succès : message de confirmation « Votre demande de visite a été envoyée. L'agence vous contactera sous peu. » + redirection vers UBAX-FE-1303
+- [ ] Badge statut `PENDING` affiché immédiatement dans la liste
+
+---
+
+### UBAX-FE-1303 · Mes demandes de visite (client)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/property-visits/mine` |
+| **Auth** | Bearer token · `UBAX_CLIENT`, `UBAX_OWNER` |
+| **Query params** | `page` (défaut `0`) · `size` (défaut `20`) · `sort=createdAt,desc` |
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "VISIT_REQUEST_GET_LIST_SUCCESS",
+  "data": {
+    "content": [
+      {
+        "id": "uuid",
+        "propertyTitle": "Villa F5 Almadies",
+        "requestedDate": "2026-06-10",
+        "requestedTimeSlot": "10:00-14:00",
+        "status": "CONFIRMED",
+        "confirmedDate": "2026-06-10",
+        "confirmedTimeSlot": "10:00-14:00",
+        "agentName": "Marie Amani",
+        "createdAt": "2026-06-01T10:00:00"
+      }
+    ],
+    "totalElements": 5,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**Critères d'acceptation :**
+- [ ] Liste paginée avec : titre du bien, date demandée, créneau, statut (badge coloré), nom de l'agent si assigné
+- [ ] Badge statut : `PENDING` orange · `CONFIRMED` vert · `REJECTED` rouge · `CANCELLED` gris · `COMPLETED` bleu
+- [ ] Bouton « Annuler » visible uniquement si `status = PENDING` → déclenche UBAX-FE-1305
+- [ ] Clic sur une ligne → redirige vers UBAX-FE-1304
+- [ ] Message si la liste est vide : « Vous n'avez aucune demande de visite. »
+
+---
+
+### UBAX-FE-1304 · Détail d'une demande de visite (client)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/property-visits/{visitRequestId}` |
+| **Auth** | Bearer token · `UBAX_CLIENT`, `UBAX_OWNER` |
+| **Path params** | `visitRequestId` : UUID de la demande |
+
+**Response `200` :** _(objet `VisitRequestResponse` complet — voir UBAX-FE-1302)_
+
+**Erreurs possibles :**
+- `403 Forbidden` — demande appartenant à un autre utilisateur
+- `404 Not Found` — demande introuvable
+
+**Critères d'acceptation :**
+- [ ] Fiche complète : titre du bien, date demandée, créneau demandé, statut, date/créneau confirmés (si `CONFIRMED`), motif de rejet (si `REJECTED`), notes client, agent assigné
+- [ ] Bandeau vert si `status = CONFIRMED` avec la date et le créneau confirmés mis en évidence
+- [ ] Bandeau rouge si `status = REJECTED` avec le motif visible
+- [ ] Bouton « Annuler la demande » visible uniquement si `status = PENDING` → déclenche UBAX-FE-1305
+- [ ] Lien vers la fiche du bien (`/v1/properties/{propertyId}`)
+
+---
+
+### UBAX-FE-1305 · Annuler une demande de visite
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `DELETE /v1/property-visits/{visitRequestId}` |
+| **Auth** | Bearer token · `UBAX_CLIENT`, `UBAX_OWNER` |
+| **Path params** | `visitRequestId` : UUID de la demande |
+| **Request body** | _(aucun)_ |
+
+> ⚠️ Retourne **204 No Content** (pas de body JSON). Adapter le handler HTTP — ne pas parser la réponse.  
+> Seules les demandes `PENDING` sont annulables — 400 sinon.
+
+**Erreurs possibles :**
+- `400 Bad Request` — demande non en statut `PENDING`
+- `403 Forbidden` — demande ne vous appartient pas
+- `404 Not Found` — demande introuvable
+
+**Critères d'acceptation :**
+- [ ] Dialog de confirmation avant annulation (« Êtes-vous sûr de vouloir annuler cette visite ? »)
+- [ ] Après succès (204) : mettre à jour le badge `status → CANCELLED` sans rechargement complet de la page
+- [ ] Bouton « Annuler » masqué immédiatement après succès
+- [ ] Toast de confirmation : « Votre demande de visite a été annulée. »
+
+---
+
+### UBAX-FE-1306 · Configurer les créneaux de visite d'un bien (agence)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `POST /v1/agency/property-visits/config` |
+| **Auth** | Bearer token · `UBAX_PARTNER` |
+| **Content-Type** | `application/json` |
+
+> L'appel est **idempotent** — si une configuration existe pour ce bien, elle est intégralement remplacée.
+
+**Request body :**
+```json
+{
+  "propertyId": "550e8400-e29b-41d4-a716-446655440000",
+  "timeSlots": {
+    "1": ["10:00-14:00", "14:00-18:00"],
+    "2": ["10:00-14:00"],
+    "3": ["10:00-14:00"],
+    "4": ["10:00-14:00"],
+    "5": ["10:00-18:00"],
+    "6": ["10:00-14:00"]
+  },
+  "blackoutDates": ["2026-07-14", "2026-08-15"],
+  "maxVisitsPerSlot": 3
+}
+```
+
+> **`timeSlots`** : map des jours de semaine (0=Dimanche, 1=Lundi … 6=Samedi) → liste de créneaux au format `HH:mm-HH:mm`. Un jour absent = jour fermé.  
+> **`maxVisitsPerSlot`** (défaut 3) : nombre max de demandes simultanées par créneau.  
+> **`blackoutDates`** : liste de dates YYYY-MM-DD (peut être vide).
+
+**Response `201` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 201,
+  "message": "VISIT_AVAILABILITY_CONFIGURE_SUCCESS",
+  "data": {
+    "propertyId": "uuid",
+    "availableDates": ["2026-06-10", "2026-06-11"],
+    "slotsByDate": { ... }
+  }
+}
+```
+
+**Erreurs possibles :**
+- `400 Bad Request` — format de créneau invalide ou `maxVisitsPerSlot < 1`
+- `403 Forbidden` — bien n'appartient pas à votre agence
+- `404 Not Found` — bien introuvable
+
+**Critères d'acceptation :**
+- [ ] Formulaire de configuration accessible depuis la fiche bien (espace partenaire) — bouton « Configurer les visites »
+- [ ] Grille hebdomadaire : pour chaque jour (Lun à Sam), bascule ON/OFF + saisie des créneaux
+- [ ] Ajout/suppression dynamique de créneaux par jour (bouton « + Ajouter un créneau »)
+- [ ] Format créneau validé en frontend : `HH:mm-HH:mm` (ex. `10:00-14:00`)
+- [ ] Champ `maxVisitsPerSlot` avec valeur par défaut 3 et validation `>= 1`
+- [ ] Section dates fermées : sélecteur multi-dates (calendrier) pour `blackoutDates`
+- [ ] Toast de succès après sauvegarde
+- [ ] Pré-remplissage si une configuration existe déjà (GET /config/{propertyId} → UBAX-FE-1307)
+
+---
+
+### UBAX-FE-1307 · Gérer les dates d'indisponibilité (blackout)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PUT /v1/agency/property-visits/config/{propertyId}/blackout-dates` |
+| **Auth** | Bearer token · `UBAX_PARTNER` |
+| **Path params** | `propertyId` : UUID du bien |
+| **Content-Type** | `application/json` |
+
+> Remplace **intégralement** les dates fermées existantes.  
+> Envoyer `{ "blackoutDates": [] }` pour tout supprimer.
+
+**Request body :**
+```json
+{
+  "blackoutDates": ["2026-07-14", "2026-08-15", "2026-12-25"]
+}
+```
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "VISIT_AVAILABILITY_UPDATE_SUCCESS",
+  "data": null
+}
+```
+
+**Erreurs possibles :**
+- `404 Not Found` — bien ou configuration introuvable
+
+**Critères d'acceptation :**
+- [ ] Calendrier multi-sélection pour choisir les dates fermées (ex. librairie date-picker avancé)
+- [ ] Les dates déjà sélectionnées sont pré-chargées depuis `GET /config/{propertyId}`
+- [ ] Bouton « Enregistrer les dates fermées » déclenche le PUT
+- [ ] Toast de succès après mise à jour
+- [ ] Bouton « Tout effacer » pour réinitialiser (envoie `blackoutDates: []`)
+
+---
+
+### UBAX-FE-1308 · Liste des demandes de visite (agence)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/agency/property-visits` |
+| **Auth** | Bearer token · `UBAX_PARTNER` |
+| **Query params** | `page` (défaut `0`) · `size` (défaut `20`) · `sort=createdAt,asc` |
+
+**Response `200` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 200,
+  "message": "VISIT_REQUEST_GET_LIST_SUCCESS",
+  "data": {
+    "content": [
+      {
+        "id": "uuid",
+        "propertyId": "uuid",
+        "propertyTitle": "Villa F5 Almadies",
+        "clientId": "uuid",
+        "clientName": "Jean Kouassi",
+        "agentId": null,
+        "agentName": null,
+        "requestedDate": "2026-06-10",
+        "requestedTimeSlot": "10:00-14:00",
+        "status": "PENDING",
+        "confirmedDate": null,
+        "confirmedTimeSlot": null,
+        "rejectionReason": null,
+        "clientNotes": "Intéressé par la terrasse",
+        "createdAt": "2026-06-01T10:00:00",
+        "updatedAt": "2026-06-01T10:00:00"
+      }
+    ],
+    "totalElements": 12,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**Critères d'acceptation :**
+- [ ] Tableau paginé avec : titre du bien, nom du client, date demandée, créneau, statut, agent assigné, date de soumission
+- [ ] Filtre par statut (`PENDING` / `CONFIRMED` / `REJECTED` / `CANCELLED` / `COMPLETED`)
+- [ ] Tri par `createdAt ASC` par défaut (les plus anciennes en priorité de traitement)
+- [ ] Badge statut coloré avec indicateur visuel de priorité (`PENDING` en orange — action requise)
+- [ ] Clic sur une ligne → ouvre le détail avec les boutons d'action (UBAX-FE-1309 / 1310 / 1311)
+- [ ] Compteur « N demandes en attente » visible en haut de la liste
+
+---
+
+### UBAX-FE-1309 · Confirmer une demande de visite
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/agency/property-visits/{visitRequestId}/confirm` |
+| **Auth** | Bearer token · `UBAX_PARTNER` |
+| **Path params** | `visitRequestId` : UUID de la demande |
+| **Content-Type** | `application/json` |
+
+**Request body :**
+```json
+{
+  "confirmedDate": "2026-06-10",
+  "confirmedTimeSlot": "10:00-14:00",
+  "agencyNotes": "Veuillez arriver 5 minutes en avance. Présenter une pièce d'identité."
+}
+```
+
+> `confirmedDate` et `confirmedTimeSlot` peuvent être différents de ceux demandés (proposition alternative).  
+> `agencyNotes` est optionnel.
+
+**Response `200` :** _(objet `VisitRequestResponse` avec `status: "CONFIRMED"`)_
+
+**Erreurs possibles :**
+- `400 Bad Request` — statut invalide (doit être `PENDING`) ou créneau confirmé déjà complet
+- `403 Forbidden` — demande n'appartient pas à votre agence
+- `404 Not Found` — demande introuvable
+
+**Critères d'acceptation :**
+- [ ] Bouton « Confirmer » visible uniquement si `status = PENDING`
+- [ ] Modal de confirmation avec date/créneau pré-remplis depuis la demande (modifiables pour proposition alternative)
+- [ ] Champ optionnel `agencyNotes` (ex. « Instructions pour le jour J »)
+- [ ] Validation frontend : `confirmedDate` et `confirmedTimeSlot` requis
+- [ ] Après succès : badge statut → `CONFIRMED` mis à jour sans rechargement
+- [ ] Toast de succès : « La visite a été confirmée pour le {confirmedDate} à {confirmedTimeSlot}. »
+
+---
+
+### UBAX-FE-1310 · Rejeter une demande de visite
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/agency/property-visits/{visitRequestId}/reject` |
+| **Auth** | Bearer token · `UBAX_PARTNER` |
+| **Path params** | `visitRequestId` : UUID de la demande |
+| **Content-Type** | `application/json` |
+
+**Request body :**
+```json
+{
+  "reason": "Bien vendu, visite impossible. Nous vous suggérons de consulter nos autres annonces."
+}
+```
+
+> `reason` est **obligatoire** — 400 si absent ou vide.
+
+**Response `200` :** _(objet `VisitRequestResponse` avec `status: "REJECTED"` et `rejectionReason` renseigné)_
+
+**Erreurs possibles :**
+- `400 Bad Request` — statut invalide (doit être `PENDING`) ou `reason` vide
+- `403 Forbidden` — demande n'appartient pas à votre agence
+- `404 Not Found` — demande introuvable
+
+**Critères d'acceptation :**
+- [ ] Bouton « Rejeter » visible uniquement si `status = PENDING`
+- [ ] Modal de rejet avec textarea `reason` — champ obligatoire
+- [ ] Placeholder : « Ex. Bien vendu, date indisponible, etc. »
+- [ ] Bouton « Confirmer le rejet » désactivé si `reason` est vide
+- [ ] Après succès : badge statut → `REJECTED` + affichage du motif dans le détail
+- [ ] Toast : « La demande de visite a été rejetée. »
+
+---
+
+### UBAX-FE-1311 · Assigner un agent immobilier à une visite
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/agency/property-visits/{visitRequestId}/assign-agent/{agentId}` |
+| **Auth** | Bearer token · `UBAX_PARTNER` |
+| **Path params** | `visitRequestId` : UUID de la demande · `agentId` : UUID DB de l'agent |
+| **Request body** | _(aucun)_ |
+
+> **`agentId`** est l'UUID **base de données** (`user.id`), **pas** le Keycloak ID.  
+> Source : `GET /v1/agency/team` — utiliser le champ `id` (pas `keycloakId`).  
+> L'assignation **ne change pas le statut** de la demande.
+
+**Response `200` :** _(objet `VisitRequestResponse` avec `agentId` et `agentName` renseignés)_
+
+**Erreurs possibles :**
+- `403 Forbidden` — demande n'appartient pas à votre agence
+- `404 Not Found` — demande introuvable ou agent introuvable dans l'équipe de l'agence
+
+**Critères d'acceptation :**
+- [ ] Dropdown des membres de l'agence ayant le sous-rôle `AGENT_IMMOBILIER` — source : `GET /v1/agency/team`
+- [ ] Afficher nom + avatar de l'agent dans la liste déroulante
+- [ ] Envoyer `user.id` (UUID DB) dans l'URL, **pas** `user.keycloakId`
+- [ ] Filtrer les membres inactifs (ne pas afficher `deletedAt != null`)
+- [ ] Après assignation : `agentName` mis à jour dans l'UI depuis la réponse sans rechargement complet
+- [ ] Toast de confirmation : « {agentName} a été assigné à cette visite. »
+- [ ] Possibilité de réassigner un agent (bouton « Changer d'agent » si déjà assigné)
