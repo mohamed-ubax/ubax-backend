@@ -81,14 +81,28 @@ public class LaCodeListController {
   @Operation(
       summary = "Liste des valeurs par type",
       description =
-          "🌐 **Public** — Retourne toutes les entrées d'un type donné.\n\n"
-              + "**Types disponibles :** PROPERTY_TYPE · TRANSACTION_TYPE · PROPERTY_CONDITION · "
-              + "PROPERTY_DOCUMENT_TYPE · MEDIA_TYPE · PARTNER_TYPE · EMPLOYMENT_STATUS · ID_DOCUMENT_TYPE · "
-              + "TICKET_CATEGORY · TICKET_PRIORITY · TICKET_ATTACHMENT_TYPE · COST_IMPUTED_TO · "
-              + "CONTRACT_TYPE · SUBSCRIPTION_PLAN · ALERT_FREQUENCY · NEWSLETTER_FREQUENCY · DISPLAY_MODE · "
-              + "**ROLE_AGENCE** · **ROLE_HOTEL**\n\n"
-              + "> ⚠️ `ROLE_UBAX_INTERNAL` est restreint. "
-              + "Utiliser `GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL` (ADMIN requis).",
+          "🌐 **Public** — Retourne toutes les entrées actives d'un type donné. "
+              + "Aucun token requis.\n\n"
+              + "---\n\n"
+              + "### Référentiel complet des types\n\n"
+              + "| Type | Valeurs |\n"
+              + "|------|---------|\n"
+              + "| `ROLE_AGENCE` | `DIRECTEUR_AGENCE` · `COMMERCIAL` · `COMPTABLE_AGENCE` · `AGENT_SAV` · `AGENT_IMMOBILIER` |\n"
+              + "| `ROLE_HOTEL` | `GERANT_HOTEL` · `RECEPTIONNISTE` · `COMPTABLE_HOTEL` · `RESPONSABLE_HEBERGEMENT` |\n"
+              + "| `ID_TYPE` | `CNI` · `PASSEPORT` · `PERMIS_CONDUIRE` · `TITRE_SEJOUR` · `CARTE_CONSULAIRE` |\n"
+              + "| `PROPERTY_AMENITY` | `POOL` · `GENERATOR` · `WATER_TANK` · `AC` · `SECURITY` · `PARKING` · `ELEVATOR` · `GARDEN` · `FURNISHED` · `PETS` |\n"
+              + "| `TECHNICIEN_PROFESSION` | `PLOMBIER` · `ELECTRICIEN` · `SERRURIER` · `MENUISIER` · `MACON` · `PEINTRE` · `CLIMATISATION` · `VITRERIE` · `JARDINAGE` · `NETTOYAGE` · `DESINSECTISATION` · `AUTRE` |\n"
+              + "| `TICKET_CATEGORY` | Voir seeds V019 / V048 |\n"
+              + "| `TICKET_PRIORITY` | `LOW` · `NORMAL` · `HIGH` · `URGENT` |\n"
+              + "| `TICKET_ATTACHMENT_TYPE` | `INCIDENT_PHOTO` · `INCIDENT_VIDEO` · `INTERVENTION_REPORT` · `INVOICE` · `OTHER` |\n"
+              + "| `PROPERTY_TYPE` | Voir seed V027 |\n"
+              + "| `TRANSACTION_TYPE` | Voir seed V027 |\n"
+              + "| `CONTRACT_TYPE` | `LEASE` · `SALE` · `RENT_TO_OWN` |\n"
+              + "| `EMPLOYMENT_STATUS` | `EMPLOYED` · `SELF_EMPLOYED` · `STUDENT` · `RETIRED` · `UNEMPLOYED` · `OTHER` |\n"
+              + "| `PARTNER_TYPE` | `AGENCY` · `HOTEL` |\n"
+              + "| `COST_IMPUTED_TO` | Voir seed V019 |\n\n"
+              + "> ��️ **`ROLE_UBAX_INTERNAL`** est restreint aux admins. "
+              + "Utiliser `GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL` (JWT ADMIN requis).",
       tags = {"CodeList"})
   @ApiResponse(
       responseCode = "200",
@@ -126,10 +140,16 @@ public class LaCodeListController {
       summary = "Liste des valeurs par type (admin)",
       description =
           "🛡 **Rôle requis :** `ADMIN` ou `SUPER_ADMIN`.\n\n"
-              + "Identique à `GET /v1/code-list/type/{type}` mais accessible uniquement aux admins. "
-              + "Donne accès au type **`ROLE_UBAX_INTERNAL`** (sous-rôles internes UBAX) "
-              + "non exposé sur l'endpoint public.\n\n"
-              + "**Types utiles via cet endpoint :** ROLE_UBAX_INTERNAL",
+              + "Identique à `GET /v1/code-list/type/{type}` mais réservé aux admins. "
+              + "Permet d'accéder aux types restreints non exposés publiquement.\n\n"
+              + "---\n\n"
+              + "### Type restreint accessible via cet endpoint\n\n"
+              + "| Type | Valeurs |\n"
+              + "|------|---------|\n"
+              + "| `ROLE_UBAX_INTERNAL` | `DIRECTEUR_GENERAL` · `SUPPORT_CLIENT` · `OPERATIONS` · `FINANCE` · `COMMERCIAL` |\n\n"
+              + "**Exemple d'appel :** `GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL`\n\n"
+              + "> Tous les types publics (ROLE_AGENCE, ROLE_HOTEL, ID_TYPE, etc.) "
+              + "sont également accessibles via cet endpoint.",
       tags = {"CodeList"},
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(

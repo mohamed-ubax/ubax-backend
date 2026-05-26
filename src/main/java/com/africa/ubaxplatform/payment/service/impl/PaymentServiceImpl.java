@@ -239,6 +239,9 @@ public class PaymentServiceImpl implements PaymentService {
           ResponseMessageConstants.PAYMENT_CREATE_FAILURE_BAD_REQUEST);
     }
 
+    // Capturer le statut AVANT modification pour détecter la transition → PAID
+    PaymentStatus previousStatus = payment.getStatus();
+
     payment.setStatus(req.status());
     if (req.paymentMethod() != null) payment.setPaymentMethod(req.paymentMethod());
     if (req.amountPaid() != null) payment.setAmountPaid(req.amountPaid());
@@ -255,7 +258,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     Payment saved = paymentRepo.save(payment);
 
-    if (saved.getStatus() == PaymentStatus.PAID) {
+    // Générer le reçu uniquement sur la TRANSITION vers PAID (pas si déjà PAID avant la MAJ)
+    if (saved.getStatus() == PaymentStatus.PAID && previousStatus != PaymentStatus.PAID) {
       eventPublisher.publishEvent(new PaymentPaidEvent(saved, caller));
     }
 

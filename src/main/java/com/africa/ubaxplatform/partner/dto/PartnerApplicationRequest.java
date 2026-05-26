@@ -64,6 +64,13 @@ public class PartnerApplicationRequest {
   @Size(max = 150, message = "La zone ne peut dépasser 150 caractères")
   private String zone;
 
+  @NotBlank(message = "La description de l'agence/hôtel est obligatoire")
+  @Size(min = 10, max = 1000, message = "La description doit contenir entre 10 et 1000 caractères")
+  @Schema(
+      description = "Description de l'agence ou de l'hôtel (services, positionnement…)",
+      example = "Agence spécialisée dans la location et la vente de biens résidentiels à Dakar.",
+      minLength = 10,
+      maxLength = 1000)
   private String description;
 
   @DecimalMin(value = "-90.0", message = "Latitude invalide (min -90)")

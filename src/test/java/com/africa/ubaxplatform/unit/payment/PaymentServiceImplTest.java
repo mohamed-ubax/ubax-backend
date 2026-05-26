@@ -18,6 +18,7 @@ import com.africa.ubaxplatform.document.generator.InvoiceGenerator;
 import com.africa.ubaxplatform.document.generator.ReceiptGenerator;
 import com.africa.ubaxplatform.document.repository.DocumentRepository;
 import com.africa.ubaxplatform.document.service.impl.DocumentServiceImpl;
+import com.africa.ubaxplatform.notification.service.EmailService;
 import com.africa.ubaxplatform.payment.codeList.PaymentMethod;
 import com.africa.ubaxplatform.payment.codeList.PaymentStatus;
 import com.africa.ubaxplatform.payment.codeList.PaymentType;
@@ -65,6 +66,7 @@ class PaymentServiceImplTest {
   @Mock private ReceiptGenerator receiptGenerator;
   @Mock private MinioService minioService;
   @Mock private InvoiceGenerator invoiceGenerator;
+  @Mock private EmailService emailService;
 
   @InjectMocks private PaymentServiceImpl service;
   private DocumentServiceImpl documentService;
@@ -82,7 +84,8 @@ class PaymentServiceImplTest {
             null,
             invoiceGenerator,
             receiptGenerator,
-            minioService);
+            minioService,
+            emailService);
     agency = SharedTestFixtures.buildAgency();
     caller = SharedTestFixtures.buildPartnerUser();
     pendingPayment = SharedTestFixtures.buildPayment(agency, caller, PaymentStatus.PENDING);

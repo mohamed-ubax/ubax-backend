@@ -410,6 +410,8 @@ class ContractServiceImplTest {
               .build();
       SharedTestFixtures.injectId(pendingContract, SharedTestFixtures.CONTRACT_ID);
 
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
       when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
           .thenReturn(Optional.of(pendingContract));
       when(contractRepo.save(any(Contract.class))).thenReturn(pendingContract);
@@ -441,6 +443,8 @@ class ContractServiceImplTest {
               .build();
       SharedTestFixtures.injectId(pendingLease, SharedTestFixtures.CONTRACT_ID);
 
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
       when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
           .thenReturn(Optional.of(pendingLease));
       when(contractRepo.save(any(Contract.class))).thenReturn(pendingLease);
@@ -474,6 +478,8 @@ class ContractServiceImplTest {
               .build();
       SharedTestFixtures.injectId(pendingLease, SharedTestFixtures.CONTRACT_ID);
 
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
       when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
           .thenReturn(Optional.of(pendingLease));
       when(contractRepo.save(any(Contract.class))).thenReturn(pendingLease);
@@ -487,6 +493,8 @@ class ContractServiceImplTest {
     @Test
     @DisplayName("Echec – transition invalide (DRAFT → ACTIVE)")
     void activate_invalidTransition_throwsBadRequest() {
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
       when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
           .thenReturn(Optional.of(draftContract));
 

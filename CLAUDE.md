@@ -117,9 +117,11 @@ src/main/java/com/africa/ubaxplatform/
 │   ├── repository/     DocumentRepository
 │   └── service/        DocumentService (interface) + DocumentServiceImpl
 │                       → pipeline : entité → Thymeleaf → PDF → MinIO bucket documents-generated
+│                       → onPaymentPaid() : génère le reçu automatiquement après PAID
+│                         puis envoie le PDF par email au locataire (best-effort, @Async)
 ├── notification/   ✅ Email (JavaMail) et SMS (LAfricaMobile) — pas d'entité in-app
 │   ├── config/         NotificationConfig
-│   └── service/        EmailService, SmsService
+│   └── service/        EmailService (sendReceiptEmail avec PDF en pièce jointe), SmsService
 ├── common/         BaseEntity, exceptions, CustomResponse, RoleGuard, utils
 │   ├── base/           BaseEntity (id UUID, createdAt, updatedAt)
 │   ├── codelist/       LaCodeList (référentiels métier)
@@ -317,8 +319,9 @@ public class ModuleController {
 | V057 | `fix_tenant_employment_status_constraint.sql` | Supprime la contrainte CHECK orpheline `tenants_employment_status_check` (non présente dans les migrations, créée par une ancienne session Hibernate) · Ajoute `EMPLOYED` dans `la_code_list` (valeur envoyée par le mobile) · Migre les enregistrements `EMPLOYEE` → `EMPLOYED` · Désactive `EMPLOYEE` (is_system_assign=false) |
 | V058 | `create_property_visit_requests_and_availabilities.sql` | Tables `property_visit_requests`, `agency_visit_availabilities`, `visit_slot_occupancy` — module réservation de visites |
 | V059 | `seed_visit_request_code_lists.sql` | Seed `la_code_list` (VISIT_REQUEST_STATUS : PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED) |
+| V060 | `make_agency_description_not_null.sql` | Backfill `description = 'Description non renseignée.'` pour les agences existantes + contrainte `NOT NULL` sur `agencies.description` |
 
-Prochaine version disponible : **V060**
+Prochaine version disponible : **V061**
 
 ---
 
@@ -482,9 +485,11 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 
 ### Partner
 
+> **`POST /v1/partner/apply`** : le champ `description` est **obligatoire** (`@NotBlank`, 10–1 000 caractères). Il est persisté sur l'agence/hôtel créé lors de l'approbation et retourné dans `GET /v1/agencies`.
+
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
-| `POST` | `/v1/partner/apply` | Public | Soumettre candidature |
+| `POST` | `/v1/partner/apply` | Public | Soumettre candidature (`description` obligatoire 10–1 000 chars) |
 | `GET` | `/v1/partner/admin/applications` | `ADMIN` | Liste paginée |
 | `GET` | `/v1/partner/admin/applications/{id}` | `ADMIN` | Détail |
 | `PATCH` | `/v1/partner/admin/applications/{id}/decision` | `ADMIN` | Décision |
@@ -770,6 +775,35 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 | `GET` | `/v1/admin/agencies/{agencyId}/members/inactive` | `ADMIN` | Membres inactifs (soft-deleted) d'une agence |
 | `GET` | `/v1/admin/hotels/{hotelId}/members` | `ADMIN` | Membres actifs d'un hôtel (audit/support) |
 | `GET` | `/v1/admin/hotels/{hotelId}/members/inactive` | `ADMIN` | Membres inactifs (soft-deleted) d'un hôtel |
+
+### Code List (référentiels)
+
+> `GET /v1/code-list/type/{type}` est **public** (pas de JWT). `ROLE_UBAX_INTERNAL` est restreint : utiliser `GET /v1/code-list/admin/type/ROLE_UBAX_INTERNAL` (ADMIN requis).
+
+| Méthode | Chemin | Rôle | Description |
+|---------|--------|------|-------------|
+| `GET` | `/v1/code-list/type/{type}` | Public | Valeurs d'un type (selects frontend) |
+| `GET` | `/v1/code-list/admin/type/{type}` | `ADMIN` | Valeurs d'un type — accès types restreints (`ROLE_UBAX_INTERNAL`) |
+| `GET` | `/v1/code-list` | Authentifié | Liste paginée de tous les code lists |
+| `GET` | `/v1/code-list/{id}` | Authentifié | Détail d'un code list |
+| `POST` | `/v1/code-list` | `ADMIN` | Créer une valeur |
+| `PUT` | `/v1/code-list/{id}` | `ADMIN` | Modifier une valeur |
+
+**Types disponibles (endpoint public) :**
+
+| Type | Valeurs |
+|------|---------|
+| `ROLE_AGENCE` | `DIRECTEUR_AGENCE` · `COMMERCIAL` · `COMPTABLE_AGENCE` · `AGENT_SAV` · `AGENT_IMMOBILIER` |
+| `ROLE_HOTEL` | `GERANT_HOTEL` · `RECEPTIONNISTE` · `COMPTABLE_HOTEL` · `RESPONSABLE_HEBERGEMENT` |
+| `ROLE_UBAX_INTERNAL` ⚠️ | `DIRECTEUR_GENERAL` · `SUPPORT_CLIENT` · `OPERATIONS` · `FINANCE` · `COMMERCIAL` — **ADMIN uniquement** |
+| `ID_TYPE` | `CNI` · `PASSEPORT` · `PERMIS_CONDUIRE` · `TITRE_SEJOUR` · `CARTE_CONSULAIRE` |
+| `PROPERTY_AMENITY` | `POOL` · `GENERATOR` · `WATER_TANK` · `AC` · `SECURITY` · `PARKING` · `ELEVATOR` · `GARDEN` · `FURNISHED` · `PETS` |
+| `TECHNICIEN_PROFESSION` | `PLOMBIER` · `ELECTRICIEN` · `SERRURIER` · `MENUISIER` · `MACON` · `PEINTRE` · `CLIMATISATION` · `VITRERIE` · `JARDINAGE` · `NETTOYAGE` · `DESINSECTISATION` · `AUTRE` |
+| `TICKET_PRIORITY` | `LOW` · `NORMAL` · `HIGH` · `URGENT` |
+| `TICKET_ATTACHMENT_TYPE` | `INCIDENT_PHOTO` · `INCIDENT_VIDEO` · `INTERVENTION_REPORT` · `INVOICE` · `OTHER` |
+| `CONTRACT_TYPE` | `LEASE` · `SALE` · `RENT_TO_OWN` |
+| `EMPLOYMENT_STATUS` | `EMPLOYED` · `SELF_EMPLOYED` · `STUDENT` · `RETIRED` · `UNEMPLOYED` · `OTHER` |
+| `PARTNER_TYPE` | `AGENCY` · `HOTEL` |
 
 ### Dashboard & Storage
 
