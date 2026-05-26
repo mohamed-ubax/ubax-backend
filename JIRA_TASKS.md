@@ -4144,6 +4144,375 @@ Le module de réservation de visites permet aux clients mobiles de consulter les
 
 ---
 
+## MODULE 14 — RÉSERVATIONS HÔTELIÈRES · PORTAIL HÔTEL / CLIENT MOBILE
+
+**Epic :** `UBAX-FE-RESERVATIONS`  
+**Rôle requis (JWT) :** `UBAX_CLIENT` (flux client) · `UBAX_PARTNER` hôtel (flux hôtelier) · Public (disponibilité)
+
+### Objectif
+
+Ce module couvre le cycle de vie complet d'une réservation hôtelière, du côté client mobile (vérifier la disponibilité, réserver, suivre, annuler) et du côté hôtelier (consulter les demandes, confirmer, annuler, clôturer un séjour ou marquer un no-show).
+
+> **Différence avec MODULE 13 (Visites immobilières) :**  
+> - MODULE 13 gère des **rendez-vous de visite physique** d'un bien agence (créneau horaire libre par l'agence)  
+> - MODULE 14 gère des **séjours payants** dans un espace hôtelier (check-in / check-out avec calcul de montant)
+
+**Flux principal client :**
+1. Le client consulte la disponibilité d'un espace (`GET /v1/properties/{id}/availability`) — widget UBAX-FE-712.
+2. Si `availableUnits ≥ 1`, le client soumet une réservation (`POST /v1/reservations`) → statut `PENDING`.
+3. L'hôtel confirme la demande (`PATCH …/confirm`) → `CONFIRMED`.
+4. Après le séjour, l'hôtel marque le séjour terminé (`PATCH …/complete`) → `COMPLETED`.
+5. En cas de non-présentation, l'hôtel marque no-show (`PATCH …/no-show`) → `NO_SHOW`.
+6. Annulation possible par le client (`PENDING` uniquement) ou l'hôtel (`PENDING` ou `CONFIRMED`).
+
+**Statuts & transitions :**
+
+```
+PENDING ──────► CONFIRMED ──────► COMPLETED
+   │                 │                 
+   │                 └──────────────► NO_SHOW
+   │
+   └────── (client) ─────────────► CANCELLED
+                (hotel) ──────────► CANCELLED  (depuis PENDING ou CONFIRMED)
+```
+
+**Périmètre frontend de ce module :**
+
+| Tâche | Action | Acteur |
+|-------|--------|--------|
+| UBAX-FE-1401 — Créer une réservation | Écriture | `CLIENT` (mobile) |
+| UBAX-FE-1402 — Mes réservations | Lecture | `CLIENT` (mobile) |
+| UBAX-FE-1403 — Détail d'une réservation (client) | Lecture | `CLIENT` (mobile) |
+| UBAX-FE-1404 — Annuler une réservation (client) | Écriture | `CLIENT` (mobile) |
+| UBAX-FE-1405 — Liste des réservations reçues (hôtel) | Lecture | `PARTNER` hôtel |
+| UBAX-FE-1406 — Détail d'une réservation (hôtel) | Lecture + actions | `PARTNER` hôtel |
+| UBAX-FE-1407 — Confirmer une réservation | Écriture | `PARTNER` hôtel |
+| UBAX-FE-1408 — Annuler une réservation (hôtel) | Écriture | `PARTNER` hôtel |
+| UBAX-FE-1409 — Marquer séjour terminé / no-show | Écriture | `PARTNER` hôtel |
+
+**Points d'attention :**
+- `totalAmount` est **calculé par le backend** (`pricePerNight × numberOfNights`) — ne jamais calculer côté frontend.
+- `DELETE /v1/reservations/{id}` (annulation client) nécessite un **body JSON** `{ "reason": "..." }` — cas unique pour un DELETE, ne pas omettre le `Content-Type: application/json`.
+- `PATCH …/cancel` (hôtel) accepte les statuts `PENDING` **et** `CONFIRMED` — body `{ "reason": "..." }` obligatoire.
+- `GET /v1/reservations/{id}` : un CLIENT reçoit `403` s'il tente de consulter une réservation qui ne lui appartient pas.
+- L'endpoint de disponibilité (`GET /v1/properties/{id}/availability`) est **public** — widget UBAX-FE-712 à intégrer sur la fiche de l'espace avant le bouton « Réserver ».
+
+---
+
+### UBAX-FE-1401 · Créer une réservation (client mobile)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `POST /v1/reservations` |
+| **Auth** | Bearer token · `UBAX_CLIENT` |
+| **Content-Type** | `application/json` |
+| **Pré-requis** | Widget disponibilité UBAX-FE-712 intégré sur la fiche espace (UBAX-FE-702) |
+
+**Request body :**
+```json
+{
+  "propertyId": "uuid",
+  "checkInDate": "2026-07-10",
+  "checkOutDate": "2026-07-12",
+  "guestCount": 2,
+  "notes": "Chambre calme si possible, arrivée tardive vers 22h"
+}
+```
+
+> **Contraintes validées côté backend :**
+> - `checkInDate` et `checkOutDate` doivent être dans le futur (`@Future`)
+> - `checkInDate` doit être strictement antérieure à `checkOutDate`
+> - `guestCount ≥ 1`
+> - Le bien doit avoir `availableUnits ≥ 1` pour ces dates (vérification `unitCount` - overlaps CONFIRMED)
+
+**Response `201` :**
+```json
+{
+  "status": "SUCCESS",
+  "statusCode": 201,
+  "message": "RESERVATION_CREATE_SUCCESS",
+  "data": {
+    "id": "uuid",
+    "propertyId": "uuid",
+    "propertyTitle": "Suite Présidentielle",
+    "propertyCity": "Abidjan",
+    "clientId": "uuid",
+    "clientFullName": "Jean Kouassi",
+    "clientEmail": "jean@example.com",
+    "checkInDate": "2026-07-10",
+    "checkOutDate": "2026-07-12",
+    "numberOfNights": 2,
+    "guestCount": 2,
+    "pricePerNight": 150000,
+    "totalAmount": 300000,
+    "status": "PENDING",
+    "notes": "Chambre calme si possible",
+    "cancellationReason": null,
+    "cancelledById": null,
+    "confirmedAt": null,
+    "cancelledAt": null,
+    "completedAt": null,
+    "createdAt": "2026-06-01T10:00:00",
+    "updatedAt": "2026-06-01T10:00:00"
+  }
+}
+```
+
+**Erreurs possibles :**
+- `400 Bad Request` — dates invalides ou `guestCount < 1` ou `checkIn ≥ checkOut`
+- `400 Bad Request` — `RESERVATION_CREATE_FAILURE_UNAVAILABLE` — toutes les unités déjà réservées pour ces dates
+- `404 Not Found` — bien introuvable
+
+**Critères d'acceptation :**
+- [ ] Le formulaire de réservation est pré-rempli avec `checkIn` / `checkOut` sélectionnées via le widget UBAX-FE-712
+- [ ] Appel à `GET /v1/properties/{id}/availability` avant soumission pour confirmer la disponibilité (anti double-submit)
+- [ ] Champ `guestCount` avec sélecteur numérique (min 1, max raisonnable selon le type d'espace)
+- [ ] Champ `notes` textarea optionnel avec placeholder « Demandes spéciales, heure d'arrivée… »
+- [ ] Récapitulatif affiché avant confirmation : espace, dates, nombre de nuits, prix/nuit, **total XOF** (lu depuis la réponse, pas calculé)
+- [ ] Bouton « Confirmer la réservation » → spinner pendant l'appel
+- [ ] Après succès : redirection vers UBAX-FE-1403 (détail) avec badge `PENDING`
+- [ ] En cas d'erreur `UNAVAILABLE` : message « Plus de disponibilité pour ces dates » + désactivation du bouton
+- [ ] Gestion d'erreur `400` générique avec message explicite
+
+---
+
+### UBAX-FE-1402 · Mes réservations (client mobile)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/reservations/mine` |
+| **Auth** | Bearer token · `UBAX_CLIENT` |
+| **Query params** | `page` (défaut 0) · `size` (défaut 20) |
+
+**Response `200` :**
+```json
+{
+  "data": {
+    "content": [
+      {
+        "id": "uuid",
+        "propertyTitle": "Suite Présidentielle",
+        "propertyCity": "Abidjan",
+        "checkInDate": "2026-07-10",
+        "checkOutDate": "2026-07-12",
+        "numberOfNights": 2,
+        "totalAmount": 300000,
+        "status": "CONFIRMED",
+        "confirmedAt": "2026-06-02T09:00:00",
+        "createdAt": "2026-06-01T10:00:00"
+      }
+    ],
+    "totalElements": 3,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+> Triées par `createdAt` DESC (les plus récentes en premier).
+
+**Critères d'acceptation :**
+- [ ] Liste paginée avec : photo de couverture du bien, titre, ville, dates (check-in → check-out), nombre de nuits, montant total, badge statut
+- [ ] Badge statut coloré : `PENDING` orange · `CONFIRMED` vert · `COMPLETED` bleu · `CANCELLED` gris · `NO_SHOW` rouge
+- [ ] Bouton « Annuler » visible uniquement si `status = PENDING` → déclenche UBAX-FE-1404
+- [ ] Clic sur une réservation → UBAX-FE-1403
+- [ ] Message si liste vide : « Vous n'avez aucune réservation. »
+- [ ] Pagination infinie ou bouton « Charger plus »
+
+---
+
+### UBAX-FE-1403 · Détail d'une réservation (client mobile)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/reservations/{id}` |
+| **Auth** | Bearer token · `UBAX_CLIENT` |
+| **Path params** | `id` : UUID de la réservation |
+
+**Erreurs possibles :**
+- `403 Forbidden` — réservation appartenant à un autre client
+- `404 Not Found` — réservation introuvable
+
+**Critères d'acceptation :**
+- [ ] Fiche complète : photo du bien, titre, ville, dates, nombre de nuits, nombre de voyageurs, notes, prix/nuit, **total XOF**
+- [ ] Badge statut avec date de confirmation (`confirmedAt`) si `CONFIRMED`
+- [ ] Bandeau vert « Réservation confirmée le {date} » si `status = CONFIRMED`
+- [ ] Bandeau rouge « Réservation annulée » avec motif (`cancellationReason`) si `status = CANCELLED`
+- [ ] Bouton « Annuler ma réservation » visible uniquement si `status = PENDING` → UBAX-FE-1404
+- [ ] Lien vers la fiche de l'espace (UBAX-FE-702)
+- [ ] Format monétaire : `300 000 XOF` (espace comme séparateur de milliers, pas de décimales)
+
+---
+
+### UBAX-FE-1404 · Annuler une réservation (client mobile)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `DELETE /v1/reservations/{id}` |
+| **Auth** | Bearer token · `UBAX_CLIENT` |
+| **Path params** | `id` : UUID de la réservation |
+| **Content-Type** | `application/json` |
+| **Request body** | `{ "reason": "..." }` — **obligatoire** |
+
+> ⚠️ **DELETE avec body JSON** — cas atypique. Passer `Content-Type: application/json` et un objet `{ "reason": "..." }`. Seules les réservations `PENDING` sont annulables (400 sinon).
+
+**Response `200` :** _(objet `ReservationResponse` avec `status: "CANCELLED"` et `cancellationReason` renseigné)_
+
+**Erreurs possibles :**
+- `400 Bad Request` — statut invalide (la réservation n'est pas `PENDING`)
+- `403 Forbidden` — la réservation n'appartient pas au client
+- `404 Not Found` — réservation introuvable
+
+**Critères d'acceptation :**
+- [ ] Modal de confirmation avec textarea `reason` (motif obligatoire, min 5 caractères)
+- [ ] Placeholder : « Ex. Changement de plans, impossibilité de voyager… »
+- [ ] Bouton « Confirmer l'annulation » désactivé si `reason` est vide
+- [ ] Après succès : badge statut → `CANCELLED` + affichage du motif sans rechargement complet
+- [ ] Toast : « Votre réservation a été annulée. »
+- [ ] Ne pas afficher le bouton si `status ≠ PENDING`
+
+---
+
+### UBAX-FE-1405 · Liste des réservations reçues (portail hôtel)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/reservations/hotel` |
+| **Auth** | Bearer token · `UBAX_PARTNER` (hôtel) |
+| **Query params** | `status` (optionnel) · `page` · `size` |
+
+**Response `200` :** _(page de `ReservationResponse` — même structure que UBAX-FE-1402)_
+
+> Le backend filtre automatiquement sur l'hôtel du membre connecté. Le filtre `?status=` permet de n'afficher qu'un statut précis.
+
+**Critères d'acceptation :**
+- [ ] Tableau paginé avec : nom du client, titre de l'espace, dates, nombre de nuits, montant, badge statut, date de création
+- [ ] Onglets ou filtre rapide par statut : Toutes · En attente (`PENDING`) · Confirmées (`CONFIRMED`) · Terminées (`COMPLETED`) · Annulées (`CANCELLED`) · No-show (`NO_SHOW`)
+- [ ] Badge statut coloré (même code couleur que UBAX-FE-1402)
+- [ ] Clic sur une réservation → UBAX-FE-1406
+- [ ] Tri par `createdAt` DESC par défaut
+- [ ] Compteur de réservations `PENDING` en attente de traitement visible dans l'en-tête ou badge de navigation
+
+---
+
+### UBAX-FE-1406 · Détail d'une réservation (portail hôtel)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/reservations/{id}` |
+| **Auth** | Bearer token · `UBAX_PARTNER` (hôtel) |
+| **Path params** | `id` : UUID de la réservation |
+
+**Erreurs possibles :**
+- `403 Forbidden` — réservation n'appartient pas à cet hôtel
+- `404 Not Found` — réservation introuvable
+
+**Actions disponibles selon le statut :**
+
+| Statut | Confirmer | Annuler (hôtel) | Compléter | No-show |
+|--------|-----------|-----------------|-----------|---------|
+| `PENDING` | ✅ | ✅ | ❌ | ❌ |
+| `CONFIRMED` | ❌ | ✅ | ✅ | ✅ |
+| `COMPLETED` | ❌ | ❌ | ❌ | ❌ |
+| `CANCELLED` | ❌ | ❌ | ❌ | ❌ |
+| `NO_SHOW` | ❌ | ❌ | ❌ | ❌ |
+
+**Critères d'acceptation :**
+- [ ] Fiche complète : nom + email du client, titre + ville de l'espace, dates, nuits, voyageurs, notes, prix/nuit, total XOF
+- [ ] Badge statut avec horodatage contextuel (`confirmedAt` · `cancelledAt` · `completedAt`)
+- [ ] Motif d'annulation visible si `status = CANCELLED`
+- [ ] Boutons d'action selon la matrice ci-dessus → déclenchent UBAX-FE-1407, 1408, 1409
+- [ ] Bandeau d'alerte orange si `status = PENDING` : « En attente de confirmation »
+
+---
+
+### UBAX-FE-1407 · Confirmer une réservation (portail hôtel)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/reservations/{id}/confirm` |
+| **Auth** | Bearer token · `UBAX_PARTNER` (hôtel) |
+| **Path params** | `id` : UUID de la réservation |
+| **Request body** | _(aucun)_ |
+
+**Response `200` :** _(objet `ReservationResponse` avec `status: "CONFIRMED"` et `confirmedAt` renseigné)_
+
+**Erreurs possibles :**
+- `400 Bad Request` — transition invalide (la réservation n'est pas `PENDING`)
+- `403 Forbidden` — réservation n'appartient pas à cet hôtel
+- `404 Not Found` — réservation introuvable
+
+**Critères d'acceptation :**
+- [ ] Dialog de confirmation : « Confirmer la réservation de {clientName} du {checkIn} au {checkOut} ? »
+- [ ] Après succès : badge statut → `CONFIRMED` + `confirmedAt` affiché dans la fiche
+- [ ] Toast : « Réservation confirmée. »
+- [ ] Bouton masqué si `status ≠ PENDING`
+
+---
+
+### UBAX-FE-1408 · Annuler une réservation (portail hôtel)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `PATCH /v1/reservations/{id}/cancel` |
+| **Auth** | Bearer token · `UBAX_PARTNER` (hôtel) |
+| **Path params** | `id` : UUID de la réservation |
+| **Content-Type** | `application/json` |
+| **Request body** | `{ "reason": "..." }` — **obligatoire** |
+
+> Annule depuis `PENDING` **ou** `CONFIRMED` (contrairement au client, limité à `PENDING`).
+
+**Response `200` :** _(objet `ReservationResponse` avec `status: "CANCELLED"` et `cancellationReason` renseigné)_
+
+**Erreurs possibles :**
+- `400 Bad Request` — statut invalide (ni `PENDING` ni `CONFIRMED`) ou `reason` vide
+- `403 Forbidden` — réservation n'appartient pas à cet hôtel
+- `404 Not Found` — réservation introuvable
+
+**Critères d'acceptation :**
+- [ ] Modal d'annulation avec textarea `reason` obligatoire
+- [ ] Placeholder : « Ex. Espace indisponible, maintenance d'urgence… »
+- [ ] Bouton « Confirmer l'annulation » désactivé si `reason` est vide
+- [ ] Après succès : badge statut → `CANCELLED` + motif affiché dans la fiche
+- [ ] Toast : « Réservation annulée. »
+- [ ] Bouton visible si `status ∈ {PENDING, CONFIRMED}`
+
+---
+
+### UBAX-FE-1409 · Marquer séjour terminé / no-show (portail hôtel)
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint (terminé)** | `PATCH /v1/reservations/{id}/complete` |
+| **Endpoint (no-show)** | `PATCH /v1/reservations/{id}/no-show` |
+| **Auth** | Bearer token · `UBAX_PARTNER` (hôtel) |
+| **Path params** | `id` : UUID de la réservation |
+| **Request body** | _(aucun)_ |
+
+> Les deux actions ne sont disponibles que depuis le statut `CONFIRMED`.
+
+**Response `200` :** _(objet `ReservationResponse` avec `status: "COMPLETED"` ou `"NO_SHOW"`)_
+
+**Erreurs possibles :**
+- `400 Bad Request` — transition invalide (la réservation n'est pas `CONFIRMED`)
+- `403 Forbidden` — réservation n'appartient pas à cet hôtel
+- `404 Not Found` — réservation introuvable
+
+**Critères d'acceptation :**
+- [ ] Bouton **« Séjour terminé »** visible uniquement si `status = CONFIRMED`
+- [ ] Bouton **« No-show »** visible uniquement si `status = CONFIRMED`
+- [ ] Dialog de confirmation différencié selon l'action :
+  - Terminé : « Confirmer la clôture du séjour de {clientName} ? »
+  - No-show : « Marquer {clientName} comme absent ? Cette action est irréversible. »
+- [ ] Après succès : badge statut mis à jour (`COMPLETED` bleu / `NO_SHOW` rouge)
+- [ ] Toast contextuel : « Séjour clôturé avec succès. » / « Séjour marqué no-show. »
+- [ ] Les deux boutons masqués si `status ≠ CONFIRMED`
+
+---
+
+---
+
 ## TÂCHES BACKEND — Suivi Sprint
 
 > **Statuts :** `✅ DONE` · `🔄 IN PROGRESS` · `⏳ TODO` · `🔴 BLOCKED` · `🟡 TECH DEBT`  
