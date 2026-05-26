@@ -67,7 +67,17 @@ public class ReservationServiceImpl implements ReservationService {
           ResponseMessageConstants.USER_UNAUTHORIZED);
     }
     UUID hotelId = caller.getHotel().getId();
-    var propertyHotel = reservation.getProperty().getHotel();
+
+    // Priorité : hotel_id direct sur le bien (FK ajoutée en V044).
+    // Fallback : hotel du propriétaire du bien (chargé en FETCH dans findByIdWithDetails).
+    // Les deux chemins doivent pointer vers le même hôtel ; le fallback couvre les données
+    // antérieures à V044 ou les biens pour lesquels hotel_id n'a pas été renseigné.
+    var property = reservation.getProperty();
+    var propertyHotel = property.getHotel();
+    if (propertyHotel == null && property.getOwner() != null) {
+      propertyHotel = property.getOwner().getHotel();
+    }
+
     if (propertyHotel == null || !hotelId.equals(propertyHotel.getId())) {
       throw new CustomException(
           new UnAuthorizedException("Cette réservation n'appartient pas à votre hôtel"),

@@ -447,6 +447,91 @@ class ReservationServiceImplTest {
     }
 
     @Test
+    @DisplayName(
+        "Succès – bien sans hotel_id direct (pré-V044) : fallback sur property.owner.hotel")
+    void confirm_propertyHotelNullFallbackToOwnerHotel_success() throws CustomException {
+      // Bien sans hotel_id renseigné (ancien schéma pré-V044) mais owner rattaché à l'hôtel
+      Property legacyProperty =
+          Property.builder()
+              .owner(hotelStaff) // owner.hotel = hotel → fallback disponible
+              .hotel(null) // ← hotel_id non renseigné
+              .title("Chambre legacy")
+              .propertyType("HOTEL_ROOM")
+              .transactionType("SHORT_STAY")
+              .price(BigDecimal.valueOf(50_000))
+              .status(PropertyStatus.PUBLISHED)
+              .city("Abidjan")
+              .build();
+      SharedTestFixtures.injectId(legacyProperty, SharedTestFixtures.PROPERTY_ID);
+
+      Reservation legacyReservation =
+          Reservation.builder()
+              .property(legacyProperty)
+              .client(client)
+              .checkInDate(LocalDate.now().plusDays(5))
+              .checkOutDate(LocalDate.now().plusDays(8))
+              .numberOfNights(3)
+              .guestCount(2)
+              .pricePerNight(BigDecimal.valueOf(50_000))
+              .totalAmount(BigDecimal.valueOf(150_000))
+              .status(ReservationStatus.PENDING)
+              .build();
+      SharedTestFixtures.injectId(legacyReservation, RESERVATION_ID);
+
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(legacyReservation));
+      when(reservationRepo.save(any(Reservation.class))).thenReturn(legacyReservation);
+
+      ReservationResponse resp = service.confirm("hotel-kc", RESERVATION_ID);
+
+      assertThat(resp.status()).isEqualTo(ReservationStatus.CONFIRMED);
+    }
+
+    @Test
+    @DisplayName("Echec – bien sans hotel_id ET owner sans hôtel → USER_FORBIDDEN")
+    void confirm_propertyHotelNullOwnerHotelNull_throwsForbidden() {
+      User ownerWithoutHotel =
+          SharedTestFixtures.buildUserWithoutAgency("owner-kc", UUID.randomUUID());
+      // ownerWithoutHotel.hotel = null
+
+      Property orphanProperty =
+          Property.builder()
+              .owner(ownerWithoutHotel)
+              .hotel(null) // aucun hotel rattaché
+              .title("Bien orphelin")
+              .propertyType("HOTEL_ROOM")
+              .transactionType("SHORT_STAY")
+              .price(BigDecimal.valueOf(50_000))
+              .status(PropertyStatus.PUBLISHED)
+              .city("Abidjan")
+              .build();
+      SharedTestFixtures.injectId(orphanProperty, SharedTestFixtures.PROPERTY_ID);
+
+      Reservation orphanReservation =
+          Reservation.builder()
+              .property(orphanProperty)
+              .client(client)
+              .checkInDate(LocalDate.now().plusDays(5))
+              .checkOutDate(LocalDate.now().plusDays(8))
+              .numberOfNights(3)
+              .guestCount(2)
+              .pricePerNight(BigDecimal.valueOf(50_000))
+              .totalAmount(BigDecimal.valueOf(150_000))
+              .status(ReservationStatus.PENDING)
+              .build();
+      SharedTestFixtures.injectId(orphanReservation, RESERVATION_ID);
+
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(orphanReservation));
+
+      assertThatThrownBy(() -> service.confirm("hotel-kc", RESERVATION_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_FORBIDDEN);
+    }
+
+    @Test
     @DisplayName("Echec – réservation non PENDING → transition invalide")
     void confirm_notPending_throwsBadRequest() {
       Reservation confirmed =

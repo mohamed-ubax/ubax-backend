@@ -21,12 +21,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
   // ── Hôtel : réservations de leurs biens ───────────────────────────────────
 
   @Query(
-      "SELECT r FROM Reservation r WHERE r.property.owner.hotel.id = :hotelId"
+      "SELECT r FROM Reservation r WHERE r.property.hotel.id = :hotelId"
           + " AND r.deletedAt IS NULL")
   Page<Reservation> findByHotelId(@Param("hotelId") UUID hotelId, Pageable pageable);
 
   @Query(
-      "SELECT r FROM Reservation r WHERE r.property.owner.hotel.id = :hotelId"
+      "SELECT r FROM Reservation r WHERE r.property.hotel.id = :hotelId"
           + " AND r.status = :status AND r.deletedAt IS NULL")
   Page<Reservation> findByHotelIdAndStatus(
       @Param("hotelId") UUID hotelId, @Param("status") ReservationStatus status, Pageable pageable);
@@ -73,6 +73,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     JOIN FETCH r.property p
     JOIN FETCH p.owner o
     LEFT JOIN FETCH o.hotel
+    LEFT JOIN FETCH p.hotel
     WHERE r.id = :id
     AND r.deletedAt IS NULL
 """)
