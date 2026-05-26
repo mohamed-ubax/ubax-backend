@@ -89,6 +89,7 @@ public class PropertyMapper {
         p.getMaxOccupancy(),
         p.getMealPlan(),
         p.getPaymentFrequency(),
+        p.getUnitCount(),
         coverPhotoUrl,
         p.getCreatedAt(),
         p.getUpdatedAt());

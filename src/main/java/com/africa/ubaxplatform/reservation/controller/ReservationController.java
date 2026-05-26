@@ -89,7 +89,11 @@ public class ReservationController {
       summary = "Soumettre une réservation",
       description =
           "Le client crée une demande de réservation pour un bien hôtelier publié. "
-              + "Le bien doit être en statut **PUBLISHED** et sans chevauchement de dates confirmées. "
+              + "Le bien doit être en statut **PUBLISHED**.\n\n"
+              + "**Disponibilité :** une réservation est acceptée si le nombre de séjours `CONFIRMED`"
+              + " se chevauchant est **strictement inférieur** au `unitCount` du bien"
+              + " (défaut `1`). Pour un bien avec `unitCount = 5`, jusqu'à 5 réservations simultanées"
+              + " sur les mêmes dates sont possibles.\n\n"
               + "La réservation est créée en statut **PENDING**, en attente de confirmation hôtel.\n\n"
               + "**Rôles autorisés :** `CLIENT`",
       security = @SecurityRequirement(name = "bearerAuth"))

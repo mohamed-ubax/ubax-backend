@@ -108,9 +108,17 @@ public class ReservationServiceImpl implements ReservationService {
     long overlaps =
         reservationRepo.countOverlappingConfirmed(
             property.getId(), request.checkInDate(), request.checkOutDate());
-    if (overlaps > 0) {
+    int capacity = property.getUnitCount() != null ? property.getUnitCount() : 1;
+    if (overlaps >= capacity) {
       throw new CustomException(
-          new BadRequestException("Le bien est déjà réservé pour ces dates"),
+          new BadRequestException(
+              capacity == 1
+                  ? "Le bien est déjà réservé pour ces dates"
+                  : "Toutes les unités disponibles sont déjà réservées pour ces dates ("
+                      + overlaps
+                      + "/"
+                      + capacity
+                      + ")"),
           ResponseMessageConstants.RESERVATION_CREATE_FAILURE_UNAVAILABLE);
     }
 

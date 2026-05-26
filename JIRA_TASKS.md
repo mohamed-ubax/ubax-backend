@@ -124,11 +124,17 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
           { "id": "uuid", "code": "PARKING", "customValue": null, "customDescription": null },
           { "id": "uuid", "code": "GARDEN", "customValue": null, "customDescription": null }
         ],
+        "bedType": null,
+        "maxOccupancy": null,
+        "mealPlan": null,
+        "paymentFrequency": null,
+        "unitCount": 1,
         "boosted": true,
         "boostExpiresAt": "2026-06-01T00:00:00",
         "status": "PUBLISHED",
         "rejectionReason": null,
         "publishedAt": "2026-04-10T09:00:00",
+        "coverPhotoUrl": "http://localhost:9000/properties-media/uuid/cover.jpg",
         "createdAt": "2026-04-05T14:30:00",
         "updatedAt": "2026-04-10T09:00:00"
       }
@@ -340,13 +346,15 @@ Une **agence partenaire** UBAX peut publier, gérer et modérer ses annonces imm
   "paymentFrequency": "NIGHTLY",
   "maxOccupancy": 2,
   "bedType": "KING",
-  "mealPlan": "BREAKFAST"
+  "mealPlan": "BREAKFAST",
+  "unitCount": 1
 }
 ```
 
 > **`amenities`** : charger via `GET /v1/code-list/type/PROPERTY_AMENITY` (retourne `value` + `description`). Envoyer **les deux champs** dans le body pour éviter un appel DB supplémentaire côté backend — commodité standard : `{ "code": "POOL", "description": "Piscine (privée ou commune)" }`. Commodité personnalisée : `{ "customValue": "Jacuzzi", "customDescription": "Jacuzzi extérieur", "description": "Jacuzzi extérieur" }`  
 > **`ownerId`** : UUID du bailleur si l'agence gère pour un tiers — `null` si l'appelant est lui-même propriétaire  
 > **Champs hôteliers (requis pour `SHORT_STAY`) :** `paymentFrequency` (`NIGHTLY`·`WEEKLY`·`MONTHLY`) · `maxOccupancy` (≥ 1 personne). `bedType` (`SINGLE`·`DOUBLE`·`TWIN`·`KING`·`QUEEN`·`BUNK`) et `mealPlan` (`ROOM_ONLY`·`BREAKFAST`·`HALF_BOARD`·`FULL_BOARD`·`ALL_INCLUSIVE`) sont recommandés.  
+> **`unitCount`** (hôtel, optionnel, défaut `1`) : nombre d'unités identiques disponibles. Ex: `unitCount: 5` = 5 chambres Standard de même config/prix gérées sous un seul enregistrement.  
 > **Champs hôtel ignorés pour biens agence** — envoyer `null` ou omettre.
 
 **Response `201` :** objet `PropertyResponse` avec `status: "DRAFT"`
@@ -782,6 +790,7 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 | UBAX-FE-709 — Supprimer un média | Écriture | `GERANT_HOTEL` · `RESPONSABLE_HEBERGEMENT` |
 | UBAX-FE-710 — Archiver un espace | Écriture | `GERANT_HOTEL` |
 | UBAX-FE-711 — Détail d'un espace (espace hôtel) | Lecture + actions contextuelles | Tout membre `PARTNER` (hôtel) |
+| UBAX-FE-712 — Widget disponibilité (mobile/web) | Lecture | Grand public · `CLIENT` |
 
 **Points d'attention :**
 - Le `price` représente le **tarif unitaire en XOF** — afficher « /nuit » (NIGHTLY), « /semaine » (WEEKLY) ou « /mois » (MONTHLY) selon `paymentFrequency`. Le backend calcule le `totalAmount` de la réservation en conséquence.
@@ -843,6 +852,11 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
         "district": "Plateau",
         "latitude": 14.6937,
         "longitude": -17.4441,
+        "bedType": "KING",
+        "maxOccupancy": 2,
+        "mealPlan": "BREAKFAST",
+        "paymentFrequency": "NIGHTLY",
+        "unitCount": 5,
         "amenities": [
           { "id": "uuid", "code": "AC", "customValue": null, "customDescription": null },
           { "id": "uuid", "code": "FURNISHED", "customValue": null, "customDescription": null }
@@ -852,6 +866,7 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
         "status": "PUBLISHED",
         "rejectionReason": null,
         "publishedAt": "2026-04-15T10:00:00",
+        "coverPhotoUrl": "http://localhost:9000/properties-media/uuid/cover.jpg",
         "createdAt": "2026-04-10T09:00:00",
         "updatedAt": "2026-04-15T10:00:00"
       }
@@ -905,12 +920,14 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
     "maxOccupancy": 2,
     "bedType": "KING",
     "mealPlan": "BREAKFAST",
+    "unitCount": 5,
     "city": "DAKAR",
     "district": "Plateau",
     "latitude": 14.6937,
     "longitude": -17.4441,
     "status": "PUBLISHED",
     "publishedAt": "2026-04-15T10:00:00",
+    "coverPhotoUrl": "http://localhost:9000/properties-media/uuid/cover.jpg",
     "medias": [
       {
         "id": "uuid",
@@ -965,11 +982,13 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
         "maxOccupancy": 2,
         "bedType": "KING",
         "mealPlan": "BREAKFAST",
+        "unitCount": 5,
         "city": "DAKAR",
         "status": "PUBLISHED",
         "boosted": false,
         "rejectionReason": null,
         "publishedAt": "2026-04-15T10:00:00",
+        "coverPhotoUrl": "http://localhost:9000/properties-media/uuid/cover.jpg",
         "createdAt": "2026-04-10T09:00:00"
       }
     ],
@@ -1027,6 +1046,7 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
   "maxOccupancy": 2,
   "bedType": "KING",
   "mealPlan": "BREAKFAST",
+  "unitCount": 5,
   "amenities": [
     { "code": "AC",       "description": "Climatisation" },
     { "code": "SECURITY", "description": "Gardiennage / sécurité sur site" },
@@ -1040,6 +1060,7 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 > **`propertyType` disponibles pour hôtels :** `HOTEL_ROOM` · `HOTEL_SUITE` · `HOTEL_STUDIO` · `EVENT_SPACE` · `CONFERENCE_ROOM` · `RESTAURANT_SPACE`  
 > **`transactionType` :** toujours `SHORT_STAY` pour les espaces hôteliers  
 > **Champs hôteliers requis pour `SHORT_STAY` :** `paymentFrequency` (`NIGHTLY`/`WEEKLY`/`MONTHLY`) · `maxOccupancy` (≥ 1)  
+> **`unitCount`** (optionnel, défaut `1`) : nombre d'unités identiques disponibles. `unitCount: 5` = 5 chambres Standard disponibles en parallèle. Une réservation est acceptée si `nb_reservations_confirmees < unitCount`. Mettre à `1` pour une chambre unique.  
 > **`amenities`** : charger via `GET /v1/code-list/type/PROPERTY_AMENITY` (retourne `value` + `description`). Envoyer **les deux champs** dans le body — `{ "code": "AC", "description": "Climatisation" }` — pour éviter un appel DB supplémentaire côté backend.
 
 **Response `201` :**
@@ -1051,15 +1072,17 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
   "data": {
     "id": "uuid",
     "title": "Suite Présidentielle avec vue mer",
-    "propertyType": "SUITE",
+    "propertyType": "HOTEL_SUITE",
     "transactionType": "SHORT_STAY",
     "price": 150000,
     "paymentFrequency": "NIGHTLY",
     "maxOccupancy": 2,
     "bedType": "KING",
     "mealPlan": "BREAKFAST",
+    "unitCount": 5,
     "city": "DAKAR",
     "status": "DRAFT",
+    "coverPhotoUrl": null,
     "createdAt": "2026-05-06T10:00:00"
   }
 }
@@ -1078,6 +1101,7 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 - [ ] Champ `maxOccupancy` (capacité max, entier ≥ 1) affiché et requis
 - [ ] Champ `bedType` code list `BED_TYPE` : `SINGLE`·`DOUBLE`·`TWIN`·`KING`·`QUEEN`·`BUNK`
 - [ ] Champ `mealPlan` code list `MEAL_PLAN` : `ROOM_ONLY`·`BREAKFAST`·`HALF_BOARD`·`FULL_BOARD`·`ALL_INCLUSIVE`
+- [ ] Champ `unitCount` « Nombre d'unités disponibles » (entier ≥ 1, défaut `1`) — accompagné d'un tooltip explicatif : « Nombre de chambres identiques de ce type disponibles en simultané. Ex: 5 chambres Standard = 5 réservations parallèles possibles. »
 - [ ] Ville chargée depuis `GET /v1/code-list/type/CITY`
 - [ ] Carte interactive optionnelle pour saisir `latitude` / `longitude`
 - [ ] Validation frontend avant envoi (champs requis, `price` ≥ 0)
@@ -1098,7 +1122,8 @@ Un **hôtel partenaire** UBAX publie et gère ses espaces (chambres, suites, sal
 
 **Request body :** _(identique à UBAX-FE-704 — seuls les champs non-null sont modifiés)_
 
-> ⚠️ Modification autorisée uniquement en statut `DRAFT` ou `REJECTED`. Désactiver le formulaire pour tout autre statut.
+> ⚠️ Modification autorisée uniquement en statut `DRAFT` ou `REJECTED`. Désactiver le formulaire pour tout autre statut.  
+> 💡 **`unitCount`** peut être modifié ici pour ajuster la capacité du pool de chambres (ex: rénovation de 2 chambres sur 5 → passer `unitCount` à `3`). Pré-remplir avec la valeur actuelle du bien.
 
 **Response `200` :**
 ```json
@@ -1422,6 +1447,45 @@ Body: <binaire>
 - [ ] Badge ⚡ si `boosted = true`
 - [ ] Carte interactive si `latitude` / `longitude` présents
 - [ ] Pas de section documents légaux (non applicable au contexte hôtelier)
+
+---
+
+### UBAX-FE-712 · Widget de disponibilité — Détail espace hôtelier
+
+| Champ | Valeur |
+|-------|--------|
+| **Endpoint** | `GET /v1/properties/{id}/availability?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD` |
+| **Auth** | 🌐 Public — aucune authentification requise |
+| **Path params** | `id` : UUID de l'espace |
+| **Query params** | `checkIn` (date d'arrivée) · `checkOut` (date de départ) |
+
+**Contexte :** Sur la fiche d'un espace hôtelier public (UBAX-FE-702), le client saisit ses dates et l'app interroge cet endpoint pour afficher le nombre d'unités disponibles en temps réel avant de passer à la réservation.
+
+**Response `200` :**
+```json
+{
+  "propertyId": "uuid",
+  "unitCount": 5,
+  "confirmedOverlaps": 3,
+  "availableUnits": 2,
+  "checkIn": "2026-06-10",
+  "checkOut": "2026-06-12"
+}
+```
+
+> ⚠️ Seules les réservations `CONFIRMED` bloquent les unités. Les `PENDING` ne sont pas comptabilisées.  
+> Pour les biens immobiliers classiques, `unitCount` vaut toujours `1`.
+
+**Critères d'acceptation :**
+- [ ] Sélecteur de dates (date picker) accessible depuis la fiche espace (`UBAX-FE-702`)
+- [ ] Appel à cet endpoint à chaque changement de dates (debounce 300 ms recommandé)
+- [ ] Afficher un indicateur de chargement pendant la requête
+- [ ] Si `availableUnits >= 1` → badge vert « X unité(s) disponible(s) » + bouton « Réserver » actif
+- [ ] Si `availableUnits == 0` → badge rouge « Complet pour ces dates » + bouton « Réserver » désactivé
+- [ ] Validation côté client : `checkIn` doit être strictement avant `checkOut`, toutes deux dans le futur
+- [ ] Gestion d'erreur `400` (dates invalides) avec message explicite à l'utilisateur
+- [ ] Gestion d'erreur `404` (bien introuvable) avec redirection vers la liste
+- [ ] Les dates sélectionnées sont pré-remplies dans le formulaire `POST /v1/reservations` si le client clique « Réserver »
 
 ---
 
@@ -4075,3 +4139,129 @@ Le module de réservation de visites permet aux clients mobiles de consulter les
 - [ ] Après assignation : `agentName` mis à jour dans l'UI depuis la réponse sans rechargement complet
 - [ ] Toast de confirmation : « {agentName} a été assigné à cette visite. »
 - [ ] Possibilité de réassigner un agent (bouton « Changer d'agent » si déjà assigné)
+
+---
+
+---
+
+## TÂCHES BACKEND — Suivi Sprint
+
+> **Statuts :** `✅ DONE` · `🔄 IN PROGRESS` · `⏳ TODO` · `🔴 BLOCKED` · `🟡 TECH DEBT`  
+> Mis à jour le : **2026-05-26**
+
+---
+
+### ✅ DONE — Livré (sessions récentes)
+
+| ID | Titre | Migration | Fichiers principaux |
+|----|-------|-----------|---------------------|
+| `UBAX-BE-101` | Génération reçu PDF après paiement | — | `DocumentServiceImpl`, `ReceiptGenerator`, `receipt.html` |
+| `UBAX-BE-102` | Envoi reçu PDF par email au locataire | — | `EmailService.sendReceiptEmail()`, `DocumentServiceImpl.sendReceiptEmailToTenant()` |
+| `UBAX-BE-103` | Description agence obligatoire | `V060` | `PartnerApplicationRequest`, `Agency.java` |
+| `UBAX-DOC-101` | Swagger — référentiel complet code lists | — | `LaCodeListController` |
+| `UBAX-BE-104` | Statut bien automatisé (contrat → RESERVED / PUBLISHED) | — | `ContractServiceImpl.activate()`, `.terminate()` |
+| `UBAX-BE-105` | Pool chambres hôtelières (`unitCount`) | `V061` | `Property`, DTOs, `PropertyMapper`, `ReservationServiceImpl` |
+| `UBAX-DOC-102` | Swagger — `unitCount` dans Property + Reservation | — | `PropertyController`, `ReservationController` |
+| `UBAX-BE-106` | Endpoint disponibilité `GET /v1/properties/{id}/availability` | — | `PropertyAvailabilityResponse`, `PropertyService`, `PropertyServiceImpl`, `PropertyController` |
+| `UBAX-DOC-103` | Swagger — disponibilité bien + note `checkIn`/`checkOut` | — | `PropertyController.getAvailability()` |
+
+**Tests après livraison :** 589 tests, 0 failures ✅
+
+---
+
+### ⏳ TODO — Backlog Backend
+
+| ID | Titre | Priorité | Effort | Bloque |
+|----|-------|----------|--------|--------|
+| `UBAX-BE-201` | Module Prospects commerciaux | 🟠 Haute | 3–4 j | `FE` Écran Prospects |
+| `UBAX-BE-202` | Module Agenda / Rendez-vous | 🟠 Haute | 3–4 j | `FE` Écran Agenda |
+| `UBAX-BE-203` | Notifications in-app | 🟡 Moyenne | 2–3 j | `FE` Cloche header · `MB` Push |
+| `UBAX-BE-204` | Export CSV (paiements, dépenses, biens) | 🟡 Moyenne | 2 j | `FE` Boutons export Comptable |
+| `UBAX-BE-205` | Scoring locataire automatique | 🟡 Basse | 1–2 j | — |
+| `UBAX-BE-206` | Endpoint `POST /v1/auth/refresh` | 🟡 Moyenne | 0.5 j | `MB` Refresh token |
+| `UBAX-BE-207` | `PATCH /v1/users/me/password` | 🟡 Moyenne | 0.5 j | `FE`/`MB` Changement mdp |
+| `UBAX-BE-208` | `PUT /v1/users/me` (profil complet) | 🟡 Moyenne | 0.5 j | `FE`/`MB` Mise à jour profil |
+| `UBAX-BE-209` | Mandat de gestion — génération PDF | 🟠 Haute | 1 j | — |
+| `UBAX-BE-210` | Contrats SALE → bien en SOLD à l'activation | 🟠 Haute | 1 j | — |
+
+#### Détail UBAX-BE-201 — Prospects commerciaux
+
+Entité `Prospect` + table `prospects`. Statuts : `NEW → CONTACTED → QUALIFIED → CONVERTED | LOST`.  
+Endpoints : `POST /v1/prospects` · `GET /v1/prospects` · `GET /v1/prospects/{id}` · `PUT /v1/prospects/{id}` · `PATCH /v1/prospects/{id}/status` · `DELETE /v1/prospects/{id}`.  
+Assignation à un commercial de l'agence (`assignedTo` FK `users.id`). Notes libres (`notes TEXT`).
+
+#### Détail UBAX-BE-202 — Agenda / Rendez-vous
+
+Entité `Appointment` + table `appointments`. Lien optionnel FK vers `properties.id`, `tenants.id` ou `tickets.id`.  
+Endpoints : `POST /v1/appointments` · `GET /v1/appointments?from=&to=` · `PUT /v1/appointments/{id}` · `DELETE /v1/appointments/{id}`.  
+Rappel email à J-1 via `@Scheduled` ou listener.
+
+#### Détail UBAX-BE-203 — Notifications in-app
+
+Entité `Notification` + table `notifications`. Champs : `recipientId`, `type`, `title`, `body`, `link`, `readAt`.  
+Endpoints : `GET /v1/notifications/mine` (paginé) · `PATCH /v1/notifications/{id}/read` · `POST /v1/notifications/read-all`.  
+Déclencheurs : `PaymentPaidEvent` · `ContractActivated` · `TicketAssigned` · `BailleurApplicationDecision` · `PropertyModerated`.
+
+#### Détail UBAX-BE-209 — PDF Mandat de gestion
+
+Template `mandate.html` (Thymeleaf) + `MandateGenerator.java` (`@Service`). Déclenché à `PATCH /v1/mandates/{id}/submit`. Stocké dans `documents-generated`. Même pattern que `ContractGenerator`.
+
+#### Détail UBAX-BE-210 — Contrat SALE → bien SOLD
+
+Dans `ContractServiceImpl.activate()`, selon `contract.getContractType()` :
+- `LEASE` / `RENT_TO_OWN` → `PropertyStatus.RESERVED` (comportement actuel ✅)
+- `SALE` → `PropertyStatus.SOLD` (à ajouter)
+
+---
+
+### 🟡 TECH DEBT
+
+| ID | Titre | Effort |
+|----|-------|--------|
+| `UBAX-TD-101` | Tests unitaires `ReservationServiceImpl` (scénarios `unitCount` + capacity exceeded) | 1 j |
+| `UBAX-TD-102` | Tests unitaires module Bailleur | 1 j |
+| `UBAX-TD-103` | Scheduler : remettre bien en PUBLISHED quand contrat expire naturellement | 0.5 j |
+| `UBAX-TD-104` | Logs UTF-8 Windows (JVM `-Dfile.encoding=UTF-8`) | 0.5 j |
+
+---
+
+### 🔴 BLOQUEURS INFRA (production)
+
+| ID | Titre | Impact |
+|----|-------|--------|
+| `UBAX-INFRA-101` | Config SMTP production (`MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD`) | Email reçu PDF non fonctionnel en prod |
+| `UBAX-INFRA-102` | Config SMS LAfricaMobile (`LAFRICA_MOBILE_API_KEY`) | OTP inscription/reset non fonctionnel en prod |
+
+---
+
+### 📊 Avancement Backend (réévalué — 2026-05-26)
+
+| Module | Statut |
+|--------|--------|
+| Auth (login, OTP, reset, roles Keycloak) | ✅ |
+| Sous-rôles RBAC niveau 2 | ✅ |
+| Équipe agence / hôtel | ✅ |
+| Candidatures partenaires | ✅ |
+| Bailleur (demandes + liens agence) | ✅ |
+| Dossiers locataires KYC | ✅ |
+| Biens (CRUD + médias + docs + modération + boost) | ✅ |
+| Pool chambres hôtelières (`unitCount`) + disponibilité pré-réservation | ✅ |
+| Paiements & Dépenses | ✅ |
+| Dashboard KPIs | ✅ |
+| Storage MinIO | ✅ |
+| Administration back-office | ✅ |
+| Ticketing complet | ✅ |
+| Contrats (cycle de vie + PDF + automatisation statut bien) | ✅ |
+| Documents PDF (Thymeleaf → MinIO) + email reçu | ✅ |
+| Techniciens | ✅ |
+| Réservations hôtelières | ✅ |
+| Visites immobilières | ✅ |
+| Favoris | ✅ |
+| Mandat de gestion (CRUD cycle de vie) | ✅ |
+| Prospects commerciaux | ❌ |
+| Agenda / Rendez-vous | ❌ |
+| Notifications in-app | ❌ |
+| Export CSV | ❌ |
+| Scoring locataire | ❌ |
+
+**20 modules complets / 25 → ~80% backend ✅**

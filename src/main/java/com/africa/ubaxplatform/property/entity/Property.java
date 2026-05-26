@@ -257,6 +257,22 @@ public class Property extends BaseEntity {
   @Column(name = "payment_frequency", length = 20)
   private String paymentFrequency;
 
+  /**
+   * Nombre d'unités disponibles pour ce type de bien hôtelier.
+   *
+   * <p>Permet de modéliser un pool de chambres identiques (même configuration, même prix) sans
+   * créer une entrée distincte par chambre. Exemple : 5 chambres Standard disponibles → {@code
+   * unitCount = 5}.
+   *
+   * <p>La disponibilité est accordée tant que le nombre de réservations CONFIRMED qui se
+   * chevauchent est strictement inférieur à ce seuil.
+   *
+   * <p>Pour les biens immobiliers classiques, cette valeur est toujours {@code 1}.
+   */
+  @Column(name = "unit_count", nullable = false)
+  @Builder.Default
+  private Integer unitCount = 1;
+
   /** {@code true} si le bien est géré par une agence. */
   public boolean isManagedByAgency() {
     return agency != null;

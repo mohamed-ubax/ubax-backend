@@ -12,6 +12,7 @@ import com.africa.ubaxplatform.common.exception.NotFoundException;
 import com.africa.ubaxplatform.common.exception.UnAuthorizedException;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
 import com.africa.ubaxplatform.property.dto.PropertyAmenityRequest;
+import com.africa.ubaxplatform.property.dto.PropertyAvailabilityResponse;
 import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
@@ -33,9 +34,11 @@ import com.africa.ubaxplatform.property.repository.PropertyDocumentRepository;
 import com.africa.ubaxplatform.property.repository.PropertyMediaRepository;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import com.africa.ubaxplatform.property.service.interfaces.PropertyService;
+import com.africa.ubaxplatform.reservation.repository.ReservationRepository;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +65,7 @@ public class PropertyServiceImpl implements PropertyService {
   private final LaCodeListRepository codeListRepo;
   private final MinioService minioService;
   private final BailleurAgencyLinkRepository bailleurAgencyLinkRepo;
+  private final ReservationRepository reservationRepo;
 
   private static final String BUCKET_MEDIA = "properties-media";
   private static final Set<String> ALLOWED_MEDIA_MIMES =
@@ -300,6 +304,7 @@ public class PropertyServiceImpl implements PropertyService {
             .maxOccupancy(req.maxOccupancy())
             .mealPlan(req.mealPlan())
             .paymentFrequency(req.paymentFrequency())
+            .unitCount(req.unitCount() != null ? req.unitCount() : 1)
             .status(PropertyStatus.DRAFT)
             .build();
 
@@ -496,6 +501,7 @@ public class PropertyServiceImpl implements PropertyService {
     if (req.maxOccupancy() != null) property.setMaxOccupancy(req.maxOccupancy());
     if (req.mealPlan() != null) property.setMealPlan(req.mealPlan());
     if (req.paymentFrequency() != null) property.setPaymentFrequency(req.paymentFrequency());
+    if (req.unitCount() != null) property.setUnitCount(req.unitCount());
 
     return PropertyMapper.toResponse(propertyRepo.save(property));
   }
@@ -598,6 +604,29 @@ public class PropertyServiceImpl implements PropertyService {
     Property property = resolveProperty(id);
     property.setExpiresAt(null);
     return PropertyMapper.toResponse(propertyRepo.save(property));
+  }
+
+  // ── Disponibilité ──────────────────────────────────────────────
+
+  @Override
+  @Transactional(readOnly = true)
+  public PropertyAvailabilityResponse getAvailability(
+      UUID propertyId, LocalDate checkIn, LocalDate checkOut) throws CustomException {
+
+    if (checkIn == null || checkOut == null || !checkIn.isBefore(checkOut)) {
+      throw new CustomException(
+          new BadRequestException(
+              "Les dates sont invalides : checkIn doit être strictement antérieure à checkOut"),
+          ResponseMessageConstants.PROPERTY_GET_FAILURE);
+    }
+
+    Property property = resolveProperty(propertyId);
+    int unitCount = property.getUnitCount() != null ? property.getUnitCount() : 1;
+    long overlaps = reservationRepo.countOverlappingConfirmed(propertyId, checkIn, checkOut);
+    long available = Math.max(0L, unitCount - overlaps);
+
+    return new PropertyAvailabilityResponse(
+        propertyId, unitCount, overlaps, available, checkIn, checkOut);
   }
 
   // ── Médias ─────────────────────────────────────────────────────

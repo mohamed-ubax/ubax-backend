@@ -9,6 +9,7 @@ import com.africa.ubaxplatform.common.response.CustomResponse;
 import com.africa.ubaxplatform.common.util.RequestHeaderParser;
 import com.africa.ubaxplatform.common.util.RoleGuard;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import com.africa.ubaxplatform.property.dto.PropertyAvailabilityResponse;
 import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
@@ -33,6 +34,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -93,7 +95,8 @@ import org.springframework.web.multipart.MultipartFile;
             + "> ⚠️ **Cohérence obligatoire** : types hôteliers (`HOTEL_ROOM`, `HOTEL_SUITE`…) → `SHORT_STAY` uniquement ;"
             + " types agence (`APARTMENT`, `VILLA`…) → `SHORT_STAY` interdit. Le backend renvoie `400` si la règle n'est pas respectée.\n\n"
             + "> **Champs hôteliers** (requis si `SHORT_STAY`) : `paymentFrequency` (`NIGHTLY`·`WEEKLY`·`MONTHLY`) · `maxOccupancy` (≥ 1) ·"
-            + " `bedType` (`SINGLE`·`DOUBLE`·`TWIN`·`KING`·`QUEEN`·`BUNK`) · `mealPlan` (`ROOM_ONLY`·`BREAKFAST`·`HALF_BOARD`·`FULL_BOARD`·`ALL_INCLUSIVE`)\n\n"
+            + " `bedType` (`SINGLE`·`DOUBLE`·`TWIN`·`KING`·`QUEEN`·`BUNK`) · `mealPlan` (`ROOM_ONLY`·`BREAKFAST`·`HALF_BOARD`·`FULL_BOARD`·`ALL_INCLUSIVE`) ·"
+            + " `unitCount` (entier ≥ 1, défaut `1`) — pool de chambres identiques : ex. `5` si 5 chambres Standard sont disponibles.\n\n"
             + "> Les valeurs `propertyType` et `city` sont récupérables dynamiquement via"
             + " `GET /v1/code-list/type/PROPERTY_TYPE` et `GET /v1/code-list/type/CITY`.")
 public class PropertyController {
@@ -371,6 +374,68 @@ public class PropertyController {
             propertyService.getById(id)));
   }
 
+  @GetMapping("/{id}/availability")
+  @Operation(
+      summary = "Disponibilité d'un bien pour une plage de dates",
+      description =
+          "🌐 **Public** – Vérifie combien d'unités sont disponibles pour un bien hôtelier"
+              + " sur une plage de dates donnée.\n\n"
+              + "**Paramètres :**\n"
+              + "- `checkIn` — date d'arrivée (format `YYYY-MM-DD`, obligatoire)\n"
+              + "- `checkOut` — date de départ (format `YYYY-MM-DD`, obligatoire, strictement après `checkIn`)\n\n"
+              + "**Réponse :**\n"
+              + "```json\n"
+              + "{\n"
+              + "  \"propertyId\": \"uuid\",\n"
+              + "  \"unitCount\": 5,\n"
+              + "  \"confirmedOverlaps\": 3,\n"
+              + "  \"availableUnits\": 2,\n"
+              + "  \"checkIn\": \"2026-06-10\",\n"
+              + "  \"checkOut\": \"2026-06-12\"\n"
+              + "}\n"
+              + "```\n\n"
+              + "⚠️ Seules les réservations avec statut `CONFIRMED` bloquent les unités."
+              + " Les réservations `PENDING` ne sont **pas** comptabilisées."
+              + " Pour les biens immobiliers classiques, `unitCount` est toujours `1`.\n\n"
+              + "💡 Appelez cet endpoint avant `POST /v1/reservations` pour informer"
+              + " l'utilisateur de la disponibilité réelle.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Disponibilité calculée",
+        content =
+            @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = PropertyAvailabilityResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Dates invalides (checkIn ≥ checkOut ou format incorrect)",
+        content = @Content),
+    @ApiResponse(responseCode = "404", description = "Bien introuvable", content = @Content)
+  })
+  public ResponseEntity<CustomResponse> getAvailability(
+      @PathVariable UUID id,
+      @Parameter(
+              description = "Date d'arrivée (YYYY-MM-DD)",
+              example = "2026-06-10",
+              required = true)
+          @RequestParam
+          LocalDate checkIn,
+      @Parameter(
+              description = "Date de départ (YYYY-MM-DD)",
+              example = "2026-06-12",
+              required = true)
+          @RequestParam
+          LocalDate checkOut)
+      throws CustomException {
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_AVAILABILITY_GET_SUCCESS,
+            propertyService.getAvailability(id, checkIn, checkOut)));
+  }
+
   // ── Mes biens (partenaire / agence) ────────────────────────────
 
   @GetMapping("/mine")
@@ -428,6 +493,10 @@ public class PropertyController {
               + " `PATCH /{id}/submit` pour passer en modération.\n\n"
               + "**Champs obligatoires :** `title`, `propertyType`, `transactionType`,"
               + " `price` (≥ 0), `city`\n\n"
+              + "**Champ `unitCount` (hôtel) :** nombre d'unités disponibles pour ce type de chambre."
+              + " Permet un pool de chambres identiques (même config, même prix) sans créer N entrées séparées."
+              + " `unitCount = 5` → 5 réservations `CONFIRMED` simultanées autorisées avant de bloquer la disponibilité."
+              + " Optionnel — défaut `1` (biens classiques et hôteliers mono-chambre).\n\n"
               + "**Exemple — bien agence (VILLA à vendre) :**\n"
               + "```json\n"
               + "{\n"
@@ -483,9 +552,12 @@ public class PropertyController {
               + "  \"bedType\": \"KING\",\n"
               + "  \"maxOccupancy\": 2,\n"
               + "  \"mealPlan\": \"BREAKFAST\",\n"
-              + "  \"paymentFrequency\": \"NIGHTLY\"\n"
+              + "  \"paymentFrequency\": \"NIGHTLY\",\n"
+              + "  \"unitCount\": 5\n"
               + "}\n"
-              + "```",
+              + "```\n\n"
+              + "> 💡 `unitCount: 5` signifie que 5 chambres de ce même type sont disponibles en parallèle."
+              + " Sans ce champ (ou `unitCount: 1`), la première réservation confirmée bloque toutes les autres.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(
@@ -537,7 +609,10 @@ public class PropertyController {
       summary = "Mettre à jour un bien",
       description =
           "🏢 **Rôles requis :** `AGENCY` · `OWNER` · `AGENT` · `PARTNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
-              + "Mise à jour partielle d'un bien. Seuls les champs non-null sont modifiés. Le bien doit être en statut `DRAFT` ou `PENDING`.",
+              + "Mise à jour partielle d'un bien. Seuls les champs non-null sont modifiés."
+              + " Le bien doit être en statut `DRAFT` ou `PENDING`.\n\n"
+              + "> 💡 **`unitCount`** : modifiable ici pour ajuster la capacité disponible d'un pool de chambres"
+              + " (ex: rénovation de 2 chambres sur 5 → passer à `unitCount: 3`).",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponses({
     @ApiResponse(

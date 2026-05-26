@@ -16,6 +16,7 @@ import com.africa.ubaxplatform.auth.repository.UserRepository;
 import com.africa.ubaxplatform.common.constants.ResponseMessageConstants;
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import com.africa.ubaxplatform.property.dto.PropertyAvailabilityResponse;
 import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDocumentAddRequest;
@@ -31,9 +32,11 @@ import com.africa.ubaxplatform.property.repository.PropertyDocumentRepository;
 import com.africa.ubaxplatform.property.repository.PropertyMediaRepository;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import com.africa.ubaxplatform.property.service.impl.PropertyServiceImpl;
+import com.africa.ubaxplatform.reservation.repository.ReservationRepository;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
 import com.africa.ubaxplatform.testHelper.SharedTestFixtures;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +64,7 @@ class PropertyServiceImplTest {
   @Mock PropertyDocumentRepository docRepo;
   @Mock UserRepository userRepo;
   @Mock MinioService minioService;
+  @Mock ReservationRepository reservationRepo;
 
   @InjectMocks PropertyServiceImpl service;
 
@@ -981,6 +985,91 @@ class PropertyServiceImplTest {
     }
   }
 
+  // getAvailability
+
+  @Nested
+  @DisplayName("getAvailability()")
+  class Availability {
+
+    private static final LocalDate CHECK_IN = LocalDate.of(2026, 7, 10);
+    private static final LocalDate CHECK_OUT = LocalDate.of(2026, 7, 12);
+
+    @BeforeEach
+    void stubProperty() {
+      lenient().when(propertyRepo.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+    }
+
+    @Test
+    @DisplayName("Succès – unités disponibles calculées (unitCount=5, overlaps=3 → available=2)")
+    void getAvailability_partiallyBooked() throws CustomException {
+      property.setUnitCount(5);
+      when(reservationRepo.countOverlappingConfirmed(PROPERTY_ID, CHECK_IN, CHECK_OUT))
+          .thenReturn(3L);
+
+      PropertyAvailabilityResponse result =
+          service.getAvailability(PROPERTY_ID, CHECK_IN, CHECK_OUT);
+
+      assertThat(result.unitCount()).isEqualTo(5);
+      assertThat(result.confirmedOverlaps()).isEqualTo(3L);
+      assertThat(result.availableUnits()).isEqualTo(2L);
+      assertThat(result.checkIn()).isEqualTo(CHECK_IN);
+      assertThat(result.checkOut()).isEqualTo(CHECK_OUT);
+      assertThat(result.propertyId()).isEqualTo(PROPERTY_ID);
+    }
+
+    @Test
+    @DisplayName("Succès – toutes les unités disponibles (overlaps=0)")
+    void getAvailability_allFree() throws CustomException {
+      property.setUnitCount(3);
+      when(reservationRepo.countOverlappingConfirmed(PROPERTY_ID, CHECK_IN, CHECK_OUT))
+          .thenReturn(0L);
+
+      PropertyAvailabilityResponse result =
+          service.getAvailability(PROPERTY_ID, CHECK_IN, CHECK_OUT);
+
+      assertThat(result.availableUnits()).isEqualTo(3L);
+    }
+
+    @Test
+    @DisplayName("Succès – availableUnits=0 (toutes les unités occupées, pas de valeur négative)")
+    void getAvailability_fullyBooked_noNegative() throws CustomException {
+      property.setUnitCount(2);
+      when(reservationRepo.countOverlappingConfirmed(PROPERTY_ID, CHECK_IN, CHECK_OUT))
+          .thenReturn(2L);
+
+      PropertyAvailabilityResponse result =
+          service.getAvailability(PROPERTY_ID, CHECK_IN, CHECK_OUT);
+
+      assertThat(result.availableUnits()).isEqualTo(0L);
+    }
+
+    @Test
+    @DisplayName("Echec – checkIn égal à checkOut → PROPERTY_GET_FAILURE")
+    void getAvailability_sameDate_throws() {
+      assertThatThrownBy(() -> service.getAvailability(PROPERTY_ID, CHECK_IN, CHECK_IN))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PROPERTY_GET_FAILURE);
+    }
+
+    @Test
+    @DisplayName("Echec – checkIn après checkOut → PROPERTY_GET_FAILURE")
+    void getAvailability_checkInAfterCheckOut_throws() {
+      assertThatThrownBy(() -> service.getAvailability(PROPERTY_ID, CHECK_OUT, CHECK_IN))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PROPERTY_GET_FAILURE);
+    }
+
+    @Test
+    @DisplayName("Echec – bien introuvable → PROPERTY_GET_FAILURE_NOT_FOUND")
+    void getAvailability_propertyNotFound_throws() {
+      when(propertyRepo.findById(PROPERTY_ID)).thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> service.getAvailability(PROPERTY_ID, CHECK_IN, CHECK_OUT))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PROPERTY_GET_FAILURE_NOT_FOUND);
+    }
+  }
+
   // Helpers
 
   private static PropertyCreateRequest minimalCreateRequest(UUID ownerId) {
@@ -1011,13 +1100,14 @@ class PropertyServiceImplTest {
         null,
         null,
         null,
-        null);
+        null,
+        null); // unitCount — null = défaut 1
   }
 
   private static PropertyUpdateRequest emptyUpdateRequest() {
     return new PropertyUpdateRequest(
         null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null, null, null, null);
+        null, null, null, null, null, null, null, null, null, null, null, null); // unitCount
   }
 
   private static Hotel buildHotel(UUID hotelId) {
