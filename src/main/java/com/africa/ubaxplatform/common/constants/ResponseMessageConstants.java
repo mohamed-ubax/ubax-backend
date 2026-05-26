@@ -49,6 +49,8 @@ public class ResponseMessageConstants {
   // ── PROPERTY ────────────────────────────────────────────────────
   public static final String PROPERTY_GET_SUCCESS = "PROPERTY_GET_SUCCESS";
   public static final String PROPERTY_GET_LIST_SUCCESS = "PROPERTY_GET_LIST_SUCCESS";
+  public static final String PROPERTY_AVAILABILITY_GET_SUCCESS =
+      "PROPERTY_AVAILABILITY_GET_SUCCESS";
   public static final String PROPERTY_CREATE_SUCCESS = "PROPERTY_CREATE_SUCCESS";
   public static final String PROPERTY_UPDATE_SUCCESS = "PROPERTY_UPDATE_SUCCESS";
   public static final String PROPERTY_DELETE_SUCCESS = "PROPERTY_DELETE_SUCCESS";

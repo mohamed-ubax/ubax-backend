@@ -1,6 +1,7 @@
 package com.africa.ubaxplatform.property.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.util.List;
@@ -64,4 +65,11 @@ public record PropertyUpdateRequest(
         @Pattern(
             regexp = "NIGHTLY|WEEKLY|MONTHLY",
             message = "paymentFrequency invalide. Valeurs acceptées : NIGHTLY, WEEKLY, MONTHLY")
-        String paymentFrequency) {}
+        String paymentFrequency,
+    @Schema(
+            description =
+                "Nombre d'unités disponibles pour ce type de bien hôtelier."
+                    + " Mettre à jour si la capacité de chambres disponibles change.",
+            nullable = true)
+        @Min(value = 1, message = "unitCount doit être supérieur ou égal à 1")
+        Integer unitCount) {}

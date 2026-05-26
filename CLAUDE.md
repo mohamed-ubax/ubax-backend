@@ -320,8 +320,9 @@ public class ModuleController {
 | V058 | `create_property_visit_requests_and_availabilities.sql` | Tables `property_visit_requests`, `agency_visit_availabilities`, `visit_slot_occupancy` — module réservation de visites |
 | V059 | `seed_visit_request_code_lists.sql` | Seed `la_code_list` (VISIT_REQUEST_STATUS : PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED) |
 | V060 | `make_agency_description_not_null.sql` | Backfill `description = 'Description non renseignée.'` pour les agences existantes + contrainte `NOT NULL` sur `agencies.description` |
+| V061 | `add_unit_count_to_properties.sql` | Colonne `unit_count INTEGER NOT NULL DEFAULT 1` sur `properties` + contrainte `CHECK (unit_count >= 1)` — pool de chambres identiques pour les biens hôteliers |
 
-Prochaine version disponible : **V061**
+Prochaine version disponible : **V062**
 
 ---
 
@@ -511,11 +512,14 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 
 > **Sécurité** : `GET /v1/properties` et `GET /v1/properties/**` sont publics (pas de JWT requis). Toutes les autres méthodes (POST, PUT, PATCH, DELETE) exigent un JWT Keycloak valide.
 > **`coverPhotoUrl`** : champ présent dans `PropertyResponse` — URL de la photo de couverture (null si aucun média uploadé).
+> **`unitCount`** : nombre d'unités disponibles pour un bien hôtelier (défaut : `1`). Permet un pool de chambres identiques (même config, même prix). Une réservation est acceptée si `overlappingConfirmed < unitCount`. Pour les biens immobiliers classiques, laisser à `1`.
+> **Disponibilité** : `GET /v1/properties/{id}/availability?checkIn=&checkOut=` retourne `{ propertyId, unitCount, confirmedOverlaps, availableUnits, checkIn, checkOut }`. Endpoint **public**, à appeler avant `POST /v1/reservations`. Seules les réservations `CONFIRMED` bloquent les unités.
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
 | `GET` | `/v1/properties` | Public | Liste paginée + filtres (inclut `coverPhotoUrl`) |
 | `GET` | `/v1/properties/{id}` | Public | Détail (inclut `coverPhotoUrl`) |
+| `GET` | `/v1/properties/{id}/availability` | Public | Disponibilité pour `?checkIn=&checkOut=` (format `YYYY-MM-DD`) |
 | `GET` | `/v1/properties/mine` | `PARTNER/OWNER` | Mes biens (inclut `coverPhotoUrl`) |
 | `POST` | `/v1/properties` | `PARTNER/OWNER` | Créer brouillon |
 | `PUT` | `/v1/properties/{id}` | `PARTNER/OWNER` | Mettre à jour |

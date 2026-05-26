@@ -24,6 +24,7 @@ import com.africa.ubaxplatform.payment.codeList.PaymentStatus;
 import com.africa.ubaxplatform.payment.codeList.PaymentType;
 import com.africa.ubaxplatform.payment.entity.Payment;
 import com.africa.ubaxplatform.payment.repository.PaymentRepository;
+import com.africa.ubaxplatform.property.codeList.PropertyStatus;
 import com.africa.ubaxplatform.property.entity.Property;
 import com.africa.ubaxplatform.property.repository.PropertyRepository;
 import com.africa.ubaxplatform.tenant.entity.Tenant;
@@ -287,6 +288,9 @@ public class ContractServiceImpl implements ContractService {
     Contract saved = contractRepo.save(contract);
     log.info("Contrat {} → ACTIVE", id);
 
+    // Marquer le bien comme RESERVED (retiré des annonces publiques PUBLISHED)
+    setPropertyStatus(saved, PropertyStatus.RESERVED);
+
     // Pour les baux LEASE, créer immédiatement le premier loyer (avec l'agent qui active)
     if (Constants.CodeList.ContractType.LEASE.equals(saved.getContractType())
         && saved.getMonthlyRent() != null) {
@@ -308,8 +312,13 @@ public class ContractServiceImpl implements ContractService {
     contract.setTerminatedAt(LocalDateTime.now());
     contract.setTerminationReason(req.getTerminationReason());
     contract.setTerminatedBy(caller);
+    Contract saved = contractRepo.save(contract);
     log.info("Contrat {} → TERMINATED ({})", id, req.getTerminationReason());
-    return ContractMapper.toResponse(contractRepo.save(contract));
+
+    // Remettre le bien en PUBLISHED (disponible à nouveau sur le portail public)
+    setPropertyStatus(saved, PropertyStatus.PUBLISHED);
+
+    return ContractMapper.toResponse(saved);
   }
 
   @Override
@@ -479,6 +488,39 @@ public class ContractServiceImpl implements ContractService {
 
   private void checkWriteAccess(User caller, Contract contract) throws CustomException {
     checkReadAccess(caller, contract);
+  }
+
+  /**
+   * Met à jour le statut du bien lié au contrat.
+   *
+   * <p>Transitions pilotées automatiquement par le cycle de vie du contrat :
+   *
+   * <ul>
+   *   <li>{@code ACTIVE} → bien passe en {@code RESERVED} (retiré des annonces publiques)
+   *   <li>{@code TERMINATED} → bien repasse en {@code PUBLISHED} (à nouveau disponible)
+   * </ul>
+   *
+   * <p>Appel best-effort : un échec ne bloque pas la transition du contrat.
+   */
+  private void setPropertyStatus(Contract contract, PropertyStatus newStatus) {
+    if (contract.getProperty() == null) return;
+    try {
+      Property property = contract.getProperty();
+      PropertyStatus previous = property.getStatus();
+      property.setStatus(newStatus);
+      propertyRepo.save(property);
+      log.info(
+          "[CONTRACT] Bien {} : {} → {} (contractId={})",
+          property.getId(),
+          previous,
+          newStatus,
+          contract.getId());
+    } catch (Exception e) {
+      log.error(
+          "[CONTRACT] Échec mise à jour statut bien pour contractId={} : {}",
+          contract.getId(),
+          e.getMessage());
+    }
   }
 
   private void validateByType(CreateContractRequest req) throws CustomException {

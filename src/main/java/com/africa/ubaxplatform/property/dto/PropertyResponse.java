@@ -86,6 +86,13 @@ public record PropertyResponse(
             nullable = true)
         String paymentFrequency,
     @Schema(
+            description =
+                "Nombre d'unités disponibles pour ce type de bien hôtelier (toujours 1 pour les"
+                    + " biens immobiliers classiques). Une réservation est acceptée tant que le"
+                    + " nombre de séjours CONFIRMED se chevauchant est < unitCount.",
+            example = "5")
+        Integer unitCount,
+    @Schema(
             description = "URL de la photo de couverture (null si aucun média uploadé)",
             nullable = true)
         String coverPhotoUrl,

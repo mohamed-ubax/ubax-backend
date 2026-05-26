@@ -2,6 +2,7 @@ package com.africa.ubaxplatform.property.service.interfaces;
 
 import com.africa.ubaxplatform.common.exception.CustomException;
 import com.africa.ubaxplatform.property.codeList.PropertyStatus;
+import com.africa.ubaxplatform.property.dto.PropertyAvailabilityResponse;
 import com.africa.ubaxplatform.property.dto.PropertyBoostRequest;
 import com.africa.ubaxplatform.property.dto.PropertyCreateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyDetailResponse;
@@ -14,6 +15,7 @@ import com.africa.ubaxplatform.property.dto.PropertyResponse;
 import com.africa.ubaxplatform.property.dto.PropertyStatusUpdateRequest;
 import com.africa.ubaxplatform.property.dto.PropertyUpdateRequest;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -82,6 +84,21 @@ public interface PropertyService {
 
   /** Admin : supprime la date d'expiration d'une annonce (l'annonce ne s'archivera pas). */
   PropertyResponse removeExpiration(UUID id) throws CustomException;
+
+  // ── Disponibilité ──────────────────────────────────────────────
+
+  /**
+   * Retourne la disponibilité d'un bien pour une plage de dates donnée.
+   *
+   * <p>Utilisable avant de soumettre une réservation pour afficher les unités disponibles.
+   *
+   * @param propertyId UUID du bien
+   * @param checkIn date d'arrivée (doit être avant {@code checkOut})
+   * @param checkOut date de départ
+   * @return DTO avec {@code unitCount}, {@code confirmedOverlaps} et {@code availableUnits}
+   */
+  PropertyAvailabilityResponse getAvailability(
+      UUID propertyId, LocalDate checkIn, LocalDate checkOut) throws CustomException;
 
   // ── Médias ─────────────────────────────────────────────────────
 

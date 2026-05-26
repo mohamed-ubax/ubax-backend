@@ -422,6 +422,41 @@ class ContractServiceImplTest {
       assertThat(resp).isNotNull();
       assertThat(resp.status()).isEqualTo(ContractStatus.ACTIVE);
       verify(paymentRepo, never()).existsByContractIdAndDueDate(any(), any());
+      // Le bien doit passer en RESERVED
+      assertThat(property.getStatus()).isEqualTo(PropertyStatus.RESERVED);
+      verify(propertyRepo).save(property);
+    }
+
+    @Test
+    @DisplayName("Succès – activate() marque le bien RESERVED (retrait portail public)")
+    void activate_setsPropertyStatusToReserved() throws CustomException {
+      assertThat(property.getStatus()).isEqualTo(PropertyStatus.PUBLISHED);
+
+      Contract pendingContract =
+          Contract.builder()
+              .property(property)
+              .owner(caller)
+              .contractType("LEASE")
+              .startDate(LocalDate.now())
+              .status(ContractStatus.PENDING_SIGNATURE)
+              .monthlyRent(BigDecimal.valueOf(300_000))
+              .paymentDay(5)
+              .build();
+      SharedTestFixtures.injectId(pendingContract, SharedTestFixtures.CONTRACT_ID);
+
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
+          .thenReturn(Optional.of(pendingContract));
+      when(contractRepo.save(any(Contract.class))).thenReturn(pendingContract);
+      when(paymentRepo.existsByContractIdAndDueDate(any(), any())).thenReturn(false);
+      when(paymentRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+      service.activate(SharedTestFixtures.KEYCLOAK_ID, SharedTestFixtures.CONTRACT_ID);
+
+      assertThat(property.getStatus())
+          .as("Le bien doit être RESERVED après activation du contrat")
+          .isEqualTo(PropertyStatus.RESERVED);
     }
 
     @Test
@@ -512,8 +547,9 @@ class ContractServiceImplTest {
   class Terminate {
 
     @Test
-    @DisplayName("Succès – ACTIVE → TERMINATED avec motif")
+    @DisplayName("Succès – ACTIVE → TERMINATED avec motif + bien remis en PUBLISHED")
     void terminate_active_success() throws CustomException {
+      property.setStatus(PropertyStatus.RESERVED); // bien déjà réservé par un contrat actif
       Contract activeContract =
           Contract.builder()
               .property(property)
@@ -539,6 +575,42 @@ class ContractServiceImplTest {
           service.terminate(SharedTestFixtures.KEYCLOAK_ID, SharedTestFixtures.CONTRACT_ID, req);
 
       assertThat(resp.status()).isEqualTo(ContractStatus.TERMINATED);
+      // Le bien doit repasser en PUBLISHED (à nouveau visible sur le portail)
+      assertThat(property.getStatus()).isEqualTo(PropertyStatus.PUBLISHED);
+      verify(propertyRepo).save(property);
+    }
+
+    @Test
+    @DisplayName("Succès – terminate() remet le bien en PUBLISHED (remis sur le portail)")
+    void terminate_setsPropertyStatusToPublished() throws CustomException {
+      property.setStatus(PropertyStatus.RESERVED);
+
+      Contract activeContract =
+          Contract.builder()
+              .property(property)
+              .owner(caller)
+              .createdBy(caller)
+              .contractType("SALE")
+              .startDate(LocalDate.now())
+              .status(ContractStatus.ACTIVE)
+              .paymentDay(1)
+              .build();
+      SharedTestFixtures.injectId(activeContract, SharedTestFixtures.CONTRACT_ID);
+
+      TerminateContractRequest req = new TerminateContractRequest();
+      req.setTerminationReason("Vente annulée par l'acquéreur");
+
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
+          .thenReturn(Optional.of(activeContract));
+      when(contractRepo.save(any(Contract.class))).thenReturn(activeContract);
+
+      service.terminate(SharedTestFixtures.KEYCLOAK_ID, SharedTestFixtures.CONTRACT_ID, req);
+
+      assertThat(property.getStatus())
+          .as("Le bien doit être PUBLISHED après résiliation du contrat")
+          .isEqualTo(PropertyStatus.PUBLISHED);
     }
 
     @Test
