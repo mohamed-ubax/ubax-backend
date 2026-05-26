@@ -321,8 +321,9 @@ public class ModuleController {
 | V059 | `seed_visit_request_code_lists.sql` | Seed `la_code_list` (VISIT_REQUEST_STATUS : PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED) |
 | V060 | `make_agency_description_not_null.sql` | Backfill `description = 'Description non renseignée.'` pour les agences existantes + contrainte `NOT NULL` sur `agencies.description` |
 | V061 | `add_unit_count_to_properties.sql` | Colonne `unit_count INTEGER NOT NULL DEFAULT 1` sur `properties` + contrainte `CHECK (unit_count >= 1)` — pool de chambres identiques pour les biens hôteliers |
+| V062 | `backfill_hotel_id_on_properties.sql` | Backfill `hotel_id` sur `properties` : propage `users.hotel_id` → `properties.hotel_id` pour tous les biens dont l'owner est rattaché à un hôtel et dont `hotel_id` était NULL (données pré-V044) |
 
-Prochaine version disponible : **V062**
+Prochaine version disponible : **V063**
 
 ---
 
