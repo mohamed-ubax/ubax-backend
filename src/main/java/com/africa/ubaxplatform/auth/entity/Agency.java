@@ -45,7 +45,7 @@ public class Agency extends BaseEntity {
    * Description de l'agence, de ses services et de son positionnement. Affichée sur la page
    * publique de l'agence.
    */
-  @Column(name = "description", columnDefinition = "TEXT")
+  @Column(name = "description", columnDefinition = "TEXT", nullable = false)
   private String description;
 
   /**

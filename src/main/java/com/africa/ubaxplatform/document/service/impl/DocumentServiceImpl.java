@@ -13,6 +13,7 @@ import com.africa.ubaxplatform.document.generator.InvoiceGenerator;
 import com.africa.ubaxplatform.document.generator.ReceiptGenerator;
 import com.africa.ubaxplatform.document.repository.DocumentRepository;
 import com.africa.ubaxplatform.document.service.interfaces.DocumentService;
+import com.africa.ubaxplatform.notification.service.EmailService;
 import com.africa.ubaxplatform.payment.entity.Payment;
 import com.africa.ubaxplatform.payment.event.PaymentPaidEvent;
 import com.africa.ubaxplatform.payment.repository.PaymentRepository;
@@ -43,6 +44,7 @@ public class DocumentServiceImpl implements DocumentService {
   private final InvoiceGenerator invoiceGenerator;
   private final ReceiptGenerator receiptGenerator;
   private final MinioService minioService;
+  private final EmailService emailService;
 
   @Override
   @Transactional
@@ -159,6 +161,47 @@ public class DocumentServiceImpl implements DocumentService {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
+  /**
+   * Envoie le reçu PDF par email au locataire associé au paiement.
+   *
+   * <p>L'envoi est best-effort : un échec ne doit jamais faire échouer la génération du reçu. Si le
+   * locataire n'a pas d'email (champ optionnel sur {@code User}), l'envoi est silencieusement
+   * ignoré.
+   */
+  private void sendReceiptEmailToTenant(Payment payment, byte[] pdfBytes, String fileName) {
+    if (payment.getTenant() == null
+        || payment.getTenant().getUser() == null
+        || payment.getTenant().getUser().getEmail() == null) {
+      log.info(
+          "[DOC] Envoi email reçu ignoré (pas d'email locataire) – paymentId={}", payment.getId());
+      return;
+    }
+
+    com.africa.ubaxplatform.auth.entity.User tenantUser = payment.getTenant().getUser();
+    String email = tenantUser.getEmail();
+    String firstName = tenantUser.getFirstName();
+
+    try {
+      emailService.sendReceiptEmail(
+          email,
+          firstName,
+          payment.getReference(),
+          payment.getPeriodLabel(),
+          payment.getPaidDate(),
+          payment.getAmountPaid() != null ? payment.getAmountPaid() : payment.getAmount(),
+          pdfBytes,
+          fileName);
+      log.info("[DOC] Email reçu envoyé à {} pour paymentId={}", email, payment.getId());
+    } catch (Exception e) {
+      // Envoi best-effort : on logge sans faire échouer la transaction
+      log.warn(
+          "[DOC] Échec envoi email reçu à {} pour paymentId={} : {}",
+          email,
+          payment.getId(),
+          e.getMessage());
+    }
+  }
+
   private Payment requirePayment(UUID paymentId) {
     return paymentRepo
         .findById(paymentId)
@@ -189,6 +232,18 @@ public class DocumentServiceImpl implements DocumentService {
     Payment payment = event.payment();
     User triggeredBy = event.triggeredBy();
 
+    // Garde anti-doublon : ne pas regénérer si un reçu GENERATED existe déjà pour ce paiement
+    boolean receiptAlreadyGenerated =
+        documentRepo.findByRefIdAndRefType(payment.getId(), RefType.PAYMENT).stream()
+            .anyMatch(
+                d ->
+                    d.getDocType() == DocumentType.RECEIPT
+                        && d.getStatus() == DocumentStatus.GENERATED);
+    if (receiptAlreadyGenerated) {
+      log.warn("[DOC] Reçu déjà généré pour paymentId={}, génération ignorée.", payment.getId());
+      return;
+    }
+
     log.info("[DOC] Génération automatique du reçu pour paymentId={}", payment.getId());
 
     Document record =
@@ -199,7 +254,7 @@ public class DocumentServiceImpl implements DocumentService {
     try {
       byte[] pdf = receiptGenerator.generate(payment);
       String fileName = "recu-" + payment.getReference() + ".pdf";
-      String objectName = "recus/" + payment.getId() + "/" + fileName; // ← nouveau répertoire
+      String objectName = "recus/" + payment.getId() + "/" + fileName;
       String url =
           minioService.uploadFile(
               BUCKET, objectName, new ByteArrayInputStream(pdf), pdf.length, "application/pdf");
@@ -210,11 +265,15 @@ public class DocumentServiceImpl implements DocumentService {
       record.setReferenceNumber(generateRef("RCP"));
       record.setStatus(DocumentStatus.GENERATED);
 
-      // Optionnel : mettre à jour le receiptUrl sur le payment
+      // Mettre à jour le receiptUrl sur le payment
       payment.setReceiptUrl(url);
       paymentRepo.save(payment);
 
       log.info("[DOC] Reçu généré automatiquement : paymentId={}, url={}", payment.getId(), url);
+
+      // Envoyer le reçu par email au locataire (si email disponible)
+      sendReceiptEmailToTenant(payment, pdf, fileName);
+
     } catch (Exception e) {
       record.setStatus(DocumentStatus.FAILED);
       record.setErrorMessage(e.getMessage());

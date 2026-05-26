@@ -22,6 +22,7 @@ import com.africa.ubaxplatform.document.generator.InvoiceGenerator;
 import com.africa.ubaxplatform.document.generator.ReceiptGenerator;
 import com.africa.ubaxplatform.document.repository.DocumentRepository;
 import com.africa.ubaxplatform.document.service.impl.DocumentServiceImpl;
+import com.africa.ubaxplatform.notification.service.EmailService;
 import com.africa.ubaxplatform.payment.entity.Payment;
 import com.africa.ubaxplatform.payment.repository.PaymentRepository;
 import com.africa.ubaxplatform.storage.service.interfaces.MinioService;
@@ -49,6 +50,7 @@ class DocumentServiceImplTest {
   @Mock InvoiceGenerator invoiceGenerator;
   @Mock ReceiptGenerator receiptGenerator;
   @Mock MinioService minioService;
+  @Mock EmailService emailService;
 
   @InjectMocks DocumentServiceImpl service;
 

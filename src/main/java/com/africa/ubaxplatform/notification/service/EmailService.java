@@ -2,11 +2,14 @@ package com.africa.ubaxplatform.notification.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -123,6 +126,42 @@ public class EmailService {
     sendHtml(to, subject, templateName, ctx);
   }
 
+  // ── Email reçu de paiement ─────────────────────────────────────
+
+  /**
+   * Envoie un email de notification au locataire avec le reçu PDF en pièce jointe.
+   *
+   * @param to adresse email du destinataire
+   * @param firstName prénom du locataire (salutation)
+   * @param paymentRef référence du paiement (ex : PAY-2026-RENT-XXXXXXXX)
+   * @param periodLabel libellé de la période (ex : "Juin 2026") — peut être null
+   * @param paidDate date de paiement — peut être null
+   * @param amount montant encaissé
+   * @param pdfBytes contenu du reçu PDF à joindre
+   * @param fileName nom du fichier joint (ex : recu-PAY-2026-RENT-XXXXXXXX.pdf)
+   */
+  @Async
+  public void sendReceiptEmail(
+      String to,
+      String firstName,
+      String paymentRef,
+      String periodLabel,
+      LocalDate paidDate,
+      BigDecimal amount,
+      byte[] pdfBytes,
+      String fileName) {
+    Context ctx = new Context();
+    ctx.setVariable("firstName", firstName);
+    ctx.setVariable("paymentRef", paymentRef);
+    ctx.setVariable("periodLabel", periodLabel);
+    ctx.setVariable("paidDate", paidDate);
+    ctx.setVariable("amount", amount);
+    sendHtmlWithAttachment(
+        to, "Votre reçu de paiement – " + paymentRef, "email/receipt", ctx, pdfBytes, fileName);
+  }
+
+  // ── Helpers internes ───────────────────────────────────────────
+
   private void sendHtml(String to, String subject, String templateName, Context ctx) {
     try {
       String html = templateEngine.process(templateName, ctx);
@@ -144,6 +183,36 @@ public class EmailService {
     } catch (MessagingException | java.io.UnsupportedEncodingException e) {
       log.error("Échec envoi email à {} : {}", to, e.getMessage());
       throw new RuntimeException("Échec de l'envoi de l'email", e);
+    }
+  }
+
+  private void sendHtmlWithAttachment(
+      String to,
+      String subject,
+      String templateName,
+      Context ctx,
+      byte[] attachment,
+      String attachmentName) {
+    try {
+      String html = templateEngine.process(templateName, ctx);
+
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper =
+          new MimeMessageHelper(
+              message, MimeMessageHelper.MULTIPART_MODE_MIXED, StandardCharsets.UTF_8.name());
+
+      helper.setFrom(from, fromName);
+      helper.setTo(to);
+      helper.setSubject(subject);
+      helper.setText(html, true);
+      helper.addAttachment(attachmentName, new ByteArrayResource(attachment), "application/pdf");
+
+      mailSender.send(message);
+      log.info(
+          "Email avec pièce jointe envoyé à {} ({}) – fichier : {}", to, subject, attachmentName);
+    } catch (MessagingException | java.io.UnsupportedEncodingException e) {
+      log.error("Échec envoi email avec pièce jointe à {} : {}", to, e.getMessage());
+      throw new RuntimeException("Échec de l'envoi de l'email avec pièce jointe", e);
     }
   }
 }

@@ -280,16 +280,17 @@ public class ContractServiceImpl implements ContractService {
   @Override
   @Transactional
   public ContractResponse activate(String keycloakId, UUID id) throws CustomException {
+    User caller = requireUser(keycloakId);
     Contract contract = requireContract(id);
     requireTransition(contract, ContractStatus.PENDING_SIGNATURE, ContractStatus.ACTIVE);
     contract.setStatus(ContractStatus.ACTIVE);
     Contract saved = contractRepo.save(contract);
     log.info("Contrat {} → ACTIVE", id);
 
-    // Pour les baux LEASE, créer immédiatement le premier loyer
+    // Pour les baux LEASE, créer immédiatement le premier loyer (avec l'agent qui active)
     if (Constants.CodeList.ContractType.LEASE.equals(saved.getContractType())
         && saved.getMonthlyRent() != null) {
-      createFirstRentPayment(saved);
+      createFirstRentPayment(saved, caller);
     }
 
     return ContractMapper.toResponse(saved);
@@ -359,7 +360,7 @@ public class ContractServiceImpl implements ContractService {
    *
    * <p>Idempotent : si un paiement existe déjà pour cette échéance, rien n'est créé.
    */
-  private void createFirstRentPayment(Contract contract) {
+  private void createFirstRentPayment(Contract contract, User recordedBy) {
     LocalDate start = contract.getStartDate();
 
     // Premier loyer = 1 mois après l'entrée (Java gère automatiquement les mois courts)
@@ -393,6 +394,7 @@ public class ContractServiceImpl implements ContractService {
             .tenant(contract.getTenant())
             .property(contract.getProperty())
             .agency(contract.getProperty() != null ? contract.getProperty().getAgency() : null)
+            .recordedBy(recordedBy)
             .paymentType(PaymentType.RENT)
             .status(PaymentStatus.PENDING)
             .amount(amount)
