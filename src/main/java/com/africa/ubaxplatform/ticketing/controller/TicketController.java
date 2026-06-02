@@ -30,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -382,5 +383,115 @@ public class TicketController {
             Constants.Status.OK,
             ResponseMessageConstants.TICKET_ATTACHMENT_GET_LIST_SUCCESS,
             ticketService.listAttachments(ticketId)));
+  }
+
+  // ── Archivage ─────────────────────────────────────────────────
+
+  @DeleteMapping("/{ticketId}")
+  @Operation(
+      summary = "Archiver un ticket (soft delete)",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Suppression logique : le ticket disparaît des listes actives mais reste consultable via `GET /archived/{id}`.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Ticket archivé"),
+    @ApiResponse(responseCode = "401", description = "Non authentifié"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Ticket introuvable")
+  })
+  public ResponseEntity<CustomResponse> archive(
+      @PathVariable UUID ticketId, HttpServletRequest httpRequest) throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
+    ticketService.archive(ticketId, caller.getSub());
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TICKET_ARCHIVE_SUCCESS,
+            null));
+  }
+
+  @GetMapping("/archived")
+  @Operation(
+      summary = "Lister les tickets archivés",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne les tickets soft-deleted de l'agence, triés par date d'archivage décroissante.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponse(responseCode = "200", description = "Liste paginée des tickets archivés")
+  public ResponseEntity<CustomResponse> listArchived(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
+    var pageable = PageRequest.of(page, size, Sort.by("deletedAt").descending());
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TICKET_GET_ARCHIVED_LIST_SUCCESS,
+            ticketService.listArchived(caller.getSub(), pageable)));
+  }
+
+  @GetMapping("/archived/{ticketId}")
+  @Operation(
+      summary = "Détail d'un ticket archivé",
+      description = "🏢 **Rôles requis :** `PARTNER` · `ADMIN` · `SUPER_ADMIN`",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Ticket archivé trouvé"),
+    @ApiResponse(responseCode = "401", description = "Non authentifié"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Ticket archivé introuvable")
+  })
+  public ResponseEntity<CustomResponse> getArchivedById(
+      @PathVariable UUID ticketId, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TICKET_GET_ARCHIVED_SUCCESS,
+            ticketService.getArchivedById(ticketId)));
+  }
+
+  @PatchMapping("/{ticketId}/restore")
+  @Operation(
+      summary = "Restaurer un ticket archivé",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Remet `deletedAt` à null — le ticket redevient visible dans les listes actives.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Ticket restauré"),
+    @ApiResponse(responseCode = "401", description = "Non authentifié"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Ticket archivé introuvable")
+  })
+  public ResponseEntity<CustomResponse> restore(
+      @PathVariable UUID ticketId, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TICKET_RESTORE_SUCCESS,
+            ticketService.restore(ticketId)));
   }
 }

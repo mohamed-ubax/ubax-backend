@@ -45,4 +45,16 @@ public interface TicketService {
   List<TicketMessageResponse> listMessages(UUID ticketId) throws CustomException;
 
   List<TicketAttachmentResponse> listAttachments(UUID ticketId) throws CustomException;
+
+  /** Archive (soft delete) un ticket. Réservé à PARTNER/ADMIN. */
+  void archive(UUID ticketId, String callerKeycloakId) throws CustomException;
+
+  /** Retourne les tickets archivés de l'agence. */
+  Page<TicketResponse> listArchived(String keycloakId, Pageable pageable) throws CustomException;
+
+  /** Retourne le détail d'un ticket archivé. */
+  TicketResponse getArchivedById(UUID ticketId) throws CustomException;
+
+  /** Restaure un ticket archivé (remet deletedAt à null). */
+  TicketResponse restore(UUID ticketId) throws CustomException;
 }

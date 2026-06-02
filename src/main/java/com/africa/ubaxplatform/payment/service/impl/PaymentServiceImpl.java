@@ -278,6 +278,47 @@ public class PaymentServiceImpl implements PaymentService {
           new BadRequestException("Impossible de supprimer un paiement encaissé"),
           ResponseMessageConstants.PAYMENT_CREATE_FAILURE_BAD_REQUEST);
     }
-    paymentRepo.delete(payment);
+    payment.setDeletedAt(java.time.LocalDateTime.now());
+    paymentRepo.save(payment);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<PaymentResponse> listArchived(String callerKeycloakId, Pageable pageable)
+      throws CustomException {
+    User caller = resolveUser(callerKeycloakId);
+    Agency agency = requireAgency(caller);
+    return paymentRepo.findArchived(agency.getId(), pageable).map(PaymentMapper::toResponse);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PaymentResponse getArchivedById(UUID id) throws CustomException {
+    Payment payment =
+        paymentRepo
+            .findByIdAndDeletedAtIsNotNull(id)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException("Paiement archivé introuvable"),
+                        ResponseMessageConstants.PAYMENT_GET_FAILURE_NOT_FOUND));
+    return PaymentMapper.toResponse(payment);
+  }
+
+  @Override
+  @Transactional
+  public PaymentResponse restore(UUID id, String callerKeycloakId) throws CustomException {
+    User caller = resolveUser(callerKeycloakId);
+    Payment payment =
+        paymentRepo
+            .findByIdAndDeletedAtIsNotNull(id)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException("Paiement archivé introuvable"),
+                        ResponseMessageConstants.PAYMENT_GET_FAILURE_NOT_FOUND));
+    requireSameAgency(payment, caller);
+    payment.setDeletedAt(null);
+    return PaymentMapper.toResponse(paymentRepo.save(payment));
   }
 }

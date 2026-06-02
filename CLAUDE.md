@@ -15,123 +15,31 @@
 
 ```
 src/main/java/com/africa/ubaxplatform/
-├── auth/           ✅ Auth, inscription OTP, reset password, admins, sous-rôles
-│   ├── codeList/       UserRole, UbaxAdminRole, AgenceRole, HotelRole, RoleScope
-│   ├── controller/     AuthController, AdminController, UserProfileController,
-│   │                   AgencyTeamController, UserSubRoleController
-│   ├── dto/
-│   ├── entity/         User, Agency, Hotel, OtpVerification, UserSubRole
-│   ├── mapper/         UserMapper, AgencyMapper
-│   ├── repository/     UserRepository, AgencyRepository, HotelRepository,
-│   │                   OtpVerificationRepository, UserSubRoleRepository
-│   └── service/
-├── partner/        ✅ Candidatures partenaires (agences / hôtels)
-│   ├── codeList/       ApplicationStatus
-│   ├── controller/     PartnerController
-│   ├── entity/         PartnerApplication, ApplicationStatusLog
-│   └── service/
-├── tenant/         ✅ Dossiers locataires (KYC)
-│   ├── codeList/       TenantStatus
-│   ├── controller/     TenantController
-│   ├── entity/         Tenant
-│   └── service/
+├── auth/           ✅ Auth, OTP, reset password, admins, sous-rôles
+│   UserRole·UbaxAdminRole·AgenceRole·HotelRole · AuthController·AdminController·AgencyTeamController·UserSubRoleController · User·Agency·Hotel·OtpVerification·UserSubRole
+├── partner/        ✅ Candidatures partenaires — PartnerController · PartnerApplication·ApplicationStatusLog
+├── tenant/         ✅ Dossiers locataires (KYC) — TenantController · Tenant
 ├── property/       ✅ Biens, médias, documents, modération, boost
-│   ├── codeList/       PropertyStatus
-│   ├── controller/     PropertyController
-│   ├── entity/         Property, PropertyMedia, PropertyDocument
-│   ├── scheduler/      PropertySchedulerJob
-│   └── service/
-├── payment/        ✅ Paiements, dépenses agence + scheduler loyers automatiques
-│   ├── codeList/       PaymentStatus, PaymentType, PaymentMethod,
-│   │                   ExpenseCategory, CostCenter
-│   ├── controller/     PaymentController, ExpenseController
-│   ├── entity/         Payment, Expense
-│   ├── scheduler/      PaymentSchedulerJob (markOverduePayments 01h00, generateUpcomingRentPayments 06h00)
-│   └── service/
-├── dashboard/      ✅ Analytics & KPIs par rôle (DG, Commercial, Comptable, SAV)
-│   ├── controller/     DashboardController
-│   ├── dto/            AgencyDashboardResponse, ExpenseBreakdownItem,
-│   │                   RevenueBreakdownItem
-│   └── service/
-├── storage/        ✅ MinIO – upload direct et URLs présignées
-│   ├── controller/     StorageController
-│   └── service/
-├── bailleur/       ✅ Demandes d'adhésion bailleur, liens bailleur↔agence, création compte OWNER
-│   ├── codeList/       BailleurApplicationStatus (PENDING, APPROVED, REJECTED, CANCELLED)
-│   ├── controller/     BailleurController
-│   ├── dto/            BailleurApplyRequest, BailleurPropertyRequest, BailleurDecisionRequest,
-│   │                   BailleurApplicationResponse, BailleurPropertyResponse
-│   ├── entity/         BailleurApplication, BailleurApplicationProperty, BailleurAgencyLink
-│   ├── repository/     BailleurApplicationRepository, BailleurApplicationPropertyRepository,
-│   │                   BailleurAgencyLinkRepository
-│   └── service/
-├── reservation/    ✅ Réservations hôtelières (client + hôtel + admin)
-│   ├── codeList/       ReservationStatus (PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW)
-│   ├── controller/     ReservationController
-│   ├── dto/            CreateReservationRequest, CancelReservationRequest, ReservationResponse
-│   ├── entity/         Reservation
-│   ├── mapper/         ReservationMapper
-│   ├── repository/     ReservationRepository
-│   └── service/
-├── visitappointment/ ✅ Réservation de visites immobilières (client + agence)
-│   ├── codeList/       VisitRequestStatus (PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED)
-│   ├── controller/     PropertyVisitClientController, PropertyVisitAgencyController
-│   ├── dto/            CreateVisitRequestDto, ConfigureVisitAvailabilityDto, ConfirmVisitRequestDto,
-│   │                   RejectVisitRequestDto, UpdateBlackoutDatesDto, VisitRequestResponse,
-│   │                   VisitAvailabilityResponse
-│   ├── entity/         PropertyVisitRequest, AgencyVisitAvailability
-│   ├── mapper/         VisitRequestMapper
-│   ├── repository/     PropertyVisitRequestRepository, AgencyVisitAvailabilityRepository
-│   └── service/        PropertyVisitService (interface) + PropertyVisitServiceImpl
-├── ticketing/      ✅ Tickets SAV complets — entités, controller, service, repos, DTOs
-│   ├── codeList/       TicketStatus (enum), MessageType (enum)
-│   ├── controller/     TicketController
-│   ├── dto/            CreateTicketRequest, AddTicketMessageRequest, AssignTicketRequest,
-│   │                   ScheduleInterventionRequest (technicienId + interventionPrice),
-│   │                   UpdateRepairCostRequest, UpdateTicketStatusRequest,
-│   │                   TicketResponse (technicienId, technicienProfession, interventionPrice),
-│   │                   TicketMessageResponse, TicketAttachmentResponse
-│   ├── entity/         Ticket (+ technicien FK + interventionPrice), TicketAttachment, TicketMessage
-│   ├── mapper/         TicketMapper
-│   ├── repository/     TicketRepository, TicketMessageRepository, TicketAttachmentRepository
-│   └── service/        TicketService (interface) + TicketServiceImpl
-├── technicien/     ✅ Prestataires externes SAV — gérés par agence ou hôtel (pas de compte plateforme)
-│   ├── controller/     TechnicienController (6 endpoints /v1/technicians)
-│   ├── dto/            CreateTechnicienRequest, UpdateTechnicienRequest, TechnicienResponse
-│   ├── entity/         Technicien (soft delete, available, agency XOR hotel)
-│   ├── repository/     TechnicienRepository
-│   └── service/        TechnicienService (interface) + TechnicienServiceImpl
-├── contract/       ✅ Baux et contrats — cycle de vie complet + génération premier loyer
-│   ├── codeList/       ContractStatus (DRAFT→PENDING_SIGNATURE→ACTIVE→TERMINATED|CANCELLED)
-│   ├── controller/     ContractController (8 endpoints /v1/contracts)
-│   ├── dto/            CreateContractRequest, TerminateContractRequest, ContractResponse
-│   ├── entity/         Contract
-│   ├── mapper/         ContractMapper
-│   ├── repository/     ContractRepository
-│   └── service/        ContractService (interface) + ContractServiceImpl
-│                       → crée le 1er loyer à activate(), génère PDF à submit()
-├── document/       ✅ Génération PDF Thymeleaf → MinIO — pas d'API REST
-│   ├── codeList/       DocumentStatus, DocumentType, RefType
-│   ├── entity/         Document
-│   ├── generator/      ContractGenerator, InvoiceGenerator, ReceiptGenerator (@Service)
-│   ├── repository/     DocumentRepository
-│   └── service/        DocumentService (interface) + DocumentServiceImpl
-│                       → pipeline : entité → Thymeleaf → PDF → MinIO bucket documents-generated
-│                       → onPaymentPaid() : génère le reçu automatiquement après PAID
-│                         puis envoie le PDF par email au locataire (best-effort, @Async)
-├── notification/   ✅ Email (JavaMail) et SMS (LAfricaMobile) — pas d'entité in-app
-│   ├── config/         NotificationConfig
-│   └── service/        EmailService (sendReceiptEmail avec PDF en pièce jointe), SmsService
-├── common/         BaseEntity, exceptions, CustomResponse, RoleGuard, utils
-│   ├── base/           BaseEntity (id UUID, createdAt, updatedAt)
-│   ├── codelist/       LaCodeList (référentiels métier)
-│   ├── constants/      Constants, ResponseMessageConstants
-│   ├── exception/      CustomException, BadRequestException, ConflictException,
-│   │                   NotFoundException, UnAuthorizedException, StorageException
-│   ├── response/       CustomResponse
-│   └── util/           RoleGuard, RequestHeaderParser, KeycloakJwtRolesConverter,
-│                       OtpUtils
-└── config/         SecurityConfig, OpenApiConfig, CustomEntryPoint/AccessDenied
+│   PropertyController · Property·PropertyMedia·PropertyDocument · PropertySchedulerJob
+├── payment/        ✅ Paiements + scheduler loyers — PaymentController·ExpenseController · Payment·Expense
+│   PaymentSchedulerJob (markOverduePayments@01h00, generateUpcomingRentPayments@06h00)
+├── dashboard/      ✅ Analytics & KPIs par rôle — DashboardController
+├── storage/        ✅ MinIO upload + URLs présignées — StorageController
+├── bailleur/       ✅ Demandes bailleur, liens bailleur↔agence, création compte OWNER
+│   BailleurApplicationStatus(PENDING/APPROVED/REJECTED/CANCELLED) · BailleurController · BailleurApplication·BailleurAgencyLink
+├── reservation/    ✅ Réservations hôtelières — ReservationController · Reservation
+│   ReservationStatus(PENDING→CONFIRMED→COMPLETED|NO_SHOW, PENDING|CONFIRMED→CANCELLED)
+├── visitappointment/ ✅ Réservation de visites immobilières
+│   VisitRequestStatus(PENDING/CONFIRMED/REJECTED/CANCELLED/COMPLETED) · PropertyVisitClientController·PropertyVisitAgencyController · PropertyVisitRequest·AgencyVisitAvailability
+├── ticketing/      ✅ Tickets SAV — TicketController · Ticket(technicienId, interventionPrice)·TicketAttachment·TicketMessage
+├── technicien/     ✅ Prestataires externes SAV (pas de compte plateforme) — TechnicienController · Technicien(agency XOR hotel, soft delete)
+├── contract/       ✅ Baux et contrats — ContractController · Contract
+│   ContractStatus(DRAFT→PENDING_SIGNATURE→ACTIVE→TERMINATED|CANCELLED) · activate()→1er loyer · submit()→PDF
+├── document/       ✅ Génération PDF Thymeleaf → MinIO (pas d'API REST)
+│   ContractGenerator·InvoiceGenerator·ReceiptGenerator · onPaymentPaid()→PDF→email @Async
+├── notification/   ✅ Email (JavaMail) + SMS (LAfricaMobile) — EmailService·SmsService
+├── common/         BaseEntity(UUID·createdAt·updatedAt) · CustomException·CustomResponse · RoleGuard·RequestHeaderParser·KeycloakJwtRolesConverter
+└── config/         SecurityConfig · OpenApiConfig
 ```
 
 ---
@@ -266,62 +174,25 @@ public class ModuleController {
 
 | Version | Fichier | Tables / colonnes |
 |---------|---------|-------------------|
-| V001 | `create_schema.sql` | Schéma `administrative` |
-| V002 | `create_users.sql` | `users`, `user_roles` |
-| V003 | `create_otp_verifications.sql` | `otp_verifications` |
-| V004 | `create_partner_applications.sql` | `partner_applications` |
-| V005 | `create_application_status_logs.sql` | `application_status_logs` |
-| V006 | `add_storage_slug_to_partner_applications.sql` | `storage_slug` sur `partner_applications` |
-| V007 | `create_la_code_list.sql` | `la_code_list` |
-| V008 | `create_agencies.sql` | `agencies` |
-| V009 | `add_agency_id_to_users.sql` | `agency_id` sur `users` |
-| V010 | `create_tenants.sql` | `tenants` |
-| V011 | `create_contracts.sql` | `contracts` |
-| V012 | `drop_stale_role_column_from_users.sql` | Suppression colonne obsolète |
-| V013 | `create_properties.sql` | `properties`, `property_media`, `property_documents` |
-| V014 | `create_payments.sql` | `payments` |
-| V015 | `create_expenses.sql` | `expenses` |
-| V016 | `create_user_sub_roles.sql` | `user_sub_roles` (id, user_id, role, scope, created_at) |
-| V017 | `create_hotels.sql` | `hotels` + `hotel_id` sur `users` |
-| V018 | `create_tickets.sql` | `tickets`, `ticket_messages`, `ticket_attachments` |
-| V019 | `seed_ticket_code_lists.sql` | Seed `la_code_list` (TICKET_CATEGORY, TICKET_PRIORITY, TICKET_ATTACHMENT_TYPE) |
-| V020 | `seed_sub_roles_code_lists.sql` | Seed `la_code_list` (ROLE_AGENCE, ROLE_HOTEL, ROLE_UBAX_INTERNAL) |
-| V021 | `fix_user_sub_roles_scope_constraint.sql` | Correction contrainte `chk_user_sub_roles_scope` (valeurs majuscules) |
-| V022 | `create_bailleur_agency_links.sql` | `bailleur_agency_links` (contrainte unique bailleur↔agence) |
-| V023 | `seed_bailleur_system_config.sql` | Seed `la_code_list` (GEO_CONFLICT_RADIUS_METERS = 50 m) |
-| V024 | `add_coordinates_to_partner_applications.sql` | `latitude`, `longitude` sur `partner_applications` |
-| V025 | `create_bailleur_applications.sql` | `bailleur_applications`, `bailleur_application_properties` |
-| V026 | `seed_id_type_code_list.sql` | Seed `la_code_list` (ID_TYPE : CNI, PASSEPORT, PERMIS_CONDUIRE, TITRE_SEJOUR, CARTE_CONSULAIRE) |
-| V027–V034 | *(migrations hôtel, villes, représentant légal…)* | Voir fichiers SQL |
-| V035 | `create_property_amenities.sql` | Table `property_amenities`, migration booléens → table, suppression colonnes booléennes |
-| V036 | `seed_property_amenity_code_lists.sql` | Seed `la_code_list` (PROPERTY_AMENITY : POOL, GENERATOR, WATER_TANK, AC, SECURITY, PARKING, ELEVATOR, GARDEN, FURNISHED, PETS) |
-| V037 | `add_updated_at_to_property_amenities.sql` | Colonne `updated_at` manquante sur `property_amenities` (BaseEntity) |
-| V038 | `add_verified_by_id_to_property_documents.sql` | Colonne `verified_by_id` manquante sur `property_documents` (serveurs déployés avant correction V013) |
-| V039 | `create_reservations.sql` | Table `reservations` (statuts PENDING → CONFIRMED → COMPLETED \| CANCELLED \| NO_SHOW) |
-| V040 | `create_documents.sql` | Table `documents` (ref_id, ref_type, doc_type, status PENDING\|GENERATED\|SENT\|FAILED, file_url, generated_by FK users) |
-| V041 | `make_payment_recorded_by_nullable.sql` | `recorded_by` nullable sur `payments` (paiements système sans acteur humain) |
-| V042 | `drop_property_type_check_constraint.sql` | Suppression contrainte CHECK statique `properties_property_type_check` — bloquait HOTEL_SUITE et autres types hôteliers ajoutés en V034 |
-| V043 | `add_user_id_to_bailleur_applications.sql` | Colonne `user_id UUID` (nullable, FK → `users.id`) sur `bailleur_applications` — lie la demande au compte CLIENT authentifié |
-| V044 | `add_hotel_id_to_properties.sql` | Colonne `hotel_id UUID` (FK → `hotels.id`) sur `properties` — filtre biens par hôtel |
+| V001–V044 | *(voir `src/main/resources/db/migration/`)* | Fondations : schéma, users, OTP, partners, code_list, agencies, tenants, contracts, properties, payments, expenses, sub_roles, hotels, tickets, bailleurs, amenities, reservations, documents |
 | V045 | `create_techniciens.sql` | Table `techniciens` (agency_id XOR hotel_id, available, soft delete, CHECK constraint structure) |
 | V046 | `add_technicien_to_tickets.sql` | Colonnes `technicien_id UUID` (FK → `techniciens.id`) + `intervention_price DECIMAL(15,2)` sur `tickets` |
-| V047 | `seed_technicien_profession_code_lists.sql` | Seed `la_code_list` (TECHNICIEN_PROFESSION : PLOMBIER, ELECTRICIEN, SERRURIER, MENUISIER, MACON, PEINTRE, CLIMATISATION, VITRERIE, JARDINAGE, NETTOYAGE, DESINSECTISATION, AUTRE) |
-
+| V047 | `seed_technicien_profession_code_lists.sql` | Seed `la_code_list` TECHNICIEN_PROFESSION (12 valeurs : PLOMBIER, ELECTRICIEN … AUTRE) |
 | V048 | `update_ticket_category_code_lists.sql` | Mise à jour code lists catégories tickets |
 | V049 | `create_property_favorites.sql` | Table `property_favorites` (user_id FK, property_id FK, contrainte unique) |
 | V050 | `add_property_id_to_tenants.sql` | Colonne `property_id UUID` (nullable, FK → `properties.id`) sur `tenants` — bien ciblé à la soumission du dossier |
 | V051 | `add_rent_to_own_contract_type.sql` | Seed `la_code_list` (CONTRACT_TYPE : RENT_TO_OWN = Location-vente) + colonne `monthly_installment NUMERIC(15,2)` sur `contracts` |
 | V052 | `drop_transaction_type_check_constraint.sql` | Suppression contrainte CHECK statique `properties_transaction_type_check` — bloquait SHORT_STAY et autres types hôteliers ajoutés en V034 |
 | V053 | `add_description_to_property_amenities.sql` | Colonne `description VARCHAR(500)` sur `property_amenities` — description libre pour chaque commodité d'un bien |
-| V054 | `simplify_bailleur_application.sql` | Simplification module bailleur : ajout colonne `description TEXT` sur `bailleur_applications`, suppression colonnes `conflict_detected`/`conflict_note`, suppression table `bailleur_application_properties` |
+| V054 | `simplify_bailleur_application.sql` | `description TEXT` sur `bailleur_applications`, supprime `conflict_*`, supprime table `bailleur_application_properties` |
 | V055 | `add_id_docs_and_nullable_email_to_bailleur.sql` | `email` nullable sur `bailleur_applications` (clients sans email) + colonnes `id_doc_recto_url TEXT` et `id_doc_verso_url TEXT` (pièce d'identité recto/verso) |
-| V056 | `create_management_contracts.sql` | Table `management_contracts` (agence↔bailleur, statuts DRAFT/PENDING_SIGNATURE/ACTIVE/TERMINATED/CANCELLED, FKs agency/owner/created_by/terminated_by, indexes agency/owner/status) |
-| V057 | `fix_tenant_employment_status_constraint.sql` | Supprime la contrainte CHECK orpheline `tenants_employment_status_check` (non présente dans les migrations, créée par une ancienne session Hibernate) · Ajoute `EMPLOYED` dans `la_code_list` (valeur envoyée par le mobile) · Migre les enregistrements `EMPLOYEE` → `EMPLOYED` · Désactive `EMPLOYEE` (is_system_assign=false) |
+| V056 | `create_management_contracts.sql` | Table `management_contracts` (mandats agence↔bailleur, mêmes statuts que contracts, FKs agency/owner/created_by/terminated_by) |
+| V057 | `fix_tenant_employment_status_constraint.sql` | Corrige contrainte orpheline `tenants_employment_status_check`, ajoute `EMPLOYED` en code_list, migre `EMPLOYEE` → `EMPLOYED` |
 | V058 | `create_property_visit_requests_and_availabilities.sql` | Tables `property_visit_requests`, `agency_visit_availabilities`, `visit_slot_occupancy` — module réservation de visites |
 | V059 | `seed_visit_request_code_lists.sql` | Seed `la_code_list` (VISIT_REQUEST_STATUS : PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED) |
-| V060 | `make_agency_description_not_null.sql` | Backfill `description = 'Description non renseignée.'` pour les agences existantes + contrainte `NOT NULL` sur `agencies.description` |
+| V060 | `make_agency_description_not_null.sql` | `NOT NULL` sur `agencies.description` + backfill |
 | V061 | `add_unit_count_to_properties.sql` | Colonne `unit_count INTEGER NOT NULL DEFAULT 1` sur `properties` + contrainte `CHECK (unit_count >= 1)` — pool de chambres identiques pour les biens hôteliers |
-| V062 | `backfill_hotel_id_on_properties.sql` | Backfill `hotel_id` sur `properties` : propage `users.hotel_id` → `properties.hotel_id` pour tous les biens dont l'owner est rattaché à un hôtel et dont `hotel_id` était NULL (données pré-V044) |
+| V062 | `backfill_hotel_id_on_properties.sql` | Backfill `hotel_id` sur `properties` depuis `users.hotel_id` (données pré-V044) |
 
 Prochaine version disponible : **V063**
 
@@ -354,91 +225,7 @@ Prochaine version disponible : **V063**
 | `POST` | `/v1/users/me/avatar` | Authentifié | Mettre à jour avatar |
 | `GET` | `/v1/admin/clients` | `ADMIN` | Liste tous les clients (`?agencyId=` ou `?hotelId=` optionnel) |
 
-#### Détail des DTOs — Authentification mobile
-
-**`POST /v1/auth/login`** — `LoginRequest` → `LoginResponse`
-```json
-// Request
-{ "email": "user@example.com", "password": "..." }
-
-// Response (Keycloak token)
-{
-  "access_token": "eyJ...", "refresh_token": "eyJ...",
-  "expires_in": 300, "refresh_expires_in": 1800,
-  "token_type": "Bearer", "session_state": "uuid", "scope": "email profile"
-}
-```
-
-**`POST /v1/auth/login/phone`** — `PhoneLoginRequest` → `LoginResponse`
-```json
-{ "phone": "+2250712345678", "password": "..." }
-// Même LoginResponse que ci-dessus
-```
-Format téléphone : `^\+[1-9]\d{7,14}$` — préfixe international obligatoire.
-
-**`POST /v1/auth/register/send-otp`** — `SendOtpRequest`
-```json
-{ "phone": "+2250712345678" }
-// 200 OK | 409 téléphone déjà utilisé
-```
-
-**`POST /v1/auth/register/verify-otp`** — `VerifyOtpRequest`
-```json
-{ "phone": "+2250712345678", "code": "123456" }
-// 200 OK | 400 OTP invalide/expiré
-```
-
-**`POST /v1/auth/register/complete`** — `RegisterCompleteRequest` → `RegisterResponse` (201)
-```java
-// Champs et contraintes
-String phone;       // @NotBlank @Pattern (international)
-String title;       // @NotBlank — "M." ou "Mme" — OBLIGATOIRE
-String firstName;   // @NotBlank @Size(2,100)
-String lastName;    // @NotBlank @Size(2,100)
-String password;    // @NotBlank @Size(min=8)
-String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
-```
-> **email est optionnel** — ne jamais le marquer `required` côté frontend.
-
-```json
-// RegisterResponse (201)
-{
-  "userId": "uuid", "keycloakId": "uuid",
-  "phone": "+2250712345678", "firstName": "Kouassi", "lastName": "Amani",
-  "email": null, "roles": ["CLIENT"]
-}
-```
-
-**`POST /v1/auth/logout`** — `LogoutRequest`
-```json
-{ "refreshToken": "eyJ..." }
-// 200 OK — invalide la session Keycloak
-```
-
-**`POST /v1/auth/forgot-password`** — `ForgotPasswordRequest`
-```json
-{ "email": "user@example.com" }
-// Toujours 200 OK (anti-énumération) — ne pas distinguer "email trouvé" vs "introuvable"
-```
-
-**`POST /v1/auth/forgot-password/send-otp`** — `SendOtpRequest`
-```json
-{ "phone": "+2250712345678" }
-// 200 OK | 404 compte introuvable
-```
-
-**`POST /v1/auth/forgot-password/verify-otp`** — `VerifyOtpRequest`
-```json
-{ "phone": "+2250712345678", "code": "123456" }
-// 200 OK | 400 OTP invalide
-// ⚠️ L'OTP est vérifié mais NON consommé — /reset doit encore être appelé
-```
-
-**`POST /v1/auth/forgot-password/reset`** — `ResetPasswordByPhoneRequest`
-```json
-{ "phone": "+2250712345678", "code": "123456", "newPassword": "min8chars" }
-// 200 OK — l'OTP est consommé (invalidé) ici | 400 OTP invalide/expiré
-```
+> **Notes clés — Auth mobile** : `phone` format `^\+[1-9]\d{7,14}$` (préfixe international obligatoire). `RegisterCompleteRequest` : `title` obligatoire (`M.`/`Mme`), `email` **optionnel** (`@Email` sans `@NotBlank`), `password` min 8 chars. `LoginResponse` contient `access_token` + `refresh_token` + `expires_in` (300s). `POST /v1/auth/forgot-password` retourne toujours 200 OK (anti-énumération). `forgot-password/verify-otp` : OTP vérifié **NON consommé** — appeler `/reset` ensuite.
 
 ### Sous-rôles (User Sub-Roles)
 
@@ -556,39 +343,6 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 | `GET` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Détail — 403 si pas demandeur |
 | `DELETE` | `/v1/property-visits/{visitRequestId}` | `CLIENT/OWNER` | Annuler `PENDING` → `CANCELLED` · 204 No Content |
 
-#### DTOs clés — Visites client
-
-**`POST /v1/property-visits`** — `CreateVisitRequestDto`
-```json
-{
-  "propertyId": "uuid",
-  "requestedDate": "2026-06-10",
-  "requestedTimeSlot": "10:00-14:00",
-  "clientNotes": "Intéressé par la terrasse, visite rapide SVP"
-}
-```
-
-**`VisitRequestResponse`** (retourné par POST, GET /{id}, PATCH)
-```json
-{
-  "id": "uuid",
-  "propertyId": "uuid",
-  "propertyTitle": "Villa F5 Almadies",
-  "clientId": "uuid",
-  "clientName": "Jean Kouassi",
-  "agentId": "uuid",
-  "agentName": "Marie Amani",
-  "requestedDate": "2026-06-10",
-  "requestedTimeSlot": "10:00-14:00",
-  "status": "CONFIRMED",
-  "confirmedDate": "2026-06-10",
-  "confirmedTimeSlot": "10:00-14:00",
-  "rejectionReason": null,
-  "clientNotes": "...",
-  "createdAt": "2026-06-01T10:00:00",
-  "updatedAt": "2026-06-02T09:00:00"
-}
-```
 
 ### Property Visits - Agency
 
@@ -607,36 +361,6 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 | `PATCH` | `/v1/agency/property-visits/{visitRequestId}/reject` | `PARTNER` | `PENDING → REJECTED` · body `reason` requis |
 | `PATCH` | `/v1/agency/property-visits/{visitRequestId}/assign-agent/{agentId}` | `PARTNER` | Assigner un agent (ne change pas le statut) |
 
-#### DTOs clés — Configuration visite (agence)
-
-**`POST /v1/agency/property-visits/config`** — `ConfigureVisitAvailabilityDto`
-```json
-{
-  "propertyId": "uuid",
-  "timeSlots": {
-    "1": ["10:00-14:00", "14:00-18:00"],
-    "2": ["10:00-14:00"],
-    "5": ["10:00-18:00"],
-    "6": ["10:00-14:00"]
-  },
-  "blackoutDates": ["2026-07-14", "2026-08-15"],
-  "maxVisitsPerSlot": 3
-}
-```
-
-**`PATCH …/confirm`** — `ConfirmVisitRequestDto`
-```json
-{
-  "confirmedDate": "2026-06-10",
-  "confirmedTimeSlot": "10:00-14:00",
-  "agencyNotes": "Veuillez arriver 5 min en avance"
-}
-```
-
-**`PATCH …/reject`** — `RejectVisitRequestDto`
-```json
-{ "reason": "Bien vendu, visite impossible" }
-```
 
 ### Payment & Expense
 
@@ -668,8 +392,7 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 
 ### Ticketing
 
-> **Création avec images** : `POST /v1/tickets` accepte un champ `attachments[]` (optionnel). Chaque entrée est une URL pré-uploadée via `GET /v1/storage/presign/ticket-attachment`. Les fichiers sont sauvegardés comme `TicketAttachment` (type `INCIDENT_PHOTO` par défaut) dans la même transaction.
-> **Accès CLIENT** : un CLIENT peut créer un ticket, lister ses propres tickets (`/mine`) et consulter le détail de ses tickets uniquement (vérification reporter — 403 si pas déclarant).
+> `attachments[]` optionnel dans `POST /v1/tickets` (URLs presign/ticket-attachment, type INCIDENT_PHOTO par défaut). CLIENT : création + `/mine` + détail de ses propres tickets uniquement (403 sinon).
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
@@ -710,9 +433,7 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 
 ### Mandat de gestion (Agence ↔ Bailleur)
 
-> Acte administratif **exclusif entre l'agence et le bailleur** — jamais visible par les clients. Requiert qu'un lien `bailleur_agency_links` approuvé existe avant création. Un seul mandat `ACTIVE` ou `PENDING_SIGNATURE` autorisé par couple agence↔bailleur.
-> **Référence auto-générée :** format `MAN-{YEAR}-{6-char-UUID}` (ex. `MAN-2026-A1B2C3`).
-> **Type `MANDATE` bloqué dans `POST /v1/contracts`** — utiliser uniquement `/v1/mandates`.
+> Exclusif agence↔bailleur (jamais visible clients). Requiert lien `bailleur_agency_links` approuvé. Un seul ACTIVE/PENDING_SIGNATURE par couple. Référence auto : `MAN-{YEAR}-{UUID6}`. Type `MANDATE` bloqué dans `POST /v1/contracts`.
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
@@ -726,9 +447,7 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 
 ### Bailleur
 
-> **Flux mobile simplifié** : `CLIENT` connecté → choisit une agence (`GET /v1/agencies`) → soumet une demande avec sa pièce d'identité + description libre (`POST /v1/bailleur/apply`) → agence vérifie les biens hors-app → approuve ou rejette → rôle `UBAX_OWNER` ajouté automatiquement → l'agence crée les biens via `POST /v1/properties` en rattachant le bailleur comme propriétaire.
-> **`POST /v1/bailleur/apply`** : requiert JWT `CLIENT`. Les champs `firstName`, `lastName`, `phone`, `email` sont extraits automatiquement du compte. Champs obligatoires : `agencyId`, `idType`, `idNumber`, `description` (**minimum 10 mots**, max 1000 chars, validé par `@MinWords(10)`). Champs optionnels : `email` (requis si le compte n'a pas d'email), `idDocRectoUrl`, `idDocVersoUrl` (URLs pré-uploadées via bucket `bailleur-documents`). **Aucune liste de biens dans le body.**
-> **`POST /v1/properties` avec `ownerId`** : si le créateur est membre d'une agence ET que `ownerId` ≠ soi-même, le backend vérifie que le propriétaire est un bailleur approuvé par cette agence (table `bailleur_agency_links`). Si le lien n'existe pas → `400`. Utiliser `GET /v1/bailleur/agency/bailleurs` pour obtenir la liste des `ownerId` valides.
+> Flux : CLIENT choisit agence → `POST /v1/bailleur/apply` (JWT CLIENT, champs auto-extraits du compte, obligatoires : `agencyId`/`idType`/`idNumber`/`description` min 10 mots, optionnels : `idDocRectoUrl`/`idDocVersoUrl`) → agence approuve → rôle OWNER ajouté. `POST /v1/properties` avec `ownerId` tiers : vérifie lien `bailleur_agency_links` (400 sinon) — utiliser `GET /v1/bailleur/agency/bailleurs`.
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|
@@ -743,10 +462,7 @@ String email;       // @Email uniquement — PAS de @NotBlank → OPTIONNEL
 
 ### Reservation
 
-> **Statuts :** `PENDING → CONFIRMED → COMPLETED | NO_SHOW` · `PENDING | CONFIRMED → CANCELLED`  
-> **`DELETE /v1/reservations/{id}`** : requiert un body JSON `{ "reason": "..." }` (motif obligatoire) — seules les réservations `PENDING` sont annulables par le client.  
-> **`PATCH …/cancel` (hôtel)** : annule une réservation `PENDING` ou `CONFIRMED` — body `{ "reason": "..." }` obligatoire.  
-> **Accès `GET /v1/reservations/{id}`** : CLIENT = propriétaire uniquement (403 sinon) · PARTNER = biens de son hôtel uniquement.
+> Statuts : `PENDING→CONFIRMED→COMPLETED|NO_SHOW` · `PENDING|CONFIRMED→CANCELLED`. `DELETE` et `cancel` : body `{"reason":"..."}` obligatoire. `DELETE` réservé au client sur `PENDING` uniquement. `GET /{id}` : CLIENT = propriétaire (403 sinon), PARTNER = hôtel uniquement.
 
 | Méthode | Chemin | Rôle | Description |
 |---------|--------|------|-------------|

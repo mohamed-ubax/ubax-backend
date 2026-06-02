@@ -20,6 +20,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -111,6 +112,10 @@ public class Payment extends BaseEntity {
 
   @Column(name = "note", columnDefinition = "TEXT")
   private String note;
+
+  /** Horodatage de la suppression logique. {@code null} = paiement actif. */
+  @Column(name = "deleted_at")
+  private LocalDateTime deletedAt;
 
   /** {@code true} si la date d'échéance est dépassée et le paiement n'est pas {@code PAID}. */
   public boolean isOverdue() {

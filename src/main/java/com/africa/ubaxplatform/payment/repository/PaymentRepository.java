@@ -21,7 +21,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
   @Query(
       """
       SELECT p FROM Payment p
-      WHERE (:agencyId   IS NULL OR p.agency.id     = :agencyId)
+      WHERE p.deletedAt IS NULL
+        AND (:agencyId   IS NULL OR p.agency.id     = :agencyId)
         AND (:status     IS NULL OR p.status         = :status)
         AND (:type       IS NULL OR p.paymentType    = :type)
         AND (:propertyId IS NULL OR p.property.id   = :propertyId)
@@ -45,7 +46,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
   @Query(
       """
       SELECT p FROM Payment p
-      WHERE p.agency.id = :agencyId
+      WHERE p.deletedAt IS NULL
+        AND p.agency.id = :agencyId
         AND p.status IN ('PENDING', 'PARTIAL')
         AND p.dueDate < :today
       ORDER BY p.dueDate ASC
@@ -99,15 +101,28 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
    * Vérifie si un paiement existe déjà pour un contrat et une date d'échéance — anti-doublon
    * scheduler.
    */
-  boolean existsByContractIdAndDueDate(UUID contractId, LocalDate dueDate);
+  boolean existsByContractIdAndDueDateAndDeletedAtIsNull(UUID contractId, LocalDate dueDate);
 
   /** Paiements PENDING ou PARTIAL dont la date d'échéance est dépassée — passage en LATE. */
   @Query(
       """
       SELECT p FROM Payment p
-      WHERE p.status IN :statuses
+      WHERE p.deletedAt IS NULL
+        AND p.status IN :statuses
         AND p.dueDate < :today
       """)
   List<Payment> findOverdueByStatuses(
       @Param("statuses") Collection<PaymentStatus> statuses, @Param("today") LocalDate today);
+
+  // ── Archivage (soft-deleted) ────────────────────────────────────
+
+  @Query(
+      """
+      SELECT p FROM Payment p
+      WHERE p.deletedAt IS NOT NULL
+        AND (:agencyId IS NULL OR p.agency.id = :agencyId)
+      """)
+  Page<Payment> findArchived(@Param("agencyId") UUID agencyId, Pageable pageable);
+
+  java.util.Optional<Payment> findByIdAndDeletedAtIsNotNull(UUID id);
 }

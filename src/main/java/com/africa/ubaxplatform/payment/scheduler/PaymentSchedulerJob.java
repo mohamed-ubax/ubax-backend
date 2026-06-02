@@ -103,7 +103,7 @@ public class PaymentSchedulerJob {
         continue;
       }
 
-      if (paymentRepo.existsByContractIdAndDueDate(contract.getId(), dueDate)) {
+      if (paymentRepo.existsByContractIdAndDueDateAndDeletedAtIsNull(contract.getId(), dueDate)) {
         continue;
       }
 

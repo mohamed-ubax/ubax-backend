@@ -331,7 +331,94 @@ public class PaymentController {
         new CustomResponse(
             Constants.Message.SUCCESS_BODY,
             Constants.Status.OK,
-            ResponseMessageConstants.PAYMENT_GET_SUCCESS,
+            ResponseMessageConstants.PAYMENT_ARCHIVE_SUCCESS,
             null));
+  }
+
+  // ── Archivage ─────────────────────────────────────────────────
+
+  @GetMapping("/archived")
+  @Operation(
+      summary = "Lister les paiements archivés",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne les paiements supprimés logiquement (soft delete) de l'agence connectée.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste paginée des paiements archivés"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant")
+  })
+  public ResponseEntity<CustomResponse> listArchived(
+      @PageableDefault(size = 20, sort = "deletedAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PAYMENT_GET_ARCHIVED_LIST_SUCCESS,
+            paymentService.listArchived(caller.getSub(), pageable)));
+  }
+
+  @GetMapping("/archived/{id}")
+  @Operation(
+      summary = "Détail d'un paiement archivé",
+      description = "🏢 **Rôles requis :** `PARTNER` · `ADMIN` · `SUPER_ADMIN`",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Détail du paiement archivé"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Paiement archivé introuvable")
+  })
+  public ResponseEntity<CustomResponse> getArchivedById(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PAYMENT_GET_ARCHIVED_SUCCESS,
+            paymentService.getArchivedById(id)));
+  }
+
+  @PatchMapping("/{id}/restore")
+  @Operation(
+      summary = "Restaurer un paiement archivé",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Annule la suppression logique — remet `deletedAt` à null.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Paiement restauré"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Paiement archivé introuvable")
+  })
+  public ResponseEntity<CustomResponse> restore(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PAYMENT_RESTORE_SUCCESS,
+            paymentService.restore(id, caller.getSub())));
   }
 }

@@ -746,6 +746,40 @@ public class PropertyController {
             null));
   }
 
+  @PatchMapping("/{id}/restore")
+  @Operation(
+      summary = "Restaurer un bien archivé",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `OWNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Remet un bien `ARCHIVED` en statut `DRAFT`. Le bien peut ensuite être resoumis pour publication.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Bien restauré en DRAFT"),
+    @ApiResponse(responseCode = "400", description = "Le bien n'est pas archivé"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Rôle insuffisant ou bien appartenant à un autre propriétaire"),
+    @ApiResponse(responseCode = "404", description = "Bien introuvable")
+  })
+  public ResponseEntity<CustomResponse> restore(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_RESTORE_SUCCESS,
+            propertyService.restore(id, caller.getSub())));
+  }
+
   // ── Modération admin ───────────────────────────────────────────
 
   @PatchMapping("/{id}/status")
@@ -1204,6 +1238,69 @@ public class PropertyController {
             Constants.Status.OK,
             ResponseMessageConstants.PROPERTY_DOCUMENT_DELETE_SUCCESS,
             null));
+  }
+
+  @GetMapping("/{id}/documents/archived")
+  @Operation(
+      summary = "Lister les documents archivés d'un bien",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `OWNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Retourne les documents supprimés logiquement (soft delete), triés par date d'archivage décroissante.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste des documents archivés"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Bien introuvable")
+  })
+  public ResponseEntity<CustomResponse> listArchivedDocuments(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_DOCUMENT_GET_ARCHIVED_LIST_SUCCESS,
+            propertyService.listArchivedDocuments(id, caller.getSub())));
+  }
+
+  @PatchMapping("/{id}/documents/{docId}/restore")
+  @Operation(
+      summary = "Restaurer un document archivé",
+      description =
+          "🏢 **Rôles requis :** `PARTNER` · `OWNER` · `ADMIN` · `SUPER_ADMIN`\n\n"
+              + "Annule la suppression logique d'un document (remet `deletedAt` à null).",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Document restauré"),
+    @ApiResponse(responseCode = "401", description = "Token absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Document archivé introuvable")
+  })
+  public ResponseEntity<CustomResponse> restoreDocument(
+      @PathVariable UUID id, @PathVariable UUID docId, HttpServletRequest httpRequest)
+      throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.PARTNER,
+            UserRole.OWNER,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.PROPERTY_DOCUMENT_RESTORE_SUCCESS,
+            propertyService.restoreDocument(id, docId, caller.getSub())));
   }
 
   // ── Boost & Expiration (Admin) ─────────────────────────────────

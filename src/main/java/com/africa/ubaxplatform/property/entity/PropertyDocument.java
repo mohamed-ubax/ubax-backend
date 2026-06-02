@@ -137,6 +137,10 @@ public class PropertyDocument extends BaseEntity {
     return Constants.CodeList.PropertyDocumentType.TITLE_DEED.equals(docType);
   }
 
+  /** Horodatage de la suppression logique. {@code null} = document actif. */
+  @Column(name = "deleted_at")
+  private LocalDateTime deletedAt;
+
   /** {@code true} si le document est prêt à être partagé avec un acheteur (vérifié + visible). */
   public boolean isReadyToShare() {
     return verified && visibleToPublic;

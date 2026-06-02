@@ -174,7 +174,9 @@ public class TicketServiceImpl implements TicketService {
   @Transactional(readOnly = true)
   public Page<TicketResponse> listMine(String keycloakId, Pageable pageable)
       throws CustomException {
-    return ticketRepo.findByReporterKeycloakId(keycloakId, pageable).map(TicketMapper::toResponse);
+    return ticketRepo
+        .findByReporterKeycloakIdAndDeletedAtIsNull(keycloakId, pageable)
+        .map(TicketMapper::toResponse);
   }
 
   @Override
@@ -363,5 +365,54 @@ public class TicketServiceImpl implements TicketService {
       case RESOLVED -> "CLOSED";
       case CLOSED, CANCELLED -> "aucune (état terminal)";
     };
+  }
+
+  // ── Archivage ─────────────────────────────────────────────────────────────
+
+  @Override
+  @Transactional
+  public void archive(UUID ticketId, String callerKeycloakId) throws CustomException {
+    Ticket ticket = findTicket(ticketId);
+    ticket.setDeletedAt(java.time.LocalDateTime.now());
+    ticketRepo.save(ticket);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<TicketResponse> listArchived(String keycloakId, Pageable pageable)
+      throws CustomException {
+    User user =
+        userRepo
+            .findByKeycloakId(keycloakId)
+            .orElseThrow(() -> new NotFoundException(ResponseMessageConstants.USER_NOT_FOUND));
+    if (user.getAgency() == null) {
+      throw new BadRequestException("Aucune agence associée à ce compte");
+    }
+    return ticketRepo
+        .findArchivedByAgencyId(user.getAgency().getId(), pageable)
+        .map(TicketMapper::toResponse);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public TicketResponse getArchivedById(UUID ticketId) throws CustomException {
+    Ticket ticket =
+        ticketRepo
+            .findByIdAndDeletedAtIsNotNull(ticketId)
+            .orElseThrow(
+                () -> new NotFoundException(ResponseMessageConstants.TICKET_GET_FAILURE_NOT_FOUND));
+    return TicketMapper.toResponse(ticket);
+  }
+
+  @Override
+  @Transactional
+  public TicketResponse restore(UUID ticketId) throws CustomException {
+    Ticket ticket =
+        ticketRepo
+            .findByIdAndDeletedAtIsNotNull(ticketId)
+            .orElseThrow(
+                () -> new NotFoundException(ResponseMessageConstants.TICKET_GET_FAILURE_NOT_FOUND));
+    ticket.setDeletedAt(null);
+    return TicketMapper.toResponse(ticketRepo.save(ticket));
   }
 }

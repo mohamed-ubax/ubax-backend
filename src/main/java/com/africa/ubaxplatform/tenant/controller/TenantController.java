@@ -416,4 +416,90 @@ public class TenantController {
             ResponseMessageConstants.TENANT_DELETE_SUCCESS,
             null));
   }
+
+  @GetMapping("/archived")
+  @Operation(
+      summary = "Lister les dossiers locataires archivés",
+      description =
+          "Retourne les dossiers supprimés logiquement (deletedAt IS NOT NULL).\n\n"
+              + "- **ADMIN / SUPER_ADMIN** : tous les dossiers archivés.\n"
+              + "- **PARTNER agence** : uniquement les dossiers archivés liés à son agence.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Liste paginée des dossiers archivés"),
+    @ApiResponse(responseCode = "401", description = "Token JWT absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant")
+  })
+  public ResponseEntity<CustomResponse> listArchived(
+      @PageableDefault(size = 20, sort = "deletedAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      HttpServletRequest httpRequest)
+      throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN,
+            UserRole.PARTNER);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TENANT_GET_ARCHIVED_LIST_SUCCESS,
+            tenantService.listArchived(caller.getSub(), pageable)));
+  }
+
+  @GetMapping("/archived/{id}")
+  @Operation(
+      summary = "Détail d'un dossier locataire archivé",
+      description = "Retourne le détail complet d'un dossier archivé.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Dossier archivé trouvé"),
+    @ApiResponse(responseCode = "401", description = "Token JWT absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Dossier archivé introuvable")
+  })
+  public ResponseEntity<CustomResponse> getArchivedById(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RequestUser caller =
+        RoleGuard.requireAnyRole(
+            requestHeaderParser,
+            httpRequest,
+            UserRole.ADMIN,
+            UserRole.SUPER_ADMIN,
+            UserRole.PARTNER);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TENANT_GET_ARCHIVED_SUCCESS,
+            tenantService.getArchivedById(caller.getSub(), id)));
+  }
+
+  @PatchMapping("/{id}/restore")
+  @Operation(
+      summary = "Restaurer un dossier locataire archivé",
+      description =
+          "Remet `deletedAt` à null — le dossier redevient visible dans les listes actives.\n\n"
+              + "**Rôles autorisés :** `ADMIN`, `SUPER_ADMIN`",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Dossier restauré avec succès"),
+    @ApiResponse(responseCode = "401", description = "Token JWT absent ou invalide"),
+    @ApiResponse(responseCode = "403", description = "Rôle insuffisant"),
+    @ApiResponse(responseCode = "404", description = "Dossier archivé introuvable")
+  })
+  public ResponseEntity<CustomResponse> restore(
+      @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
+    RoleGuard.requireAnyRole(
+        requestHeaderParser, httpRequest, UserRole.ADMIN, UserRole.SUPER_ADMIN);
+    return ResponseEntity.ok(
+        new CustomResponse(
+            Constants.Message.SUCCESS_BODY,
+            Constants.Status.OK,
+            ResponseMessageConstants.TENANT_RESTORE_SUCCESS,
+            tenantService.restore(id)));
+  }
 }

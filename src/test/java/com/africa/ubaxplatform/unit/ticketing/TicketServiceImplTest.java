@@ -42,6 +42,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -606,6 +607,134 @@ class TicketServiceImplTest {
       when(ticketRepo.existsById(SharedTestFixtures.TICKET_ID)).thenReturn(false);
 
       assertThatThrownBy(() -> service.listMessages(SharedTestFixtures.TICKET_ID))
+          .isInstanceOf(NotFoundException.class);
+    }
+  }
+
+  // ── Archive / Restore ──────────────────────────────────────────
+
+  @Nested
+  @DisplayName("archive()")
+  class Archive {
+
+    @Test
+    @DisplayName("Succès – deletedAt renseigné sur le ticket, save appelé")
+    void archive_success_setsDeletedAt() throws CustomException {
+      when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.of(openTicket));
+      when(ticketRepo.save(any(Ticket.class))).thenAnswer(inv -> inv.getArgument(0));
+
+      service.archive(SharedTestFixtures.TICKET_ID, SharedTestFixtures.KEYCLOAK_ID);
+
+      ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
+      verify(ticketRepo).save(captor.capture());
+      assertThat(captor.getValue().getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Echec – ticket introuvable → NotFoundException")
+    void archive_notFound_throwsNotFoundException() {
+      when(ticketRepo.findById(SharedTestFixtures.TICKET_ID)).thenReturn(Optional.empty());
+
+      assertThatThrownBy(
+              () -> service.archive(SharedTestFixtures.TICKET_ID, SharedTestFixtures.KEYCLOAK_ID))
+          .isInstanceOf(NotFoundException.class);
+    }
+  }
+
+  @Nested
+  @DisplayName("listArchived()")
+  class ListArchived {
+
+    @Test
+    @DisplayName("Succès – retourne les tickets archivés de l'agence")
+    void listArchived_success_returnsArchivedPage() throws CustomException {
+      Ticket archived = SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.CLOSED);
+      archived.setDeletedAt(LocalDateTime.now().minusDays(1));
+      Page<Ticket> page = new PageImpl<>(List.of(archived));
+
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(reporter));
+      when(ticketRepo.findArchivedByAgencyId(any(), any())).thenReturn(page);
+
+      var result = service.listArchived(SharedTestFixtures.KEYCLOAK_ID, PageRequest.of(0, 20));
+
+      assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Echec – utilisateur sans agence → BadRequestException")
+    void listArchived_noAgency_throws() {
+      User noAgency =
+          SharedTestFixtures.buildUserWithoutAgency(
+              SharedTestFixtures.KEYCLOAK_ID, SharedTestFixtures.USER_ID);
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(noAgency));
+
+      assertThatThrownBy(
+              () -> service.listArchived(SharedTestFixtures.KEYCLOAK_ID, PageRequest.of(0, 20)))
+          .isInstanceOf(com.africa.ubaxplatform.common.exception.BadRequestException.class);
+    }
+  }
+
+  @Nested
+  @DisplayName("getArchivedById()")
+  class GetArchivedById {
+
+    @Test
+    @DisplayName("Succès – retourne le détail d'un ticket archivé")
+    void getArchivedById_found_returnsResponse() throws CustomException {
+      Ticket archived = SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.OPEN);
+      archived.setDeletedAt(LocalDateTime.now().minusDays(1));
+
+      when(ticketRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.TICKET_ID))
+          .thenReturn(Optional.of(archived));
+
+      var result = service.getArchivedById(SharedTestFixtures.TICKET_ID);
+
+      assertThat(result).isNotNull();
+      assertThat(result.id()).isEqualTo(SharedTestFixtures.TICKET_ID);
+    }
+
+    @Test
+    @DisplayName("Echec – ticket archivé introuvable → NotFoundException")
+    void getArchivedById_notFound_throws() {
+      when(ticketRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.TICKET_ID))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> service.getArchivedById(SharedTestFixtures.TICKET_ID))
+          .isInstanceOf(NotFoundException.class);
+    }
+  }
+
+  @Nested
+  @DisplayName("restore()")
+  class Restore {
+
+    @Test
+    @DisplayName("Succès – deletedAt remis à null, ticket restauré")
+    void restore_success_clearsDeletedAt() throws CustomException {
+      Ticket archived = SharedTestFixtures.buildTicket(contract, reporter, TicketStatus.OPEN);
+      archived.setDeletedAt(LocalDateTime.now().minusDays(1));
+
+      when(ticketRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.TICKET_ID))
+          .thenReturn(Optional.of(archived));
+      when(ticketRepo.save(any(Ticket.class))).thenAnswer(inv -> inv.getArgument(0));
+
+      var result = service.restore(SharedTestFixtures.TICKET_ID);
+
+      ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
+      verify(ticketRepo).save(captor.capture());
+      assertThat(captor.getValue().getDeletedAt()).isNull();
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Echec – ticket archivé introuvable → NotFoundException")
+    void restore_notFound_throws() {
+      when(ticketRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.TICKET_ID))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> service.restore(SharedTestFixtures.TICKET_ID))
           .isInstanceOf(NotFoundException.class);
     }
   }

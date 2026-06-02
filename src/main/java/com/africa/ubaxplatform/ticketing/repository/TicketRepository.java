@@ -14,37 +14,48 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
-  /** Tous les tickets d'une agence (via contrat → bien → agence). */
+  /** Tous les tickets actifs d'une agence (via contrat → bien → agence). */
   @Query(
-      "SELECT t FROM Ticket t WHERE t.contract.property.agency.id = :agencyId"
-          + " ORDER BY t.createdAt DESC")
+      "SELECT t FROM Ticket t WHERE t.deletedAt IS NULL"
+          + " AND t.contract.property.agency.id = :agencyId ORDER BY t.createdAt DESC")
   Page<Ticket> findByAgencyId(@Param("agencyId") UUID agencyId, Pageable pageable);
 
-  /** Tickets d'une agence filtrés par statut. */
+  /** Tickets actifs d'une agence filtrés par statut. */
   @Query(
-      "SELECT t FROM Ticket t WHERE t.contract.property.agency.id = :agencyId"
+      "SELECT t FROM Ticket t WHERE t.deletedAt IS NULL"
+          + " AND t.contract.property.agency.id = :agencyId"
           + " AND t.status = :status ORDER BY t.createdAt DESC")
   Page<Ticket> findByAgencyIdAndStatus(
       @Param("agencyId") UUID agencyId, @Param("status") TicketStatus status, Pageable pageable);
 
-  /** Tickets d'une agence assignés à un agent spécifique. */
+  /** Tickets actifs d'une agence assignés à un agent spécifique. */
   @Query(
-      "SELECT t FROM Ticket t WHERE t.contract.property.agency.id = :agencyId"
+      "SELECT t FROM Ticket t WHERE t.deletedAt IS NULL"
+          + " AND t.contract.property.agency.id = :agencyId"
           + " AND t.assignedTo.id = :userId ORDER BY t.createdAt DESC")
   Page<Ticket> findByAgencyIdAndAssignedTo(
       @Param("agencyId") UUID agencyId, @Param("userId") UUID userId, Pageable pageable);
 
-  /** Nombre de tickets d'une agence par statut (dashboard SAV). */
+  /** Nombre de tickets actifs d'une agence par statut (dashboard SAV). */
   @Query(
-      "SELECT COUNT(t) FROM Ticket t WHERE t.contract.property.agency.id = :agencyId"
-          + " AND t.status = :status")
+      "SELECT COUNT(t) FROM Ticket t WHERE t.deletedAt IS NULL"
+          + " AND t.contract.property.agency.id = :agencyId AND t.status = :status")
   long countByAgencyIdAndStatus(
       @Param("agencyId") UUID agencyId, @Param("status") TicketStatus status);
 
-  @Query("SELECT COUNT(t) FROM Ticket t WHERE t.status IN :statuses")
+  @Query("SELECT COUNT(t) FROM Ticket t WHERE t.deletedAt IS NULL AND t.status IN :statuses")
   long countByStatusIn(@Param("statuses") Collection<TicketStatus> statuses);
 
-  Page<Ticket> findByStatus(TicketStatus status, Pageable pageable);
+  Page<Ticket> findByStatusAndDeletedAtIsNull(TicketStatus status, Pageable pageable);
 
-  Page<Ticket> findByReporterKeycloakId(String keycloakId, Pageable pageable);
+  Page<Ticket> findByReporterKeycloakIdAndDeletedAtIsNull(String keycloakId, Pageable pageable);
+
+  // ── Archivage (soft-deleted) ────────────────────────────────────
+
+  @Query(
+      "SELECT t FROM Ticket t WHERE t.deletedAt IS NOT NULL"
+          + " AND t.contract.property.agency.id = :agencyId ORDER BY t.deletedAt DESC")
+  Page<Ticket> findArchivedByAgencyId(@Param("agencyId") UUID agencyId, Pageable pageable);
+
+  java.util.Optional<Ticket> findByIdAndDeletedAtIsNotNull(UUID id);
 }

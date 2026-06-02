@@ -139,4 +139,16 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
       "SELECT COUNT(t) > 0 FROM Tenant t WHERE t.id = :tenantId AND t.deletedAt IS NULL"
           + " AND t.property.agency.id = :agencyId")
   boolean isLinkedToAgency(@Param("tenantId") UUID tenantId, @Param("agencyId") UUID agencyId);
+
+  // ── Archivage (soft-deleted) ────────────────────────────────────
+
+  @Query("SELECT t FROM Tenant t WHERE t.deletedAt IS NOT NULL ORDER BY t.deletedAt DESC")
+  Page<Tenant> findAllArchived(Pageable pageable);
+
+  @Query(
+      "SELECT t FROM Tenant t WHERE t.deletedAt IS NOT NULL"
+          + " AND t.property.agency.id = :agencyId ORDER BY t.deletedAt DESC")
+  Page<Tenant> findArchivedByAgencyId(@Param("agencyId") UUID agencyId, Pageable pageable);
+
+  java.util.Optional<Tenant> findByIdAndDeletedAtIsNotNull(UUID id);
 }

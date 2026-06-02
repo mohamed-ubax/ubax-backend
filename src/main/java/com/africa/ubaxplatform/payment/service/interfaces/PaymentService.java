@@ -38,4 +38,14 @@ public interface PaymentService {
       throws CustomException;
 
   void delete(UUID id, String callerKeycloakId) throws CustomException;
+
+  /** Retourne les paiements archivés (soft-deleted) de l'agence. */
+  Page<PaymentResponse> listArchived(String callerKeycloakId, Pageable pageable)
+      throws CustomException;
+
+  /** Retourne le détail d'un paiement archivé. */
+  PaymentResponse getArchivedById(UUID id) throws CustomException;
+
+  /** Restaure un paiement archivé (remet deletedAt à null). */
+  PaymentResponse restore(UUID id, String callerKeycloakId) throws CustomException;
 }
