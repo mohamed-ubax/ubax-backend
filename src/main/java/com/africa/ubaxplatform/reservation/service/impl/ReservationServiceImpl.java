@@ -68,17 +68,19 @@ public class ReservationServiceImpl implements ReservationService {
     }
     UUID hotelId = caller.getHotel().getId();
 
-    // Priorité : hotel_id direct sur le bien (FK ajoutée en V044).
-    // Fallback : hotel du propriétaire du bien (chargé en FETCH dans findByIdWithDetails).
-    // Les deux chemins doivent pointer vers le même hôtel ; le fallback couvre les données
-    // antérieures à V044 ou les biens pour lesquels hotel_id n'a pas été renseigné.
+    // Logique OR identique à ReservationRepository.findByHotelId :
+    //   - chemin direct : property.hotel_id = hotelId
+    //   - chemin owner  : property.owner.hotel_id = hotelId  (anciens biens pré-V044)
+    // Les deux LEFT JOIN FETCH dans findByIdWithDetails garantissent que les deux sont chargés.
     var property = reservation.getProperty();
-    var propertyHotel = property.getHotel();
-    if (propertyHotel == null && property.getOwner() != null) {
-      propertyHotel = property.getOwner().getHotel();
-    }
+    boolean directMatch =
+        property.getHotel() != null && hotelId.equals(property.getHotel().getId());
+    boolean ownerMatch =
+        property.getOwner() != null
+            && property.getOwner().getHotel() != null
+            && hotelId.equals(property.getOwner().getHotel().getId());
 
-    if (propertyHotel == null || !hotelId.equals(propertyHotel.getId())) {
+    if (!directMatch && !ownerMatch) {
       throw new CustomException(
           new UnAuthorizedException("Cette réservation n'appartient pas à votre hôtel"),
           ResponseMessageConstants.USER_FORBIDDEN);

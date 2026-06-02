@@ -532,6 +532,66 @@ class ReservationServiceImplTest {
     }
 
     @Test
+    @DisplayName(
+        "Succès – hotel_id direct ≠ caller mais owner.hotel = caller (logique OR) → CONFIRMED")
+    void confirm_propertyHotelMismatchOwnerHotelMatches_success() throws CustomException {
+      // Scénario du bug : property.hotel_id pointe sur un hôtel différent (ex. migration V062
+      // incohérente) mais property.owner.hotel correspond bien au gérant qui confirme.
+      Hotel otherHotel = Hotel.builder().name("Autre hôtel").build();
+      SharedTestFixtures.injectId(otherHotel, UUID.randomUUID()); // ID différent de HOTEL_ID
+
+      Property mismatchProperty =
+          Property.builder()
+              .owner(hotelStaff) // owner.hotel = hotel (HOTEL_ID) → chemin owner valide
+              .hotel(otherHotel) // hotel_id direct ≠ HOTEL_ID → chemin direct invalide
+              .title("Chambre incohérente")
+              .propertyType("HOTEL_ROOM")
+              .transactionType("SHORT_STAY")
+              .price(BigDecimal.valueOf(50_000))
+              .status(PropertyStatus.PUBLISHED)
+              .city("Abidjan")
+              .build();
+      SharedTestFixtures.injectId(mismatchProperty, SharedTestFixtures.PROPERTY_ID);
+
+      Reservation mismatchReservation =
+          Reservation.builder()
+              .property(mismatchProperty)
+              .client(client)
+              .checkInDate(LocalDate.now().plusDays(5))
+              .checkOutDate(LocalDate.now().plusDays(8))
+              .numberOfNights(3)
+              .guestCount(2)
+              .pricePerNight(BigDecimal.valueOf(50_000))
+              .totalAmount(BigDecimal.valueOf(150_000))
+              .status(ReservationStatus.PENDING)
+              .build();
+      SharedTestFixtures.injectId(mismatchReservation, RESERVATION_ID);
+
+      when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(mismatchReservation));
+      when(reservationRepo.save(any(Reservation.class))).thenReturn(mismatchReservation);
+
+      ReservationResponse resp = service.confirm("hotel-kc", RESERVATION_ID);
+
+      assertThat(resp.status()).isEqualTo(ReservationStatus.CONFIRMED);
+    }
+
+    @Test
+    @DisplayName("Echec – caller sans hôtel → USER_UNAUTHORIZED")
+    void confirm_callerWithoutHotel_throwsUnauthorized() {
+      User noHotelUser =
+          SharedTestFixtures.buildUserWithoutAgency("no-hotel-kc", UUID.randomUUID());
+      when(userRepo.findByKeycloakIdWithHotel("no-hotel-kc")).thenReturn(Optional.of(noHotelUser));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(pendingReservation));
+
+      assertThatThrownBy(() -> service.confirm("no-hotel-kc", RESERVATION_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_UNAUTHORIZED);
+    }
+
+    @Test
     @DisplayName("Echec – réservation non PENDING → transition invalide")
     void confirm_notPending_throwsBadRequest() {
       Reservation confirmed =
@@ -604,6 +664,41 @@ class ReservationServiceImplTest {
     }
 
     @Test
+    @DisplayName("Echec – caller sans hôtel → USER_UNAUTHORIZED")
+    void cancelByHotel_callerWithoutHotel_throwsUnauthorized() {
+      User noHotelUser =
+          SharedTestFixtures.buildUserWithoutAgency("no-hotel-kc", UUID.randomUUID());
+      CancelReservationRequest req = new CancelReservationRequest("Test");
+      when(userRepo.findByKeycloakIdWithHotel("no-hotel-kc")).thenReturn(Optional.of(noHotelUser));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(pendingReservation));
+
+      assertThatThrownBy(() -> service.cancelByHotel("no-hotel-kc", RESERVATION_ID, req))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_UNAUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("Echec – propriété appartenant à un autre hôtel → USER_FORBIDDEN")
+    void cancelByHotel_wrongHotel_throwsForbidden() {
+      Hotel otherHotel = Hotel.builder().name("Hôtel concurrent").build();
+      SharedTestFixtures.injectId(otherHotel, UUID.randomUUID());
+      User otherHotelStaff =
+          SharedTestFixtures.buildPartnerUser("other-hotel-kc", UUID.randomUUID(), null);
+      otherHotelStaff.setHotel(otherHotel);
+
+      CancelReservationRequest req = new CancelReservationRequest("Test");
+      when(userRepo.findByKeycloakIdWithHotel("other-hotel-kc"))
+          .thenReturn(Optional.of(otherHotelStaff));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(pendingReservation));
+
+      assertThatThrownBy(() -> service.cancelByHotel("other-hotel-kc", RESERVATION_ID, req))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_FORBIDDEN);
+    }
+
+    @Test
     @DisplayName("Echec – réservation COMPLETED ne peut pas être annulée")
     void cancelByHotel_completed_throwsBadRequest() {
       Reservation completed =
@@ -662,6 +757,20 @@ class ReservationServiceImplTest {
     }
 
     @Test
+    @DisplayName("Echec – caller sans hôtel → USER_UNAUTHORIZED")
+    void complete_callerWithoutHotel_throwsUnauthorized() {
+      User noHotelUser =
+          SharedTestFixtures.buildUserWithoutAgency("no-hotel-kc", UUID.randomUUID());
+      when(userRepo.findByKeycloakIdWithHotel("no-hotel-kc")).thenReturn(Optional.of(noHotelUser));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(pendingReservation));
+
+      assertThatThrownBy(() -> service.complete("no-hotel-kc", RESERVATION_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_UNAUTHORIZED);
+    }
+
+    @Test
     @DisplayName("Echec – réservation PENDING → transition invalide")
     void complete_pending_throwsBadRequest() {
       when(userRepo.findByKeycloakIdWithHotel("hotel-kc")).thenReturn(Optional.of(hotelStaff));
@@ -703,6 +812,20 @@ class ReservationServiceImplTest {
       ReservationResponse resp = service.noShow("hotel-kc", RESERVATION_ID);
 
       assertThat(resp.status()).isEqualTo(ReservationStatus.NO_SHOW);
+    }
+
+    @Test
+    @DisplayName("Echec – caller sans hôtel → USER_UNAUTHORIZED")
+    void noShow_callerWithoutHotel_throwsUnauthorized() {
+      User noHotelUser =
+          SharedTestFixtures.buildUserWithoutAgency("no-hotel-kc", UUID.randomUUID());
+      when(userRepo.findByKeycloakIdWithHotel("no-hotel-kc")).thenReturn(Optional.of(noHotelUser));
+      when(reservationRepo.findByIdWithDetails(RESERVATION_ID))
+          .thenReturn(Optional.of(pendingReservation));
+
+      assertThatThrownBy(() -> service.noShow("no-hotel-kc", RESERVATION_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_UNAUTHORIZED);
     }
 
     @Test
