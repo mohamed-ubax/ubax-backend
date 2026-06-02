@@ -229,6 +229,8 @@ public class ReservationController {
     @ApiResponse(responseCode = "401", description = "Token JWT absent ou invalide"),
     @ApiResponse(responseCode = "403", description = "Rôle insuffisant ou partenaire non hôtelier")
   })
+  // ── Hôtel (PARTNER ou PARTNER_ADMIN pour le gérant fondateur) ────────────────
+
   public ResponseEntity<CustomResponse> getHotelReservations(
       @Parameter(
               description = "Filtre par statut. Omis = tous les statuts.",
@@ -249,7 +251,8 @@ public class ReservationController {
       HttpServletRequest httpRequest)
       throws CustomException {
     RequestUser caller =
-        RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.PARTNER_ADMIN);
     Page<ReservationResponse> page =
         reservationService.getHotelReservations(caller.getSub(), status, pageable);
     return ResponseEntity.ok(
@@ -277,7 +280,8 @@ public class ReservationController {
   public ResponseEntity<CustomResponse> confirm(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RequestUser caller =
-        RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.PARTNER_ADMIN);
     ReservationResponse response = reservationService.confirm(caller.getSub(), id);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -307,7 +311,8 @@ public class ReservationController {
       HttpServletRequest httpRequest)
       throws CustomException {
     RequestUser caller =
-        RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.PARTNER_ADMIN);
     ReservationResponse response = reservationService.cancelByHotel(caller.getSub(), id, request);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -334,7 +339,8 @@ public class ReservationController {
   public ResponseEntity<CustomResponse> complete(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RequestUser caller =
-        RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.PARTNER_ADMIN);
     ReservationResponse response = reservationService.complete(caller.getSub(), id);
     return ResponseEntity.ok(
         new CustomResponse(
@@ -361,7 +367,8 @@ public class ReservationController {
   public ResponseEntity<CustomResponse> noShow(
       @PathVariable UUID id, HttpServletRequest httpRequest) throws CustomException {
     RequestUser caller =
-        RoleGuard.requireAnyRole(requestHeaderParser, httpRequest, UserRole.PARTNER);
+        RoleGuard.requireAnyRole(
+            requestHeaderParser, httpRequest, UserRole.PARTNER, UserRole.PARTNER_ADMIN);
     ReservationResponse response = reservationService.noShow(caller.getSub(), id);
     return ResponseEntity.ok(
         new CustomResponse(
