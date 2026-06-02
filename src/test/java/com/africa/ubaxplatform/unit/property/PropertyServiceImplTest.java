@@ -153,7 +153,8 @@ class PropertyServiceImplTest {
     void getById_success() throws CustomException {
       when(propertyRepo.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
       when(mediaRepo.findByPropertyIdOrderBySortOrderAsc(PROPERTY_ID)).thenReturn(List.of());
-      when(docRepo.findByPropertyIdOrderByCreatedAtDesc(PROPERTY_ID)).thenReturn(List.of());
+      when(docRepo.findByPropertyIdAndDeletedAtIsNullOrderByCreatedAtDesc(PROPERTY_ID))
+          .thenReturn(List.of());
 
       var result = service.getById(PROPERTY_ID);
 
@@ -654,6 +655,41 @@ class PropertyServiceImplTest {
     }
   }
 
+  @Nested
+  @DisplayName("restore()")
+  class RestoreProperty {
+
+    @Test
+    @DisplayName("Succès – bien ARCHIVED restauré en DRAFT")
+    void restore_archived_toDraft() throws CustomException {
+      property.setStatus(PropertyStatus.ARCHIVED);
+
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(propertyRepo.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+      when(propertyRepo.save(property)).thenReturn(property);
+
+      var result = service.restore(PROPERTY_ID, SharedTestFixtures.KEYCLOAK_ID);
+
+      assertThat(result).isNotNull();
+      assertThat(property.getStatus()).isEqualTo(PropertyStatus.DRAFT);
+    }
+
+    @Test
+    @DisplayName("Echec – bien non archivé → PROPERTY_UPDATE_FAILURE")
+    void restore_notArchived_throws() {
+      property.setStatus(PropertyStatus.PUBLISHED);
+
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(propertyRepo.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+
+      assertThatThrownBy(() -> service.restore(PROPERTY_ID, SharedTestFixtures.KEYCLOAK_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PROPERTY_UPDATE_FAILURE);
+    }
+  }
+
   // updateStatus
 
   @Nested
@@ -926,7 +962,8 @@ class PropertyServiceImplTest {
     @Test
     @DisplayName("listDocuments – gestionnaire voit tous les docs (y compris privés)")
     void listDocuments_manager_seesAll() throws CustomException {
-      when(docRepo.findByPropertyIdOrderByCreatedAtDesc(PROPERTY_ID)).thenReturn(List.of(doc));
+      when(docRepo.findByPropertyIdAndDeletedAtIsNullOrderByCreatedAtDesc(PROPERTY_ID))
+          .thenReturn(List.of(doc));
 
       var result = service.listDocuments(PROPERTY_ID, SharedTestFixtures.KEYCLOAK_ID);
 
@@ -938,7 +975,8 @@ class PropertyServiceImplTest {
     void listDocuments_nonManager_seesOnlyPublic() throws CustomException {
       User other = SharedTestFixtures.buildUserWithoutAgency("kc-other", UUID.randomUUID());
       when(userRepo.findByKeycloakId("kc-other")).thenReturn(Optional.of(other));
-      when(docRepo.findByPropertyIdAndVisibleToPublicTrue(PROPERTY_ID)).thenReturn(List.of());
+      when(docRepo.findByPropertyIdAndVisibleToPublicTrueAndDeletedAtIsNull(PROPERTY_ID))
+          .thenReturn(List.of());
 
       var result = service.listDocuments(PROPERTY_ID, "kc-other");
 
@@ -958,13 +996,15 @@ class PropertyServiceImplTest {
     }
 
     @Test
-    @DisplayName("deleteDocument – document supprimé")
+    @DisplayName("deleteDocument – document soft-deleted (deletedAt renseigné)")
     void deleteDocument_success() throws CustomException {
       when(docRepo.findById(DOC_ID)).thenReturn(Optional.of(doc));
+      when(docRepo.save(any(PropertyDocument.class))).thenAnswer(inv -> inv.getArgument(0));
 
       service.deleteDocument(PROPERTY_ID, DOC_ID, SharedTestFixtures.KEYCLOAK_ID);
 
-      verify(docRepo).delete(doc);
+      assertThat(doc.getDeletedAt()).isNotNull();
+      verify(docRepo).save(doc);
     }
 
     @Test
@@ -980,6 +1020,58 @@ class PropertyServiceImplTest {
 
       assertThatThrownBy(
               () -> service.deleteDocument(PROPERTY_ID, DOC_ID, SharedTestFixtures.KEYCLOAK_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PROPERTY_DOCUMENT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("listArchivedDocuments – retourne les documents soft-deleted")
+    void listArchivedDocuments_success() throws CustomException {
+      PropertyDocument archived =
+          PropertyDocument.builder()
+              .property(property)
+              .docType("TITLE_DEED")
+              .fileUrl("https://minio/doc.pdf")
+              .deletedAt(LocalDateTime.now().minusDays(1))
+              .build();
+      SharedTestFixtures.injectId(archived, UUID.randomUUID());
+
+      when(docRepo.findByPropertyIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(PROPERTY_ID))
+          .thenReturn(List.of(archived));
+
+      var result = service.listArchivedDocuments(PROPERTY_ID, SharedTestFixtures.KEYCLOAK_ID);
+
+      assertThat(result).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("restoreDocument – document restauré (deletedAt remis à null)")
+    void restoreDocument_success() throws CustomException {
+      PropertyDocument archived =
+          PropertyDocument.builder()
+              .property(property)
+              .docType("TITLE_DEED")
+              .fileUrl("https://minio/doc.pdf")
+              .deletedAt(LocalDateTime.now().minusDays(1))
+              .build();
+      SharedTestFixtures.injectId(archived, DOC_ID);
+
+      when(docRepo.findByIdAndDeletedAtIsNotNull(DOC_ID)).thenReturn(Optional.of(archived));
+      when(docRepo.save(any(PropertyDocument.class))).thenAnswer(inv -> inv.getArgument(0));
+
+      var result = service.restoreDocument(PROPERTY_ID, DOC_ID, SharedTestFixtures.KEYCLOAK_ID);
+
+      assertThat(archived.getDeletedAt()).isNull();
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    @DisplayName("restoreDocument – document archivé introuvable → PROPERTY_DOCUMENT_NOT_FOUND")
+    void restoreDocument_notFound_throws() {
+      when(docRepo.findByIdAndDeletedAtIsNotNull(DOC_ID)).thenReturn(Optional.empty());
+
+      assertThatThrownBy(
+              () -> service.restoreDocument(PROPERTY_ID, DOC_ID, SharedTestFixtures.KEYCLOAK_ID))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.PROPERTY_DOCUMENT_NOT_FOUND);
     }

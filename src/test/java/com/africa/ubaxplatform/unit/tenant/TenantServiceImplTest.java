@@ -1083,4 +1083,123 @@ class TenantServiceImplTest {
           .hasMessageContaining(ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND);
     }
   }
+
+  // ── Archive / Restore ──────────────────────────────────────────
+
+  @Nested
+  @DisplayName("listArchived()")
+  class ListArchived {
+
+    @Test
+    @DisplayName("Succès – PARTNER agence voit uniquement les dossiers archivés de son agence")
+    void listArchived_partner_returnsAgencyArchived() throws CustomException {
+      User partner = TenantTestFixtures.buildUserWithAgency();
+      Tenant archived =
+          TenantTestFixtures.buildTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.INCOMPLETE, partner);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+      var page = new PageImpl<>(List.of(archived));
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(partner));
+      when(tenantRepo.findArchivedByAgencyId(any(), any())).thenReturn(page);
+
+      var result = service.listArchived(TenantTestFixtures.KEYCLOAK_ID, PageRequest.of(0, 20));
+
+      assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Succès – ADMIN (sans agence) voit tous les dossiers archivés")
+    void listArchived_admin_returnsAllArchived() throws CustomException {
+      User admin = TenantTestFixtures.buildUser();
+      Tenant archived =
+          TenantTestFixtures.buildTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.QUALIFIED, admin);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(2));
+      var page = new PageImpl<>(List.of(archived));
+
+      when(userRepo.findByKeycloakId(TenantTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(admin));
+      when(tenantRepo.findAllArchived(any())).thenReturn(page);
+
+      var result = service.listArchived(TenantTestFixtures.KEYCLOAK_ID, PageRequest.of(0, 20));
+
+      assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+  }
+
+  @Nested
+  @DisplayName("getArchivedById()")
+  class GetArchivedById {
+
+    @Test
+    @DisplayName("Succès – retourne le détail d'un dossier archivé")
+    void getArchivedById_found_returnsResponse() throws CustomException {
+      User user = TenantTestFixtures.buildUser();
+      Tenant archived =
+          TenantTestFixtures.buildTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.INCOMPLETE, user);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+
+      when(tenantRepo.findByIdAndDeletedAtIsNotNull(TenantTestFixtures.TENANT_ID))
+          .thenReturn(Optional.of(archived));
+
+      var result =
+          service.getArchivedById(TenantTestFixtures.KEYCLOAK_ID, TenantTestFixtures.TENANT_ID);
+
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Echec – dossier archivé introuvable → TENANT_GET_FAILURE_NOT_FOUND")
+    void getArchivedById_notFound_throws() {
+      when(tenantRepo.findByIdAndDeletedAtIsNotNull(TenantTestFixtures.TENANT_ID))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(
+              () ->
+                  service.getArchivedById(
+                      TenantTestFixtures.KEYCLOAK_ID, TenantTestFixtures.TENANT_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND);
+    }
+  }
+
+  @Nested
+  @DisplayName("restore()")
+  class Restore {
+
+    @Test
+    @DisplayName("Succès – deletedAt remis à null, dossier restauré")
+    void restore_success_clearsDeletedAt() throws CustomException {
+      User user = TenantTestFixtures.buildUser();
+      Tenant archived =
+          TenantTestFixtures.buildTenant(
+              TenantTestFixtures.TENANT_ID, TenantStatus.INCOMPLETE, user);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+
+      when(tenantRepo.findByIdAndDeletedAtIsNotNull(TenantTestFixtures.TENANT_ID))
+          .thenReturn(Optional.of(archived));
+      when(tenantRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+      var result = service.restore(TenantTestFixtures.TENANT_ID);
+
+      ArgumentCaptor<Tenant> captor = ArgumentCaptor.forClass(Tenant.class);
+      verify(tenantRepo).save(captor.capture());
+      assertThat(captor.getValue().getDeletedAt()).isNull();
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Echec – dossier archivé introuvable → TENANT_GET_FAILURE_NOT_FOUND")
+    void restore_notFound_throws() {
+      when(tenantRepo.findByIdAndDeletedAtIsNotNull(TenantTestFixtures.TENANT_ID))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> service.restore(TenantTestFixtures.TENANT_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND);
+    }
+  }
 }

@@ -231,6 +231,10 @@ public class Ticket extends BaseEntity {
     return rating != null;
   }
 
+  /** Horodatage de la suppression logique. {@code null} = ticket actif. */
+  @Column(name = "deleted_at")
+  private LocalDateTime deletedAt;
+
   /** {@code true} si le coût de réparation a été renseigné et arbitré. */
   public boolean isCostSettled() {
     return repairCost != null && costImputedTo != null;

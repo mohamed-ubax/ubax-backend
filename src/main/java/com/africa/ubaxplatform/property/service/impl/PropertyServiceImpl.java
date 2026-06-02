@@ -340,7 +340,7 @@ public class PropertyServiceImpl implements PropertyService {
             .map(PropertyMapper::toMediaResponse)
             .toList();
     List<PropertyDocumentResponse> documents =
-        docRepo.findByPropertyIdOrderByCreatedAtDesc(id).stream()
+        docRepo.findByPropertyIdAndDeletedAtIsNullOrderByCreatedAtDesc(id).stream()
             .map(PropertyMapper::toDocumentResponse)
             .toList();
     String coverPhotoUrl =
@@ -539,6 +539,22 @@ public class PropertyServiceImpl implements PropertyService {
     requireOwnership(property, caller);
     property.setStatus(PropertyStatus.ARCHIVED);
     propertyRepo.save(property);
+  }
+
+  @Override
+  @Transactional
+  public PropertyResponse restore(UUID id, String callerKeycloakId) throws CustomException {
+    User caller = resolveUser(callerKeycloakId);
+    Property property = resolveProperty(id);
+    requireOwnership(property, caller);
+    if (property.getStatus() != PropertyStatus.ARCHIVED) {
+      throw new CustomException(
+          new BadRequestException(
+              "Seul un bien archivé peut être restauré. Statut actuel : " + property.getStatus()),
+          ResponseMessageConstants.PROPERTY_UPDATE_FAILURE);
+    }
+    property.setStatus(PropertyStatus.DRAFT);
+    return PropertyMapper.toResponse(propertyRepo.save(property));
   }
 
   @Override
@@ -820,8 +836,8 @@ public class PropertyServiceImpl implements PropertyService {
 
     List<PropertyDocument> docs =
         isManager
-            ? docRepo.findByPropertyIdOrderByCreatedAtDesc(propertyId)
-            : docRepo.findByPropertyIdAndVisibleToPublicTrue(propertyId);
+            ? docRepo.findByPropertyIdAndDeletedAtIsNullOrderByCreatedAtDesc(propertyId)
+            : docRepo.findByPropertyIdAndVisibleToPublicTrueAndDeletedAtIsNull(propertyId);
 
     return docs.stream().map(PropertyMapper::toDocumentResponse).toList();
   }
@@ -869,6 +885,38 @@ public class PropertyServiceImpl implements PropertyService {
                         new NotFoundException("Document introuvable"),
                         ResponseMessageConstants.PROPERTY_DOCUMENT_NOT_FOUND));
 
-    docRepo.delete(doc);
+    doc.setDeletedAt(LocalDateTime.now());
+    docRepo.save(doc);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<PropertyDocumentResponse> listArchivedDocuments(
+      UUID propertyId, String callerKeycloakId) throws CustomException {
+    resolveUser(callerKeycloakId);
+    resolveProperty(propertyId);
+    return docRepo.findByPropertyIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(propertyId).stream()
+        .map(PropertyMapper::toDocumentResponse)
+        .toList();
+  }
+
+  @Override
+  @Transactional
+  public PropertyDocumentResponse restoreDocument(
+      UUID propertyId, UUID docId, String callerKeycloakId) throws CustomException {
+    User caller = resolveUser(callerKeycloakId);
+    Property property = resolveProperty(propertyId);
+    requireOwnership(property, caller);
+    PropertyDocument doc =
+        docRepo
+            .findByIdAndDeletedAtIsNotNull(docId)
+            .filter(d -> d.getProperty().getId().equals(propertyId))
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException("Document archivé introuvable"),
+                        ResponseMessageConstants.PROPERTY_DOCUMENT_NOT_FOUND));
+    doc.setDeletedAt(null);
+    return PropertyMapper.toDocumentResponse(docRepo.save(doc));
   }
 }

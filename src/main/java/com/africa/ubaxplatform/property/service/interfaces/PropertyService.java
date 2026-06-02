@@ -69,6 +69,9 @@ public interface PropertyService {
   /** Archive un bien (statut → ARCHIVED). Appelé par le propriétaire. */
   void archive(UUID id, String callerKeycloakId) throws CustomException;
 
+  /** Restaure un bien archivé (ARCHIVED → DRAFT). */
+  PropertyResponse restore(UUID id, String callerKeycloakId) throws CustomException;
+
   /** Modération admin : met à jour le statut (PUBLISHED, REJECTED, etc.). */
   PropertyResponse updateStatus(UUID id, PropertyStatusUpdateRequest request)
       throws CustomException;
@@ -134,4 +137,12 @@ public interface PropertyService {
       UUID propertyId, UUID docId, String callerKeycloakId, String note) throws CustomException;
 
   void deleteDocument(UUID propertyId, UUID docId, String callerKeycloakId) throws CustomException;
+
+  /** Retourne les documents archivés (soft-deleted) d'un bien. */
+  List<PropertyDocumentResponse> listArchivedDocuments(UUID propertyId, String callerKeycloakId)
+      throws CustomException;
+
+  /** Restaure un document archivé. */
+  PropertyDocumentResponse restoreDocument(UUID propertyId, UUID docId, String callerKeycloakId)
+      throws CustomException;
 }

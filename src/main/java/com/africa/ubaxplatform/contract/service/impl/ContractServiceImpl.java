@@ -375,7 +375,7 @@ public class ContractServiceImpl implements ContractService {
     // Premier loyer = 1 mois après l'entrée (Java gère automatiquement les mois courts)
     LocalDate dueDate = start.plusMonths(1);
 
-    if (paymentRepo.existsByContractIdAndDueDate(contract.getId(), dueDate)) {
+    if (paymentRepo.existsByContractIdAndDueDateAndDeletedAtIsNull(contract.getId(), dueDate)) {
       log.debug("Premier loyer déjà existant pour contrat {}, ignoré.", contract.getId());
       return;
     }

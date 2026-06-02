@@ -99,4 +99,13 @@ public interface TenantService {
    * @param id identifiant du dossier
    */
   void delete(UUID id) throws CustomException;
+
+  /** Retourne la liste paginée des dossiers archivés (deletedAt IS NOT NULL). */
+  Page<TenantResponse> listArchived(String keycloakId, Pageable pageable) throws CustomException;
+
+  /** Retourne le détail d'un dossier archivé. */
+  TenantResponse getArchivedById(String keycloakId, UUID id) throws CustomException;
+
+  /** Restaure un dossier archivé (remet deletedAt à null). */
+  TenantResponse restore(UUID id) throws CustomException;
 }

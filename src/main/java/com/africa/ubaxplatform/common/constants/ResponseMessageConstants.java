@@ -262,6 +262,25 @@ public class ResponseMessageConstants {
   public static final String FAVORITE_GET_LIST_SUCCESS = "FAVORITE_GET_LIST_SUCCESS";
   public static final String FAVORITE_NOT_FOUND = "FAVORITE_NOT_FOUND";
 
+  // ── ARCHIVAGE ────────────────────────────────────────────────────
+  public static final String PROPERTY_RESTORE_SUCCESS = "PROPERTY_RESTORE_SUCCESS";
+  public static final String TENANT_RESTORE_SUCCESS = "TENANT_RESTORE_SUCCESS";
+  public static final String TENANT_GET_ARCHIVED_SUCCESS = "TENANT_GET_ARCHIVED_SUCCESS";
+  public static final String TENANT_GET_ARCHIVED_LIST_SUCCESS = "TENANT_GET_ARCHIVED_LIST_SUCCESS";
+  public static final String PAYMENT_ARCHIVE_SUCCESS = "PAYMENT_ARCHIVE_SUCCESS";
+  public static final String PAYMENT_RESTORE_SUCCESS = "PAYMENT_RESTORE_SUCCESS";
+  public static final String PAYMENT_GET_ARCHIVED_SUCCESS = "PAYMENT_GET_ARCHIVED_SUCCESS";
+  public static final String PAYMENT_GET_ARCHIVED_LIST_SUCCESS =
+      "PAYMENT_GET_ARCHIVED_LIST_SUCCESS";
+  public static final String TICKET_ARCHIVE_SUCCESS = "TICKET_ARCHIVE_SUCCESS";
+  public static final String TICKET_RESTORE_SUCCESS = "TICKET_RESTORE_SUCCESS";
+  public static final String TICKET_GET_ARCHIVED_SUCCESS = "TICKET_GET_ARCHIVED_SUCCESS";
+  public static final String TICKET_GET_ARCHIVED_LIST_SUCCESS = "TICKET_GET_ARCHIVED_LIST_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_RESTORE_SUCCESS =
+      "PROPERTY_DOCUMENT_RESTORE_SUCCESS";
+  public static final String PROPERTY_DOCUMENT_GET_ARCHIVED_LIST_SUCCESS =
+      "PROPERTY_DOCUMENT_GET_ARCHIVED_LIST_SUCCESS";
+
   // ── VISIT REQUEST ────────────────────────────────────────────────
   public static final String VISIT_AVAILABILITY_GET_SUCCESS = "VISIT_AVAILABILITY_GET_SUCCESS";
   public static final String VISIT_AVAILABILITY_CONFIGURE_SUCCESS =

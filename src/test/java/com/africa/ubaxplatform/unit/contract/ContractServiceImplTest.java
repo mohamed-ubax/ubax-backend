@@ -421,7 +421,7 @@ class ContractServiceImplTest {
 
       assertThat(resp).isNotNull();
       assertThat(resp.status()).isEqualTo(ContractStatus.ACTIVE);
-      verify(paymentRepo, never()).existsByContractIdAndDueDate(any(), any());
+      verify(paymentRepo, never()).existsByContractIdAndDueDateAndDeletedAtIsNull(any(), any());
       // Le bien doit passer en RESERVED
       assertThat(property.getStatus()).isEqualTo(PropertyStatus.RESERVED);
       verify(propertyRepo).save(property);
@@ -449,7 +449,8 @@ class ContractServiceImplTest {
       when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
           .thenReturn(Optional.of(pendingContract));
       when(contractRepo.save(any(Contract.class))).thenReturn(pendingContract);
-      when(paymentRepo.existsByContractIdAndDueDate(any(), any())).thenReturn(false);
+      when(paymentRepo.existsByContractIdAndDueDateAndDeletedAtIsNull(any(), any()))
+          .thenReturn(false);
       when(paymentRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
       service.activate(SharedTestFixtures.KEYCLOAK_ID, SharedTestFixtures.CONTRACT_ID);
@@ -483,7 +484,7 @@ class ContractServiceImplTest {
       when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
           .thenReturn(Optional.of(pendingLease));
       when(contractRepo.save(any(Contract.class))).thenReturn(pendingLease);
-      when(paymentRepo.existsByContractIdAndDueDate(
+      when(paymentRepo.existsByContractIdAndDueDateAndDeletedAtIsNull(
               SharedTestFixtures.CONTRACT_ID, expectedDueDate))
           .thenReturn(false);
       when(paymentRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -493,7 +494,8 @@ class ContractServiceImplTest {
 
       assertThat(resp.status()).isEqualTo(ContractStatus.ACTIVE);
       verify(paymentRepo)
-          .existsByContractIdAndDueDate(SharedTestFixtures.CONTRACT_ID, expectedDueDate);
+          .existsByContractIdAndDueDateAndDeletedAtIsNull(
+              SharedTestFixtures.CONTRACT_ID, expectedDueDate);
       verify(paymentRepo).save(any());
     }
 
@@ -518,7 +520,8 @@ class ContractServiceImplTest {
       when(contractRepo.findById(SharedTestFixtures.CONTRACT_ID))
           .thenReturn(Optional.of(pendingLease));
       when(contractRepo.save(any(Contract.class))).thenReturn(pendingLease);
-      when(paymentRepo.existsByContractIdAndDueDate(any(), any())).thenReturn(true);
+      when(paymentRepo.existsByContractIdAndDueDateAndDeletedAtIsNull(any(), any()))
+          .thenReturn(true);
 
       service.activate(SharedTestFixtures.KEYCLOAK_ID, SharedTestFixtures.CONTRACT_ID);
 

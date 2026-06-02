@@ -651,16 +651,19 @@ class PaymentServiceImplTest {
   class Delete {
 
     @Test
-    @DisplayName("Succès – paiement PENDING supprimé par le même PARTNER")
-    void delete_pending_deletesSuccessfully() throws CustomException {
+    @DisplayName("Succès – paiement PENDING archivé (soft delete) par le même PARTNER")
+    void delete_pending_softDeletesSuccessfully() throws CustomException {
       when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
           .thenReturn(Optional.of(caller));
       when(paymentRepo.findById(SharedTestFixtures.PAYMENT_ID))
           .thenReturn(Optional.of(pendingPayment));
+      when(paymentRepo.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
 
       service.delete(SharedTestFixtures.PAYMENT_ID, SharedTestFixtures.KEYCLOAK_ID);
 
-      verify(paymentRepo).delete(pendingPayment);
+      ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+      verify(paymentRepo).save(captor.capture());
+      assertThat(captor.getValue().getDeletedAt()).isNotNull();
     }
 
     @Test
@@ -691,6 +694,135 @@ class PaymentServiceImplTest {
               () -> service.delete(SharedTestFixtures.PAYMENT_ID, SharedTestFixtures.KEYCLOAK_ID))
           .isInstanceOf(CustomException.class)
           .hasMessageContaining(ResponseMessageConstants.PAYMENT_GET_FAILURE_NOT_FOUND);
+    }
+  }
+
+  // ── Archive / Restore ──────────────────────────────────────────
+
+  @Nested
+  @DisplayName("listArchived()")
+  class ListArchived {
+
+    @Test
+    @DisplayName("Succès – retourne les paiements archivés de l'agence du PARTNER")
+    void listArchived_partner_returnsArchivedPage() throws CustomException {
+      Payment archived = SharedTestFixtures.buildPayment(agency, caller, PaymentStatus.PENDING);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+      Page<Payment> page = new PageImpl<>(List.of(archived));
+
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(paymentRepo.findArchived(SharedTestFixtures.AGENCY_ID, PageRequest.of(0, 20)))
+          .thenReturn(page);
+
+      var result = service.listArchived(SharedTestFixtures.KEYCLOAK_ID, PageRequest.of(0, 20));
+
+      assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Echec – utilisateur sans agence → BadRequestException")
+    void listArchived_noAgency_throws() {
+      User noAgency =
+          SharedTestFixtures.buildUserWithoutAgency(
+              SharedTestFixtures.KEYCLOAK_ID, SharedTestFixtures.USER_ID);
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(noAgency));
+
+      assertThatThrownBy(
+              () -> service.listArchived(SharedTestFixtures.KEYCLOAK_ID, PageRequest.of(0, 20)))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PAYMENT_CREATE_FAILURE_BAD_REQUEST);
+    }
+  }
+
+  @Nested
+  @DisplayName("getArchivedById()")
+  class GetArchivedById {
+
+    @Test
+    @DisplayName("Succès – retourne le détail d'un paiement archivé")
+    void getArchivedById_found_returnsResponse() throws CustomException {
+      Payment archived = SharedTestFixtures.buildPayment(agency, caller, PaymentStatus.PENDING);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+
+      when(paymentRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.PAYMENT_ID))
+          .thenReturn(Optional.of(archived));
+
+      var result = service.getArchivedById(SharedTestFixtures.PAYMENT_ID);
+
+      assertThat(result).isNotNull();
+      assertThat(result.id()).isEqualTo(SharedTestFixtures.PAYMENT_ID);
+    }
+
+    @Test
+    @DisplayName("Echec – paiement archivé introuvable → PAYMENT_GET_FAILURE_NOT_FOUND")
+    void getArchivedById_notFound_throws() {
+      when(paymentRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.PAYMENT_ID))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> service.getArchivedById(SharedTestFixtures.PAYMENT_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PAYMENT_GET_FAILURE_NOT_FOUND);
+    }
+  }
+
+  @Nested
+  @DisplayName("restore()")
+  class Restore {
+
+    @Test
+    @DisplayName("Succès – deletedAt remis à null, paiement restauré")
+    void restore_success_clearsDeletedAt() throws CustomException {
+      Payment archived = SharedTestFixtures.buildPayment(agency, caller, PaymentStatus.PENDING);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(paymentRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.PAYMENT_ID))
+          .thenReturn(Optional.of(archived));
+      when(paymentRepo.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+      var result = service.restore(SharedTestFixtures.PAYMENT_ID, SharedTestFixtures.KEYCLOAK_ID);
+
+      ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+      verify(paymentRepo).save(captor.capture());
+      assertThat(captor.getValue().getDeletedAt()).isNull();
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Echec – paiement archivé introuvable → PAYMENT_GET_FAILURE_NOT_FOUND")
+    void restore_notFound_throws() {
+      when(userRepo.findByKeycloakId(SharedTestFixtures.KEYCLOAK_ID))
+          .thenReturn(Optional.of(caller));
+      when(paymentRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.PAYMENT_ID))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(
+              () -> service.restore(SharedTestFixtures.PAYMENT_ID, SharedTestFixtures.KEYCLOAK_ID))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.PAYMENT_GET_FAILURE_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Echec – PARTNER d'une autre agence → USER_FORBIDDEN")
+    void restore_differentAgency_throwsForbidden() {
+      Agency otherAgency = Agency.builder().name("Autre Agence").build();
+      SharedTestFixtures.injectId(otherAgency, UUID.randomUUID());
+      User otherCaller =
+          SharedTestFixtures.buildPartnerUser("other-kc", UUID.randomUUID(), otherAgency);
+
+      Payment archived = SharedTestFixtures.buildPayment(agency, caller, PaymentStatus.PENDING);
+      archived.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+
+      when(userRepo.findByKeycloakId("other-kc")).thenReturn(Optional.of(otherCaller));
+      when(paymentRepo.findByIdAndDeletedAtIsNotNull(SharedTestFixtures.PAYMENT_ID))
+          .thenReturn(Optional.of(archived));
+
+      assertThatThrownBy(() -> service.restore(SharedTestFixtures.PAYMENT_ID, "other-kc"))
+          .isInstanceOf(CustomException.class)
+          .hasMessageContaining(ResponseMessageConstants.USER_FORBIDDEN);
     }
   }
 }

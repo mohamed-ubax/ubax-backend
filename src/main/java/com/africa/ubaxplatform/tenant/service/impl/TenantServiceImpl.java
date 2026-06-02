@@ -345,6 +345,48 @@ public class TenantServiceImpl implements TenantService {
     tenantRepo.save(tenant);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public Page<TenantResponse> listArchived(String keycloakId, Pageable pageable)
+      throws CustomException {
+    User caller = resolveUser(keycloakId);
+    if (caller.getAgency() != null) {
+      return tenantRepo
+          .findArchivedByAgencyId(caller.getAgency().getId(), pageable)
+          .map(this::toResponse);
+    }
+    return tenantRepo.findAllArchived(pageable).map(this::toResponse);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public TenantResponse getArchivedById(String keycloakId, UUID id) throws CustomException {
+    Tenant tenant =
+        tenantRepo
+            .findByIdAndDeletedAtIsNotNull(id)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException("Dossier archivé introuvable"),
+                        ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND));
+    return toResponse(tenant);
+  }
+
+  @Override
+  @Transactional
+  public TenantResponse restore(UUID id) throws CustomException {
+    Tenant tenant =
+        tenantRepo
+            .findByIdAndDeletedAtIsNotNull(id)
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        new NotFoundException("Dossier archivé introuvable"),
+                        ResponseMessageConstants.TENANT_GET_FAILURE_NOT_FOUND));
+    tenant.setDeletedAt(null);
+    return toResponse(tenantRepo.save(tenant));
+  }
+
   // Seule la pièce d'identité est requise — le justificatif de revenus reste optionnel
   // (marché africain : beaucoup de travailleurs informels sans bulletin de salaire)
   private boolean isDossierComplete(Tenant t) {
