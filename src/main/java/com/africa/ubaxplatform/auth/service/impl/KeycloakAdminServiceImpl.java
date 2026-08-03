@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -60,7 +61,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
           .toBodilessEntity();
     } catch (NotFoundException e) {
       throw e;
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       throw new CustomException(
           new IllegalArgumentException(e.getMessage()),
           "Erreur lors de l'envoi de l'email de réinitialisation");
@@ -89,7 +90,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
           .body(credential)
           .retrieve()
           .toBodilessEntity();
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       if (e.getStatusCode().value() == 404) {
         throw new CustomException(
             new NotFoundException("Utilisateur introuvable dans Keycloak"),
@@ -127,7 +128,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
             .retrieve()
             .toBodilessEntity();
       }
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       if (e.getStatusCode().value() == 404) {
         throw new CustomException(
             new NotFoundException("Rôle '" + roleName + "' ou utilisateur introuvable"),
@@ -162,7 +163,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
             .retrieve()
             .toBodilessEntity();
       }
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       if (e.getStatusCode().value() == 404) {
         throw new CustomException(
             new NotFoundException("Rôle '" + roleName + "' ou utilisateur introuvable"),
@@ -212,7 +213,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
       throw new CustomException(
           new IllegalStateException("Création Keycloak sans Location header"),
           "Erreur lors de la création du compte Keycloak");
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       if (e.getStatusCode().value() == 409) {
         throw new CustomException(
             new IllegalArgumentException("Email ou téléphone déjà utilisé dans Keycloak"),
@@ -388,7 +389,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
       throw new CustomException(
           new IllegalStateException("Keycloak : pas de Location header"),
           "Erreur lors de la création du compte administrateur");
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       if (e.getStatusCode().value() == 409) {
         throw new CustomException(
             new IllegalArgumentException("Email déjà utilisé dans Keycloak : " + email),
@@ -436,7 +437,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
       throw new CustomException(
           new IllegalStateException("Keycloak : pas de Location header"),
           "Erreur lors de la création du compte partenaire");
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       if (e.getStatusCode().value() == 409) {
         throw new CustomException(
             new IllegalArgumentException("Email déjà utilisé dans Keycloak : " + email),
@@ -492,7 +493,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
       throw new CustomException(
           new IllegalStateException("Keycloak : pas de Location header"),
           "Erreur lors de la création du compte bailleur");
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       if (e.getStatusCode().value() == 409) {
         throw new CustomException(
             new IllegalArgumentException("Téléphone déjà utilisé dans Keycloak : " + phone),
@@ -516,7 +517,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
           .body(List.of("UPDATE_PASSWORD"))
           .retrieve()
           .toBodilessEntity();
-    } catch (HttpClientErrorException e) {
+    } catch (HttpStatusCodeException e) {
       throw new CustomException(
           new IllegalArgumentException(e.getMessage()),
           "Erreur lors de l'envoi du lien de définition du mot de passe");
