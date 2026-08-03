@@ -450,11 +450,14 @@ public class UserRoleServiceImpl implements UserRoleService {
       log.info("Membre ajouté : caller={}, new={}, scope={}", callerKeycloakId, keycloakId, scope);
       return UserMapper.toResponse(member, fetchSubRoles(member.getId()));
 
-    } catch (CustomException e) {
+    } catch (Exception e) {
       if (keycloakId != null) {
         keycloakAdminService.deleteUser(keycloakId);
       }
-      throw e;
+      if (e instanceof CustomException customException) {
+        throw customException;
+      }
+      throw new CustomException(e, "Erreur lors de l'ajout du membre");
     }
   }
 
